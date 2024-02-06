@@ -1,0 +1,11 @@
+{
+  "name": "api.entreheart.com",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "(npm install); (cd _baseapi && npm install)",
+    "start": "node index.js"
+  },
+  "dependencies": {}
+}
