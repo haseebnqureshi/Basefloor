@@ -1,11 +1,11 @@
 
 const path = require('path')
 
-const api = require('./_baseapi')({
+const API = require('./_baseAPI')({
 	name: 'Entreheart Class',
 	envPath: path.resolve(__dirname, '.env'),
 	collections: {
-		classes: {
+		courses: {
 			create: [true, ['name', 'active', 'professor_id', 'created_at']],
 			readAll: [true],
 			read: [true, '_id'],
@@ -44,7 +44,7 @@ const api = require('./_baseapi')({
 	auth: {
 		collection: {
 			name: 'users',
-			whitelist: ['first_name', 'last_name', 'display_name'], //in addition to 'email', 'sms', 'password_hash'
+			whitelist: ['first_name', 'last_name', 'display_name', 'university', 'department', 'role'], //in addition to 'email', 'sms', 'password_hash'
 		},
 	},
 	notifications: {
@@ -57,8 +57,34 @@ const api = require('./_baseapi')({
 	},
 })
 
+API.DB.students = {}
+API.DB.students.readAll = async (where) => {
+	const result = await API.Utils.tryCatch(`try:students:readAll`,
+		API.DB.client.db(process.env.MONGODB_DATABASE)
+			.collection('users')
+			.find(where || {})
+			.toArray())
+	return result
+}
 
-api.start({
+
+API.get('/students', async (req, res) => {
+	try {
+		const students = await API.Utils.tryCatch('try:students:readAll', 
+			API.DB.students.readAll({ role: 'professor' }))
+		res.status(200).send({ data: students })
+	}
+	catch (err) {
+		API.Utils.errorHandler({ res, err })
+	}
+
+
+	res.status(200).send()
+})
+
+
+
+API.start({
 	// key: path.resolve(__dirname, 'ssl/private.key'),
 	// crt: path.resolve(__dirname, 'ssl/certificate.crt'),
 })
