@@ -15,7 +15,6 @@ module.exports = ({ name, envPath, collections, auth, notifications }) => {
 	API.express = express
 	API.Utils = require('./utils')
 	const Log = API.Log = API.Utils.Log
-	API.DB = require('./db')
 	API.Routes = {}
 	API.Middlewares = {}
 	API.Services = {}
@@ -27,6 +26,7 @@ module.exports = ({ name, envPath, collections, auth, notifications }) => {
 	API.use(bodyParser.urlencoded({ extended: false }))
 	API.use(bodyParser.json())
 	
+	API = require('./db')(API)
 	API = require('./collections/db')(API, { collections })
 	API = require('./collections/routes')(API, { collections })
 	API = require('./auth')(API, { auth })
@@ -52,9 +52,6 @@ module.exports = ({ name, envPath, collections, auth, notifications }) => {
 
 	API.start = async ({ key, crt }) => {
 
-		API.DB.close()
-		API.DB.open()
-
 		port = process.env.PORT || 4000
 		if (process.env.NODE_ENV == 'production' && key && crt ) {
 			const credentials = {
@@ -70,18 +67,18 @@ module.exports = ({ name, envPath, collections, auth, notifications }) => {
 			const server = API.listen(port, () => {
 				Log(`${name} BaseAPI started on Port ${port} (${process.env.NODE_ENV || 'development'} node environment) ...`)
 			})
-			const onShutDown = () => {
-				console.log('received kill signal, shutting down gracefully')
-				API.DB.close()
-				server.close(() => {
-					process.exit(0)
-				})
-				setTimeout(() => {
-					process.exit(1)
-				}, 10000)
-			}
-			process.on('SIGTERM', onShutDown)
-			process.on('SIGINT', onShutDown)
+			// const onShutDown = () => {
+			// 	console.log('received kill signal, shutting down gracefully')
+			// 	API.DB.close()
+			// 	server.close(() => {
+			// 		process.exit(0)
+			// 	})
+			// 	setTimeout(() => {
+			// 		process.exit(1)
+			// 	}, 10000)
+			// }
+			// process.on('SIGTERM', onShutDown)
+			// process.on('SIGINT', onShutDown)
 		}	
 	}
 

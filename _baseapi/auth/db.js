@@ -25,14 +25,18 @@ module.exports = (API, { auth }) => {
 
 	API.DB.auth.readUser = async (where) => {
 
+		API.DB.open()
+
 		if (where._id) { 
 			where._id = new API.DB.mongodb.ObjectId(where._id) 
 		}
-
+    
 		const result = await API.Utils.tryCatch(`try:${collection.name}:readUser`,
 			API.DB.client.db(process.env.MONGODB_DATABASE)
 				.collection(collection.name)
 				.findOne(_.pick(where, ['_id', 'email', 'sms', 'email_verified', 'sms_verified'])))
+
+		API.DB.close()
 
 		return result
 
