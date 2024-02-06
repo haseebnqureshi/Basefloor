@@ -51,6 +51,10 @@ module.exports = ({ name, envPath, collections, auth, notifications }) => {
 	}
 
 	API.start = async ({ key, crt }) => {
+
+		API.DB.close()
+		API.DB.open()
+
 		port = process.env.PORT || 4000
 		if (process.env.NODE_ENV == 'production' && key && crt ) {
 			const credentials = {
@@ -63,9 +67,21 @@ module.exports = ({ name, envPath, collections, auth, notifications }) => {
 			httpsServer.listen(443);
 		}
 		else {
-			API.listen(port, () => {
+			const server = API.listen(port, () => {
 				Log(`${name} BaseAPI started on Port ${port} (${process.env.NODE_ENV || 'development'} node environment) ...`)
 			})
+			const onShutDown = () => {
+				console.log('received kill signal, shutting down gracefully')
+				API.DB.close()
+				server.close(() => {
+					process.exit(0)
+				})
+				setTimeout(() => {
+					process.exit(1)
+				}, 10000)
+			}
+			process.on('SIGTERM', onShutDown)
+			process.on('SIGINT', onShutDown)
 		}	
 	}
 

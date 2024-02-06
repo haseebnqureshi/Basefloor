@@ -27,7 +27,7 @@ module.exports = (API, { auth }) => {
 			}
 
 			//checking token validity
-			const decoded = await utils.tryCatch('try:auth:validateToken', API.Services.auth.validateToken(token))
+			const decoded = await API.Utils.tryCatch('try:auth:validateToken', API.Services.auth.validateToken(token))
 			if (!decoded) { throw 'Malformed, expired, or invalid token!' }
 
 			//persisting decoded token if whitelisted
@@ -43,6 +43,7 @@ module.exports = (API, { auth }) => {
 			next()
 		}
 		catch (err) {
+			console.log(err)
 			res.status(422).send({ err })
 		}
 	}
@@ -50,7 +51,9 @@ module.exports = (API, { auth }) => {
 	API.Middlewares.auth.loadAuthdUser = async (req, res, next) => {
 
 		//request expectations
-		const { _id } = req.auth
+		let { _id } = req.auth
+
+		_id = new API.DB.mongodb.ObjectId(_id) 
 
 		try {
 
@@ -63,6 +66,7 @@ module.exports = (API, { auth }) => {
 			next()
 		}
 		catch (err) {
+			console.log(err)
 			res.status(422).send({ err })
 		}    
 	}

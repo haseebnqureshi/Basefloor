@@ -1,4 +1,6 @@
 
+const _ = require('underscore')
+
 module.exports = (API, { auth }) => {
 
 	API.Routes.auth = []
@@ -18,17 +20,17 @@ module.exports = (API, { auth }) => {
 				if (user) { throw `${email} is already registered!` }
 
 				//normalize sms to acceptable format
-				const validSMS = API.Services.auth.normalizePhone(sms)
-				if (!validSMS) { throw `${validSMS.normalized} appears to be invalid!` }
+				// const validSMS = API.Services.auth.normalizePhone(sms)
+				// if (!validSMS) { throw `${validSMS.normalized} appears to be invalid!` }
 
 				//checking if user sms already registered
-				user = await API.Utils.tryCatch('try:auth:readUser', API.DB.auth.readUser({ sms: validSMS.normalized} ))
-				if (user) { throw `${validSMS.normalized} is already registered!` }
+				// user = await API.Utils.tryCatch('try:auth:readUser', API.DB.auth.readUser({ sms: validSMS.normalized} ))
+				// if (user) { throw `${validSMS.normalized} is already registered!` }
 
 				//creating user
 				user = await API.Utils.tryCatch('try:auth:createUser', API.DB.auth.createUser({
 					..._.omit(req.body, ['sms', 'password']),
-					sms: validSMS.normalized,
+					// sms: validSMS.normalized,
 					password_hash: await API.Services.auth.hashPassword(password),
 				}))
 
@@ -36,6 +38,23 @@ module.exports = (API, { auth }) => {
 					message: `User created!`,
 					..._.omit(user, ['password_hash', 'password'])
 				})
+
+			}
+			catch (err) {
+				API.Utils.errorHandler({ res, err })
+			}
+
+		},
+	})	
+
+	API.Routes.auth.push({
+		method: 'get',
+		path: `/auth/user`,
+		middlewares: [API.Middlewares.auth.tokenRequired, API.Middlewares.auth.loadAuthdUser],
+		fn: async (req, res) => {
+
+			try {
+				res.status(200).send(_.omit(req.user, ['password_hash', '_id', 'created_at']))
 
 			}
 			catch (err) {

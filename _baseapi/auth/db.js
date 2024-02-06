@@ -17,13 +17,17 @@ module.exports = (API, { auth }) => {
 				.collection(collection.name)
 				.insertOne({
 					created_at: new Date(),
-					..._.pick(values, [...collection.whitelist, 'email', 'sms']),
+					..._.pick(values, [...collection.whitelist, 'email', 'sms', 'password_hash']),
 				}))
 
 		return result
 	}
 
 	API.DB.auth.readUser = async (where) => {
+
+		if (where._id) { 
+			where._id = new API.DB.mongodb.ObjectId(where._id) 
+		}
 
 		const result = await API.Utils.tryCatch(`try:${collection.name}:readUser`,
 			API.DB.client.db(process.env.MONGODB_DATABASE)
@@ -40,6 +44,8 @@ module.exports = (API, { auth }) => {
 		$set[`${method}_verified`] = true
 		$set[`${method}_verified_at`] = new Date()
 
+		_id = new API.DB.mongodb.ObjectId(_id) 
+
 		const result = await API.Utils.tryCatch(`try:${collection.name}:verifyUser`,
 			API.DB.client.db(process.env.MONGODB_DATABASE)
 				.collection(collection.name)
@@ -50,6 +56,8 @@ module.exports = (API, { auth }) => {
 	}
 
 	API.DB.auth.updateUserPasswordHash = async ({ _id, password_hash }) => {
+
+		_id = new API.DB.mongodb.ObjectId(_id) 
 
 		const result = await API.Utils.tryCatch(`try:${collection.name}:updateUserPasswordHash`,
 			API.DB.client.db(process.env.MONGODB_DATABASE)
