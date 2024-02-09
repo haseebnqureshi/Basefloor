@@ -1,7 +1,4 @@
 
-const fs = require('fs')
-const path = require('path')
-
 //@see https://www.mongodb.com/developer/languages/javascript/node-crud-tutorial/
 
 const mongodb = module.exports.mongodb = require('mongodb')
@@ -38,7 +35,7 @@ module.exports = (API) => {
   }
 
   API.DB.open = async () => {
-    console.log('opening mongodb connection')
+    API.Log('opening mongodb connection')
     await API.DB.client.connect()
   }
 
@@ -47,41 +44,11 @@ module.exports = (API) => {
     // await API.DB.client.close()
   }
 
+  API.DB.collection = async (collection) => {
+    return API.DB.client.db(process.env.MONGODB_DATABASE).collection(collection)
+  }
+
   return API
 
 }
 
-
-
-
-
-
-// SCRAPS
-
-
-// module.exports.register = async () => {
-  
-//   const dirpath = path.resolve(__dirname, 'collections')
-//   const items = fs.readdirSync(dirpath).filter(f => f.match(/\.js$/i))
-//   if (items.length === 0) { return }
-
-//   let map = {}
-//   for (let item of items) {
-//     const name = item.replace(/\.js$/i, '')
-//     const contents = fs.readFileSync(path.resolve(dirpath, item), 'utf8')
-//     map[name] = 
-
-
-
-//     const replaced = contents.replace(/exports/gmi, `exports.${name}`)
-//     fs.appendFileSync(outpath, replaced)
-//   const outpath = path.resolve(__dirname, 'collections.map.json')
-//   fs.writeFileSync(outpath, '', 'utf8')
-
-
-//   }
-// }
-
-// if (process.env.NODE_ENV !== 'production') {
-//   module.exports.register()
-// }
