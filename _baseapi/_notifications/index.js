@@ -1,17 +1,17 @@
 
 module.exports = (API, { config }) => {
 
-	const { _active, _services } = config
+	const { _active, _providers } = config
 
 	API.Notifications = {}
 
 	for (let method in _active) {
-		const serviceName = _active[method]
-		const serviceConfig = _services[serviceName]
-		const service = require(`./services/${serviceName}`)({ config: serviceConfig })
+		const providerName = _active[method]
+		const providerConfig = _providers[providerName]
+		const provider = require(`./providers/${providerName}`)({ config: providerConfig })
 		API.Notifications[method] = require(`./methods/${method}`)({ 
-			client: service.client,
-			helpers: service.helpers,
+			client: provider.client,
+			services: provider.services,
 		})
 	}
 

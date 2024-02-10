@@ -3,11 +3,9 @@ const postmark = require('postmark')
 
 module.exports = ({ config }) => {
 
-	let client = {}
+	const { _env } = config
 
-	const token = config.getToken()
-
-	client = new postmark.ServerClient(token)
+	const client = new postmark.ServerClient(_env.getToken())
 
 	let helpers = {}
 

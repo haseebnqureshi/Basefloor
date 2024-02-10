@@ -26,6 +26,4 @@ API.get('/students', async (req, res) => {
 	}
 })
 
-API.post('/students', async )
-
 API.Start()

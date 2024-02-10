@@ -3,8 +3,6 @@ const _ = require('underscore')
 
 module.exports = (API, { models }) => {
 
-	API.Models = {}
-
 	for (let model of models) {
 		
 		const { _name, _label, _collection, _values } = model
@@ -19,6 +17,8 @@ module.exports = (API, { models }) => {
 			collectionFilter = false
 		}
 
+		API.DB[_name] = {}
+
 		API.DB[_name].name = _name
 
 		API.DB[_name].label = _label
@@ -30,8 +30,8 @@ module.exports = (API, { models }) => {
 			for (let key in values) {
 				if (key in _values) {
 					const valueType = _values[key][0]
-					const dbActions = _values[key][1]
-					if (dbActions.match(dbAction)) {
+					const dbActions = _values[key][1].split(',')
+					if (dbActions.indexOf(dbAction) > 0) {
 						sanitized[key] = API.Utils.valueType(values[key], valueType)
 					}
 				}
@@ -41,6 +41,7 @@ module.exports = (API, { models }) => {
 
 		API.DB[_name].create = async (values) => {
 			values = API.DB[_name].sanitize(values, 'c')
+			values = { ...values, created_at: new Date() }
 			if (collectionFilter) { 
 				values = { ...values, ...collectionFilter } 
 			}
@@ -58,6 +59,7 @@ module.exports = (API, { models }) => {
 		}
 
 		API.DB[_name].read = async (where) => {
+			where = API.DB[_name].sanitize(where, 'r')
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}
@@ -67,6 +69,8 @@ module.exports = (API, { models }) => {
 		}
 
 		API.DB[_name].update = async (where, values) => {
+			where = API.DB[_name].sanitize(where, 'u')
+			values = { ...values, updated_at: new Date() }
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}	
@@ -78,6 +82,7 @@ module.exports = (API, { models }) => {
 		}
 
 		API.DB[_name].delete = async (where) => {
+			where = API.DB[_name].sanitize(where, 'd')
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}

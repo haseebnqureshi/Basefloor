@@ -1,5 +1,18 @@
 
-module.exports = (API, { auth }) => {
+module.exports = (API, { config }) => {
+
+	API.Auth.services = require('./services')({ config })
+
+
+
+
+
+
+
+
+
+
+
 
 	API = require('./db')(API, { auth })
 

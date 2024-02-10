@@ -3,7 +3,7 @@ const path = require('path')
 const express = require('express')
 const fs = require('fs')
 
-module.exports = ({ configPath, envPath }) => {
+module.exports = ({ projectPath, envPath }) => {
 
 	require('dotenv').config({ path: envPath })
 
@@ -23,8 +23,8 @@ module.exports = ({ configPath, envPath }) => {
 	API = require('./_notifications')(API, { config: notifications })
 	API = require('./_db')(API)
 	API = require('./_models')(API, { models })
-	API = require('./_routes')(API, { routes, structure: routeStructure })
-	API = require('./_auth')(API, { config: auth })
+	// API = require('./_routes')(API, { routes, structure: routeStructure })
+	// API = require('./_auth')(API, { config: auth })
 
 	API.Start = () => {
 		const port = process.env.PORT || 4000

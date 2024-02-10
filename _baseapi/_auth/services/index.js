@@ -8,33 +8,35 @@ const { phone } = require('phone')
 const writeFileAsync = promisify(fs.writeFile)
 const unlinkAsync = promisify(fs.unlink)
 
-module.exports = (API, { auth }) => {
+module.exports = ({ config }) => {
 
-	const { collection } = auth
+	const { _env } = config
 
-	API.Services.auth = {}
+	const secret = _env.getSecret()
 
-	API.Services.auth.removeFile = async (filepath) => {
+	let services = {}
+
+	services.removeFile = async (filepath) => {
 		return await unlinkAsync(filepath)
 	}
 
-	API.Services.auth.md5 = (data) => {
+	services.md5 = (data) => {
 		return crypto.createHash('md5').update(data).digest('hex')
 	}
 
-	API.Services.auth.sha1 = (data) => {
+	services.sha1 = (data) => {
 		return crypto.createHash('sha1').update(data).digest('hex')
 	}
 
-	API.Services.auth.hashPassword = async (password) => {
+	services.hashPassword = async (password) => {
 		return await bcrypt.hash(password, 10)
 	}
 
-	API.Services.auth.comparePasswordWithHashed = async (password, hashed) => {
+	services.comparePasswordWithHashed = async (password, hashed) => {
 		return await bcrypt.compare(password, hashed)
 	}
 
-	API.Services.auth.normalizePhone = (value, countryAbbr) => {
+	services.normalizePhone = (value, countryAbbr) => {
 		switch (countryAbbr) {
 			default:
 				countryAbbr = 'USA'
@@ -48,7 +50,7 @@ module.exports = (API, { auth }) => {
 		}
 	}
 
-	API.Services.auth.emailParts = (value) => {
+	services.emailParts = (value) => {
 		const parts = value.split('@')
 		return {
 			username: parts[0],
@@ -56,29 +58,25 @@ module.exports = (API, { auth }) => {
 		}
 	}
 
-	API.Services.auth.createToken = async (sub, user_id, payload) => {
-		const expiry = API.Services.auth.expirations(sub)
+	services.createToken = async (sub, _id, payload) => {
+		const expiry = services.expirations(sub)
 		if (!expiry) { return undefined }
-		return await jwt.sign({
-			_id: user_id,
-			sub,
-			payload,
-		}, process.env.AUTH_SECRET, {
+		return await jwt.sign({ sub, _id, payload }, secret, {
 			algorithm: 'HS256',
 			expiresIn: expiry.value,
 		})
 	}
 
-	API.Services.auth.validateToken = async (token) => {
+	services.validateToken = async (token) => {
 		try {
-			return await jwt.verify(token, process.env.AUTH_SECRET)
+			return await jwt.verify(token, secret)
 		}
 		catch(err) {
 			return false
 		}
 	}
 
-	API.Services.auth.expirations = (type) => {
+	services.expirations = (type) => {
 		switch (type) {
 			case 'auth':
 				return { text: '7 days', value: '7d' }
@@ -92,16 +90,11 @@ module.exports = (API, { auth }) => {
 		}
 	}
 
-	API.Services.auth.isUserVerified = (user) => {
+	// services.isUserVerified = (user) => {
+	// 	const { email_verified, sms_verified } = user
+	// 	return email_verified === true ? true : false
+	// }
 
-		const { email_verified, sms_verified } = user
-
-		return email_verified === true ? true : false
-
-	}
-
-	return API
+	return services
 
 }
-
-

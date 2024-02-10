@@ -88,7 +88,7 @@ module.exports = (API) => {
 
 	API.Utils.valueType = (value, valueType) => {
 
-		swtich (valueType) {
+		switch (valueType) {
 			case 'String':
 				return String(value)
 				break

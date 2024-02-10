@@ -12,6 +12,9 @@ module.exports = {
 				_roles: { 
 					_enabled: true,
 				},
+				_env: {
+					getSecret: () => process.env.AUTH_SECRET,
+				}
 			},
 			_label: ['User', 'Users'],
 			_collection: 'user',
@@ -186,11 +189,13 @@ module.exports = {
 	},
 	"notifications": {
 		_active: {
-			email: 'postmark',
+			"email": 'postmark',
 		},
-		_services: {
-			postmark: {
-				getToken: () => process.env.POSTMARK_SERVER_API_TOKEN,
+		_providers: {
+			"postmark": {
+				_env: {
+					getToken: () => process.env.POSTMARK_SERVER_API_TOKEN,
+				},
 			},
 		},
 	},	

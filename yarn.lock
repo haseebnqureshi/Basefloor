@@ -2,3 +2,7 @@
 # yarn lockfile v1
 
 
+sift@^17.0.1:
+  version "17.0.1"
+  resolved "https://registry.yarnpkg.com/sift/-/sift-17.0.1.tgz#70abec7e615923b45ce1b34e4795706d9233178c"
+  integrity sha512-10rmPF5nuz5UdKuhhxgfS7Vz1aIRGmb+kn5Zy6bntCgNwkbZc0a7Z2dUw2Y9wSoRrBzf7Oim81SUsYdOkVnI8Q==
