@@ -1,30 +1,45 @@
 
 const _ = require('underscore')
 
-module.exports = (API, { routes }) => {
+const organizeRoutes = (routesArray) => {
 
-	//order the routes, from top root down the tree of parents
-	const total = routes.length
-	let found = 0
-	let filed = {}
+	let byPath = {}
+	let byPathTotal = 0
+	let byModel = {}
+	let byModelTotal = 0
 
-	while (found < total) {
-		for (let route of routes) {
-			const { _parent, _name } = route
-			if (!_parent) {
-				filed[_name] = { ...route, depth: 0 }
-				found++
+	while (byPathTotal < routesArray.length && byModelTotal < routesArray.length) {
+		for (let route of routesArray) {
+			const pattern = RegExp(/([^\(]+)\(([^\/]*)\/([^\))]+)\)/)
+			const [id, model, parentPath, path] = route._id.match(pattern)
+			route = { ...route, model, parentPath, path }
+
+			if (byModel[model]) {
+				byModel[model].push(route)
+				byModelTotal++
+			} else {
+				byModel[model] = [route]
+				byModelTotal++
 			}
-			else if (filed[_parent]) {
-				const depth = filed[_parent].depth
-				filed[_name] = { ...route, depth: depth+1 }
-				found++
+
+			if (byPath[parentPath]) {
+				byPath[parentPath].push(route)
+				byPathTotal++
+			} else {
+				byPath[parentPath] = [route]
+				byPathTotal++
 			}
 		}
 	}
 
-	console.log({ found, total, filed })
+	return { byPath, byModel }
+}
 
+module.exports = (API, { routes }) => {
+
+	const organized = organizeRoutes(routes)
+
+	console.log(organized)
 
 
 
