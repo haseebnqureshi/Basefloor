@@ -23,7 +23,7 @@ module.exports = ({ projectPath, envPath }) => {
 	API = require('./_notifications')(API, { config: notifications })
 	API = require('./_db')(API)
 	API = require('./_models')(API, { models })
-	// API = require('./_routes')(API, { routes, structure: routeStructure })
+	API = require('./_routes')(API, { routes: routes(), structure: routeStructure })
 	// API = require('./_auth')(API, { config: auth })
 
 	API.Start = () => {

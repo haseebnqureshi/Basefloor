@@ -132,8 +132,10 @@ module.exports = {
 		const groupAuthor = (collection) => ({ $and: [ {'user._id': { $in: 'group.student_ids' }}, {'group._id': { $eq: `${collection}.author_id` }} ]})
 		const group = { 'user._id': { $in: 'group.student_ids' }}
 
-		return {
-			"course": {
+		return [
+			{
+				_name: "course",
+				_path: "courses",
 				_parent: null,
 				_create: { allow: allProfessors },
 				_readAll: { allow: professor },
@@ -141,7 +143,9 @@ module.exports = {
 				_update: { where, allow: professor },
 				_delete: { where, allow: professor },
 			},
-			"assignment": {
+			{
+				_name: "assignment",
+				_path: "assignments",
 				_parent: "course",
 				_create: { allow: professor },
 				_readAll: { allow: { $or: [professor, students] }},
@@ -149,7 +153,9 @@ module.exports = {
 				_update: { where, allow: professor },
 				_delete: { where, allow: professor },
 			},
-			"submission": {
+			{
+				_name: "submission",
+				_path: "submissions",
 				_parent: "assignment",
 				_create: { allow: students },
 				_readAll: { allow: { $or: [professor, studentAuthor('submission'), groupAuthor('submission')] }},
@@ -157,7 +163,9 @@ module.exports = {
 				_update: { where, allow: studentAuthor('submission') },
 				_delete: { where, allow: studentAuthor('submission') },
 			},
-			"assessment": {
+			{
+				_name: "assessment",
+				_path: "assessments",
 				_parent: "submission",
 				_create: { allow: professor },
 				_readAll: { allow: professor },
@@ -165,7 +173,9 @@ module.exports = {
 				_update: { where, allow: professor },
 				_delete: { where, allow: professor },
 			},
-			"group": {
+			{
+				_name: "group",
+				_path: "groups",
 				_parent: "course",
 				_create: { allow: { $or: [professor, students] }},
 				_readAll: { allow: { $or: [professor, students] }},
@@ -173,19 +183,21 @@ module.exports = {
 				_update: { where, allow: { $or: [professor, group] }},
 				_delete: { where, allow: { $or: [professor, group] }},
 			},
-			"student": [
-				{
-					_parent: null,
-					_readAll: { where: ['_id', 'first_name', 'last_name', 'email'], allow: professor },
-					_read: { where, allow: professor },
-				},
-				{
-					_parent: "course",
-					_readAll: { where: ['_id', 'first_name', 'last_name', 'email'], allow: { $or: [professor, students] }, filter: students },
-					_read: { where, allow: { $or: [professor, students] }, filter: students },
-				},
-			]
-		}
+			{
+				_name: "student",
+				_path: "students",
+				_parent: null,
+				_readAll: { where: ['_id', 'first_name', 'last_name', 'email'], allow: professor },
+				_read: { where, allow: professor },
+			},
+			{
+				_name: "student",
+				_path: "students",
+				_parent: "course",
+				_readAll: { where: ['_id', 'first_name', 'last_name', 'email'], allow: { $or: [professor, students] }, filter: students },
+				_read: { where, allow: { $or: [professor, students] }, filter: students },
+			},
+		]
 	},
 	"notifications": {
 		_active: {
