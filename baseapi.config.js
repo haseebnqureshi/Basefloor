@@ -134,7 +134,7 @@ module.exports = {
 
 		return [
 			{
-				_id: "course(/courses)",
+				_id: "/courses(course)",
 				_create: { allow: allProfessors },
 				_readAll: { allow: professor },
 				_read: { where, allow: { $or: [professor, students] }},
@@ -142,7 +142,7 @@ module.exports = {
 				_delete: { where, allow: professor },
 			},
 			{
-				_id: "assignment(courses/assignments)",
+				_id: "courses/assignments(assignment)",
 				_create: { allow: professor },
 				_readAll: { allow: { $or: [professor, students] }},
 				_read: { where, allow: { $or: [professor, students] }},
@@ -150,39 +150,39 @@ module.exports = {
 				_delete: { where, allow: professor },
 			},
 			{
-				_id: "submission(assignments/submissions)",
+				_id: "assignments/submissions(submission)",
 				_create: { allow: students },
 				_readAll: { allow: { $or: [professor, studentAuthor('submission'), groupAuthor('submission')] }},
 				_read: { where, allow: { $or: [professor, studentAuthor('submission'), groupAuthor('submission')] }},
 				_update: { where, allow: studentAuthor('submission') },
 				_delete: { where, allow: studentAuthor('submission') },
 			},
-			{
-				_id: "assessment(submissions/assessments)",
-				_create: { allow: professor },
-				_readAll: { allow: professor },
-				_read: { where, allow: { $or: [professor, studentAuthor('submission')] }},
-				_update: { where, allow: professor },
-				_delete: { where, allow: professor },
-			},
-			{
-				_id: "group(courses/groups)",
-				_create: { allow: { $or: [professor, students] }},
-				_readAll: { allow: { $or: [professor, students] }},
-				_read: { where, allow: { $or: [professor, students] }},
-				_update: { where, allow: { $or: [professor, group] }},
-				_delete: { where, allow: { $or: [professor, group] }},
-			},
-			{
-				_id: "student(/students)",
-				_readAll: { where: ['_id', 'first_name', 'last_name', 'email'], allow: professor },
-				_read: { where, allow: professor },
-			},
-			{
-				_id: "student(courses/students)",
-				_readAll: { where: ['_id', 'first_name', 'last_name', 'email'], allow: { $or: [professor, students] }, filter: students },
-				_read: { where, allow: { $or: [professor, students] }, filter: students },
-			},
+			// {
+			// 	_id: "submissions/assessments(assessment)",
+			// 	_create: { allow: professor },
+			// 	_readAll: { allow: professor },
+			// 	_read: { where, allow: { $or: [professor, studentAuthor('submission')] }},
+			// 	_update: { where, allow: professor },
+			// 	_delete: { where, allow: professor },
+			// },
+			// {
+			// 	_id: "courses/groups(group)",
+			// 	_create: { allow: { $or: [professor, students] }},
+			// 	_readAll: { allow: { $or: [professor, students] }},
+			// 	_read: { where, allow: { $or: [professor, students] }},
+			// 	_update: { where, allow: { $or: [professor, group] }},
+			// 	_delete: { where, allow: { $or: [professor, group] }},
+			// },
+			// {
+			// 	_id: "/students(student)",
+			// 	_readAll: { where: ['_id', 'first_name', 'last_name', 'email'], allow: professor },
+			// 	_read: { where, allow: professor },
+			// },
+			// {
+			// 	_id: "courses/students(student)",
+			// 	_readAll: { where: ['_id', 'first_name', 'last_name', 'email'], allow: { $or: [professor, students] }, filter: students },
+			// 	_read: { where, allow: { $or: [professor, students] }, filter: students },
+			// },
 		]
 	},
 	"notifications": {

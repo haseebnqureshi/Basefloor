@@ -1,87 +1,67 @@
 
 const _ = require('underscore')
 
-const organizeRoutes = (routesArray) => {
+const organizeRoutes = (routesConfig) => {
 
-	let byPath = {}
-	let byPathTotal = 0
-	let byModel = {}
-	let byModelTotal = 0
+	const flatRoutes = []
+	const totalRoutes = routesConfig.length
 
-	while (byPathTotal < routesArray.length && byModelTotal < routesArray.length) {
-		for (let route of routesArray) {
-			const pattern = RegExp(/([^\(]+)\(([^\/]*)\/([^\))]+)\)/)
-			const [id, model, parentPath, path] = route._id.match(pattern)
-			route = { ...route, model, parentPath, path }
-
-			if (byModel[model]) {
-				byModel[model].push(route)
-				byModelTotal++
-			} else {
-				byModel[model] = [route]
-				byModelTotal++
+	let routes = routesConfig.map(route => {
+		const pattern = RegExp(/([^\/]*)\/([^\(]+)\(([^\(]+)\)/)
+		const [id, parentPath, path, model] = route._id.match(pattern)
+		const fullPath = `${parentPath}/${path}`
+		for (let method of ['_create', '_readAll', '_read', '_update', '_delete']) {
+			if (route[method]) {
+				if (route[method].where) {
+					route[method].url = `${path}/:${model}${route[method].where}`
+				} else {
+					route[method].url = path
+				}
 			}
+		}
+		const parents = []
+		flatRoutes.push(_.omit({ ...route, model, path, fullPath, parentPath }, '_id'))
+		return _.omit({ ...route, parents, model, parentPath, path, fullPath }, '_id')
+	})
 
-			if (byPath[parentPath]) {
-				byPath[parentPath].push(route)
-				byPathTotal++
-			} else {
-				byPath[parentPath] = [route]
-				byPathTotal++
+	console.log(routes)
+
+	let processed = 0
+	while (processed < totalRoutes) {
+		for (const route of routes) {
+			let cursor = route.parentPath
+			while (cursor !== '') {
+				const foundRoute = flatRoutes.find(r => cursor === r.path)
+				route.parents.push(foundRoute)
+				cursor = foundRoute.parentPath
 			}
+			processed++
 		}
 	}
 
-	return { byPath, byModel }
+	routes = routes.map(route => {
+		route.parents = _.sortBy(route.parents, parent => -parent.fullPath.length)
+		if (route.parents.length > 0) {
+			route.fullPath = route.parents[0].fullPath + '/' + route.path
+		}
+		return route
+	})
+
+	return routes
 }
+
+
 
 module.exports = (API, { routes }) => {
 
-	const organized = organizeRoutes(routes)
+	routes = organizeRoutes(routes)
 
-	console.log(organized)
-
-
-
-
-	// for (let routeName in routes) {
-
-	// 	const route = routes[routeName]
-
-	// 	const { _parent, _create, _readAll, _read, _update, _delete } = route	
-
-	// 	const router = API.Express.Router({ mergeParams: true })
+	for (const route of routes) {
+		console.log(route)
 
 
 
-
-
-
-	// 	if (_parent) {
-
-	// 	}
-	// 	else {
-	// 		API.
-
-	// 	}
-
-
-
-
-
-
-
-
-
-	// 	if (_create) {
-	// 		router.post('/', async (req, res) => {
-
-	// 		})
-	// 	}
-
-
-	// }
-
+	}
 
 
 
