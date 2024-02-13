@@ -44,10 +44,6 @@ module.exports = (API) => {
     // await API.DB.client.close()
   }
 
-  API.DB.collection = async (collection) => {
-    return API.DB.client.db(process.env.MONGODB_DATABASE).collection(collection)
-  }
-
   return API
 
 }
