@@ -26,6 +26,11 @@ module.exports = ({ projectPath, envPath }) => {
 	API = require('./_routes')(API, { routes: routes(), structure: routeStructure })
 	// API = require('./_auth')(API, { config: auth })
 
+
+	API.get('/', (req, res) => {
+		res.status(200).send({ message: 'healthy' })
+	})
+
 	API.Start = () => {
 		const port = process.env.PORT || 4000
 		API.listen(port, () => {
