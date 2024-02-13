@@ -30,6 +30,12 @@ module.exports = ({ projectPath, envPath }) => {
 		res.status(200).send({ message: 'healthy' })
 	})
 
+
+
+
+
+	API = require('./_checks')(API, { config: { projectPath }})
+
 	API.Start = () => {
 		const port = process.env.PORT || 4000
 		API.listen(port, () => {
