@@ -1,20 +1,18 @@
 module.exports = {
 	"name": 'api.entreheart.com',
+	"auth": {
+		_verify: { 
+			_email: true, 
+			_sms: false,
+		}, 
+		_env: {
+			getSecret: () => process.env.AUTH_SECRET,
+		},
+	},
 	"models": [
 		{
 			_name: 'user',
 			_auth: { 
-				_enabled: true, 
-				_verify: { 
-					_email: true, 
-					_sms: false,
-				}, 
-				_roles: { 
-					_enabled: true,
-				},
-				_env: {
-					getSecret: () => process.env.AUTH_SECRET,
-				}
 			},
 			_label: ['User', 'Users'],
 			_collection: 'user',

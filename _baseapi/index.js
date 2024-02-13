@@ -2,6 +2,7 @@
 const path = require('path')
 const express = require('express')
 const fs = require('fs')
+const _ = require('underscore')
 
 module.exports = ({ projectPath, envPath }) => {
 
@@ -9,8 +10,7 @@ module.exports = ({ projectPath, envPath }) => {
 
 	const { 
 		name, 
-		userAuth, 
-		routeStructure, 
+		auth,
 		routes, 
 		models, 
 		notifications 
@@ -23,9 +23,8 @@ module.exports = ({ projectPath, envPath }) => {
 	API = require('./_notifications')(API, { config: notifications })
 	API = require('./_db')(API)
 	API = require('./_models')(API, { models })
-	API = require('./_routes')(API, { routes: routes(), structure: routeStructure })
-	// API = require('./_auth')(API, { config: auth })
-
+	API = require('./_auth')(API, { config: auth })
+	API = require('./_routes')(API, { routes: routes() })
 
 	API.get('/', (req, res) => {
 		res.status(200).send({ message: 'healthy' })
