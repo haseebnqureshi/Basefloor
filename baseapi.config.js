@@ -157,32 +157,32 @@ module.exports = {
 				_update: { where, allow: studentAuthor('submission') },
 				_delete: { where, allow: studentAuthor('submission') },
 			},
-			// {
-			// 	_id: "submissions/assessments(assessment)",
-			// 	_create: { allow: professor },
-			// 	_readAll: { allow: professor },
-			// 	_read: { where, allow: { $or: [professor, studentAuthor('submission')] }},
-			// 	_update: { where, allow: professor },
-			// 	_delete: { where, allow: professor },
-			// },
-			// {
-			// 	_id: "courses/groups(group)",
-			// 	_create: { allow: { $or: [professor, students] }},
-			// 	_readAll: { allow: { $or: [professor, students] }},
-			// 	_read: { where, allow: { $or: [professor, students] }},
-			// 	_update: { where, allow: { $or: [professor, group] }},
-			// 	_delete: { where, allow: { $or: [professor, group] }},
-			// },
-			// {
-			// 	_id: "/students(student)",
-			// 	_readAll: { where: ['_id', 'first_name', 'last_name', 'email'], allow: professor },
-			// 	_read: { where, allow: professor },
-			// },
-			// {
-			// 	_id: "courses/students(student)",
-			// 	_readAll: { where: ['_id', 'first_name', 'last_name', 'email'], allow: { $or: [professor, students] }, filter: students },
-			// 	_read: { where, allow: { $or: [professor, students] }, filter: students },
-			// },
+			{
+				_id: "submissions/assessments(assessment)",
+				_create: { allow: professor },
+				_readAll: { allow: professor },
+				_read: { where, allow: { $or: [professor, studentAuthor('submission')] }},
+				_update: { where, allow: professor },
+				_delete: { where, allow: professor },
+			},
+			{
+				_id: "courses/groups(group)",
+				_create: { allow: { $or: [professor, students] }},
+				_readAll: { allow: { $or: [professor, students] }},
+				_read: { where, allow: { $or: [professor, students] }},
+				_update: { where, allow: { $or: [professor, group] }},
+				_delete: { where, allow: { $or: [professor, group] }},
+			},
+			{
+				_id: "/students(student)",
+				_readAll: { where: { '_token' : ['_id', 'first_name', 'last_name', 'email']}, allow: professor },
+				_read: { where, allow: professor },
+			},
+			{
+				_id: "courses/students(student)",
+				_readAll: { where: { '_token' : ['_id', 'first_name', 'last_name', 'email']}, allow: { $or: [professor, students] }, filter: students },
+				_read: { where, allow: { $or: [professor, students] }, filter: students },
+			},
 		]
 	},
 	"notifications": {
