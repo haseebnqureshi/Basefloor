@@ -39,14 +39,14 @@ module.exports = (API, { models }) => {
 			return sanitized
 		}
 
-		API.DB[_name].create = async (values) => {
+		API.DB[_name].create = async ({ values }) => {
 			values = API.DB[_name].sanitize(values, 'c')
 			values = { ...values, created_at: new Date() }
 			if (collectionFilter) { 
 				values = { ...values, ...collectionFilter } 
 			}
 			return await API.Utils.tryCatch(`try:${collectionName}:create`,
-				API.DB.collection(collectionName).insertOne(values)
+				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).insertOne(values)
 			)
 		}
 
@@ -54,40 +54,39 @@ module.exports = (API, { models }) => {
 			let where = {}
 			if (collectionFilter) { where = collectionFilter }
 			return await API.Utils.tryCatch(`try:${collectionName}:readAll(where:${JSON.stringify(where)})`,
-				API.DB.collection(collectionName).find(where).toArray()
+				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).find(where).toArray()
 			)
 		}
 
-		API.DB[_name].read = async (where) => {
+		API.DB[_name].read = async ({ where }) => {
 			where = API.DB[_name].sanitize(where, 'r')
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}
 			return await API.Utils.tryCatch(`try:${collectionName}:read(where:${JSON.stringify(where)})`,
-				API.DB.collection(collectionName).findOne(where)
+				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).findOne(where)
 			)
 		}
 
-		API.DB[_name].update = async (where, values) => {
-			where = API.DB[_name].sanitize(where, 'u')
+		API.DB[_name].update = async ({ where, values }) => {
+			where = API.DB[_name].sanitize(where, 'r')
+			values = API.DB[_name].sanitize(values, 'u')
 			values = { ...values, updated_at: new Date() }
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}	
 			return await API.Utils.tryCatch(`try:${collectionName}:update(where:${JSON.stringify(where)})`,
-				API.DB.collection(collectionName).updateOne(where, {
-					$set: API.DB[_name].sanitize(values, 'u')
-				})
+				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).updateOne(where, { $set: values })
 			)
 		}
 
-		API.DB[_name].delete = async (where) => {
+		API.DB[_name].delete = async ({ where }) => {
 			where = API.DB[_name].sanitize(where, 'd')
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}
 			return await API.Utils.tryCatch(`try:${collectionName}:delete(where:${JSON.stringify(where)})`,
-				API.DB.collection(collectionName).deleteOne(where)
+				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).deleteOne(where)
 			)
 		}
 
