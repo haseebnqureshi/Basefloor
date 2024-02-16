@@ -19,22 +19,15 @@ module.exports = ({ projectPath, envPath }) => {
 	let API = express()
 	API.Express = express
 	API = require('./_utils')(API)
-	API = require('./_middlewares')(API)	
+	API = require('./_middlewares')(API) //must be the first thing, loads json middleware
+	API = require('./_checks')(API, { config: { projectPath }}) //before, so other features can load checks into the checker
 	API = require('./_notifications')(API, { config: notifications })
 	API = require('./_db')(API)
 	API = require('./_models')(API, { models })
 	API = require('./_auth')(API, { config: auth })
 	API = require('./_routes')(API, { routes: routes() })
 
-	API.get('/', (req, res) => {
-		res.status(200).send({ message: 'healthy' })
-	})
-
-
-
-
-
-	API = require('./_checks')(API, { config: { projectPath }})
+	API.Checks.enable()
 
 	API.Start = () => {
 		const port = process.env.PORT || 4000

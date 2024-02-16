@@ -2,7 +2,12 @@
 # yarn lockfile v1
 
 
+chance@^1.1.11:
+  version "1.1.11"
+  resolved "https://registry.npmjs.org/chance/-/chance-1.1.11.tgz"
+  integrity sha512-kqTg3WWywappJPqtgrdvbA380VoXO2eu9VCV895JgbyHsaErXdyHK9LOZ911OvAk6L0obK7kDk9CGs8+oBawVA==
+
 sift@^17.0.1:
   version "17.0.1"
-  resolved "https://registry.yarnpkg.com/sift/-/sift-17.0.1.tgz#70abec7e615923b45ce1b34e4795706d9233178c"
+  resolved "https://registry.npmjs.org/sift/-/sift-17.0.1.tgz"
   integrity sha512-10rmPF5nuz5UdKuhhxgfS7Vz1aIRGmb+kn5Zy6bntCgNwkbZc0a7Z2dUw2Y9wSoRrBzf7Oim81SUsYdOkVnI8Q==

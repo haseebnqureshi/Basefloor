@@ -31,12 +31,27 @@ module.exports = (API, { models }) => {
 				if (key in _values) {
 					const valueType = _values[key][0]
 					const dbActions = _values[key][1].split(',')
-					if (dbActions.indexOf(dbAction) > 0) {
+					if (dbActions.indexOf(dbAction) > -1) {
 						sanitized[key] = API.Utils.valueType(values[key], valueType)
 					}
 				}
 			}
 			return sanitized
+		}
+
+		API.DB[_name].dummy = (dbAction /* c, rA, r, u, d */) => {
+			let dummy = {}
+			for (let key in _values) {
+				const valueType = _values[key][0]
+				const dbActions = _values[key][1].split(',')
+				const defaultValue = _values[key][2] || null;
+				console.log({ dbActions, dbAction }, dbActions.indexOf(dbAction))
+				if (dbActions.indexOf(dbAction) > -1) {
+					console.log(dbAction)
+					dummy[key] = API.Utils.dummyValue(valueType, defaultValue)
+				}
+			}
+			return dummy
 		}
 
 		API.DB[_name].create = async ({ values }) => {

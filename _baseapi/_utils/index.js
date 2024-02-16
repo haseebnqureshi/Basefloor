@@ -2,6 +2,7 @@
 const util = require('util')
 const _ = require('underscore')
 const mongodb = require('mongodb')
+const chance = new require('chance')()
 
 module.exports = (API) => {
 
@@ -93,8 +94,10 @@ module.exports = (API) => {
 				return String(value)
 				break
 			case 'Boolean':
-				if (value.toLowerCase() === 'false') {
-					return false
+				if (_.isString(value)) {
+					if (value.toLowerCase() === 'false') {
+						return false
+					}
 				}
 				return Boolean(!!value)
 				break
@@ -105,13 +108,74 @@ module.exports = (API) => {
 				return Date(value)
 				break
 			case 'ObjectId':
-				return mongodb.ObjectId(value)
+				return new mongodb.ObjectId(value)
 				break
 			case 'Array':
 				return Array(...value)
 				break
 			case 'Array(ObjectId)':
-				return Array(...value).map(v => mongodb.ObjectId(v))
+				return Array(...value).map(v => new mongodb.ObjectId(v))
+				break
+		}
+	}
+
+	API.Utils.dummyValue = (valueType, defaultValue) => {
+		console.log({ valueType, defaultValue })
+
+		let value
+		if (defaultValue) {
+			const key = defaultValue[0]
+			console.log(key)
+			if (key === '_default') {
+				return defaultValue[1]
+			} else {
+				const args = defaultValue[1]
+				return chance[key](args)
+			}
+		}
+
+		let total
+
+		switch (valueType) {
+			case 'String':
+				return chance.string()
+				break
+			case 'Boolean':
+				return chance.bool()
+				break
+			case 'Number':
+				return chance.natural()
+				break
+			case 'Date':
+				return chance.date()
+				break
+			case 'Object': 
+				value = {}
+				total = chance.natural({ min: 1, max: 12 })
+				for (let i = 0; i < total; i++) {
+					const key = chance.word()
+					value[key] = chance.sentence()
+				}
+				return value
+				break
+			case 'ObjectId':
+				return new mongodb.ObjectId()
+				break
+			case 'Array(String)':
+				value = []
+				total = chance.natural({ min: 1, max: 12 })
+				for (let i = 0; i < total; i++) {
+					value.push(chance.string())
+				}
+				return value
+				break
+			case 'Array(ObjectId)':
+				value = []
+				total = chance.natural({ min: 1, max: 12 })
+				for (let i = 0; i < total; i++) {
+					value.push(new mongodb.ObjectId())
+				}
+				return value
 				break
 		}
 	}

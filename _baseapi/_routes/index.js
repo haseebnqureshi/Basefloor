@@ -135,7 +135,7 @@ module.exports = (API, { routes }) => {
 		}
 	}
 
-
+	//loading all controllers and routes onto API
 	for (const router of routers) {
 		for (const m in methods) {
 			if (router[m]) {
@@ -166,9 +166,46 @@ module.exports = (API, { routes }) => {
 					}
 				})
 
+				let newCheck = {
+					resource: r.url,
+					description: `${m} for accessing ${router.model} items at ${r.url}`,
+					method: http.toUpperCase(),
+					params: ``,
+					bearerToken: ``,
+					body: ``,
+					output: ``,
+					expectedStatusCode: 200,
+				}
+
+				switch (m) {
+					case '_create':
+						newCheck.body = API.DB[router.model].dummy('c')
+						newCheck.body = `(${JSON.stringify(newCheck.body)})`
+						break
+				}
+
+				API.Checks.register(newCheck)
+
+
+
 			}
 		}
 	}
+
+	API.get('/', (req, res) => {
+		res.status(200).send({ message: 'healthy' })
+	})
+
+	API.Checks.register({ 
+		resource: '/',
+		description: 'health checks for api',
+		method: 'GET',
+		params: ``,
+		bearerToken: ``,
+		body: ``,
+		output: ``,
+		expectedStatusCode: 200,
+	})
 
 	return API
 
