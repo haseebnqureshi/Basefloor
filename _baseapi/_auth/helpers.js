@@ -14,29 +14,29 @@ module.exports = ({ config }) => {
 
 	const secret = _env.getSecret()
 
-	let services = {}
+	let helpers = {}
 
-	services.removeFile = async (filepath) => {
+	helpers.removeFile = async (filepath) => {
 		return await unlinkAsync(filepath)
 	}
 
-	services.md5 = (data) => {
+	helpers.md5 = (data) => {
 		return crypto.createHash('md5').update(data).digest('hex')
 	}
 
-	services.sha1 = (data) => {
+	helpers.sha1 = (data) => {
 		return crypto.createHash('sha1').update(data).digest('hex')
 	}
 
-	services.hashPassword = async (password) => {
+	helpers.hashPassword = async (password) => {
 		return await bcrypt.hash(password, 10)
 	}
 
-	services.comparePasswordWithHashed = async (password, hashed) => {
+	helpers.comparePasswordWithHashed = async (password, hashed) => {
 		return await bcrypt.compare(password, hashed)
 	}
 
-	services.normalizePhone = (value, countryAbbr) => {
+	helpers.normalizePhone = (value, countryAbbr) => {
 		switch (countryAbbr) {
 			default:
 				countryAbbr = 'USA'
@@ -50,7 +50,7 @@ module.exports = ({ config }) => {
 		}
 	}
 
-	services.emailParts = (value) => {
+	helpers.emailParts = (value) => {
 		const parts = value.split('@')
 		return {
 			username: parts[0],
@@ -58,8 +58,8 @@ module.exports = ({ config }) => {
 		}
 	}
 
-	services.createToken = async (sub, _id, payload) => {
-		const expiry = services.expirations(sub)
+	helpers.createToken = async (sub, _id, payload) => {
+		const expiry = helpers.expirations(sub)
 		if (!expiry) { return undefined }
 		return await jwt.sign({ sub, _id, payload }, secret, {
 			algorithm: 'HS256',
@@ -67,7 +67,7 @@ module.exports = ({ config }) => {
 		})
 	}
 
-	services.validateToken = async (token) => {
+	helpers.validateToken = async (token) => {
 		try {
 			return await jwt.verify(token, secret)
 		}
@@ -76,7 +76,7 @@ module.exports = ({ config }) => {
 		}
 	}
 
-	services.expirations = (type) => {
+	helpers.expirations = (type) => {
 		switch (type) {
 			case 'auth':
 				return { text: '7 days', value: '7d' }
@@ -90,11 +90,11 @@ module.exports = ({ config }) => {
 		}
 	}
 
-	// services.isUserVerified = (user) => {
+	// helpers.isUserVerified = (user) => {
 	// 	const { email_verified, sms_verified } = user
 	// 	return email_verified === true ? true : false
 	// }
 
-	return services
+	return helpers
 
 }

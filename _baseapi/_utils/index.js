@@ -73,7 +73,7 @@ module.exports = (API) => {
 		return value
 	}
 
-	API.Utils.tryCatch = async (name, fn) => {
+	API.Utils.try = async (name, fn) => {
 		//there's 2 levels of trycatch -- this level, which catches any database errors
 		//then there's the second layer, which is in our routes and manages the request
 		let result, err

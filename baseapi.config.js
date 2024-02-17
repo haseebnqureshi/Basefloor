@@ -17,7 +17,7 @@ module.exports = {
 			_label: ['User', 'Users'],
 			_collection: 'user',
 			_values: {
-				_id: 							['ObjectId', 'r,u,d'],
+				_id: 							['ObjectId', 'r,u,d'], /* for r, u, d, simply for where -- what about safe views, data returns? */
 				email: 						['String', 'c,u', ['email']],
 				email_verified: 	['Boolean', 'c,u'],
 				sms: 							['String', 'c,u', ['email']],
