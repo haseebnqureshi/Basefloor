@@ -90,11 +90,6 @@ module.exports = ({ config }) => {
 		}
 	}
 
-	// helpers.isUserVerified = (user) => {
-	// 	const { email_verified, sms_verified } = user
-	// 	return email_verified === true ? true : false
-	// }
-
 	return helpers
 
 }

@@ -5,7 +5,7 @@ module.exports = (API, { config }) => {
 
 	API.Auth = { ...require('./helpers')({ config }) }
 
-	//not all tokens are with user auth; why this is separate of user
+	//middleware requiring jwt tokens (verify, auth, and reset jwt tokens)
 	API.Auth.requireToken = async (req, res, next) => {
 		const { authorization } = req.headers
 		let { token } = req.body
@@ -22,7 +22,8 @@ module.exports = (API, { config }) => {
 			}
 
 			//checking token validity
-			const decoded = await API.Utils.try('Auth.requireToken', API.Auth.validateToken(token))
+			const decoded = await API.Utils.try('Auth.requireToken', 
+				API.Auth.validateToken(token))
 			if (!decoded) { throw `malformed, expired, or invalid token!` }
 
 			//persisting decoded token if whitelisted
@@ -42,10 +43,12 @@ module.exports = (API, { config }) => {
 		}
 	}
 
+	//middleware loading user from db
 	API.Auth.requireUser = async (req, res, next) => {
 		let { _id } = req.auth
 		try {
-			req.user = await API.Utils.try('Auth.requireUser', API.DB.user.read({ _id }))
+			req.user = await API.Utils.try('Auth.requireUser', 
+				API.DB.user.read({ _id }))
 			next()
 		}
 		catch (err) {
@@ -53,6 +56,7 @@ module.exports = (API, { config }) => {
 		}
 	}
 
+	//middleware requiring verified user
 	API.Auth.requireVerifiedUser = async (req, res, next) => {
 		const { user } = req
 		try {
@@ -66,19 +70,28 @@ module.exports = (API, { config }) => {
 		}
 	}
 
-
+	//registration route
 	API.post('/register', [], async (req, res) => {
 		const { email, password } = req.body
 		try {
 			//checking if user email already registered
-			let user = await API.Utils.try('Auth.register:user.read', API.DB.user.read({ email }))
+			let user = await API.Utils.try('Auth.register:user.read', 
+				API.DB.user.read({ email }))
 			if (user) { throw `${user} is already registered!` }
 
+			//normalize sms to acceptable format
+			// const validSMS = API.Auth.normalizePhone(sms)
+
+			//checking if user sms already registered
+			// user = await API.Utils.try('Auth.register:user.read', API.DB.user.read({ sms: validSMS.normalized	}))
+			// if (user) { throw `${validSMS.normalized} is already registered!` }
+
 			//creating user
-			user = await API.Utils.try('Auth.register:user.create', API.DB.user.create({
-				..._.omit(req.body, ['sms', 'password']),
-				password_hash: await API.Auth.hashPassword(password)
-			}))
+			user = await API.Utils.try('Auth.register:user.create', 
+				API.DB.user.create({
+					..._.omit(req.body, ['sms', 'password']),
+					password_hash: await API.Auth.hashPassword(password)
+				}))
 
 			res.status(200).send({
 				message: `user registered!`,
@@ -90,14 +103,17 @@ module.exports = (API, { config }) => {
 		}
 	})
 
+	//login route
 	API.post('/login', [], async (req, res) => {
 		const { email, password } = req.body
 		try {
-			const user = await API.Utils.try('Auth.login:user.read', API.DB.user.read({ email }))
+			const user = await API.Utils.try('Auth.login:user.read', 
+				API.DB.user.read({ email }))
 			if (!user) { throw `user not found!` }
 			const correctPassword = await API.Utils.try('Auth.login:comparePasswordWithHashed', API.Auth.comparePasswordWithHashed(password, user.password_hash))
 			if (!correctPassword) { throw 422 }
-			const token = await API.Utils.try('Auth.login:createToken', API.Auth.createToken('auth', user._id, {}))
+			const token = await API.Utils.try('Auth.login:createToken', 
+				API.Auth.createToken('auth', user._id, {}))
 			res.status(200).send({ token, message: `logged in!` })
 		}
 		catch (err) {
@@ -105,6 +121,7 @@ module.exports = (API, { config }) => {
 		}
 	})
 
+	//user information
 	API.get('/user', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
 		try {
 			res.status(200).send(
@@ -116,19 +133,178 @@ module.exports = (API, { config }) => {
 		}
 	})
 
+	//request reset password instructions be emailed 
+	API.post('/user/reset/password', [], async (req, res) => {
+		const { email } = req.body
+		try {
+
+			//checking if user exists via email
+			const user = await API.Utils.try('Auth.resetPassword:user.read', 
+				API.DB.user.read({ email }))
+
+			//creating jwt token
+			const token = await API.Utils.try('Auth.resetPassword:createToken',
+				API.Auth.createToken('reset', user._id, {}))
+
+			//send email for reset password
+			const duration = API.Auth.expirations('reset')
+			const url = process.env.APP_URL_RESET_PASSWORD.replace(':token', token)
+			const emailArgs = require('./emails/resetPassword')({
+				url,
+				durationText: duration.text,
+				appName: process.env.APP_NAME,
+				appAuthor: process.env.APP_AUTHOR,
+				appAuthorEmail: process.env.APP_AUTHOR_EMAIL,
+			})
+
+			//sending email
+			API.Utils.try('Auth.resetPassword:email.send', 
+				API.Notifications.email.send(emailArgs))
+
+			res.status(200).send({ message: `reset password instructions emailed!` })
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
+	//change user's password
+	API.put('/user/reset/password', [API.Auth.requireToken], async(req, res) => {
+		const { _id } = req.reset
+		const { password } = req.body
+		try {
+
+			//resetting user's password
+			await API.Utils.try('Auth.resetPassword(put):user.update', 
+				API.DB.user.update({ _id }, {
+					password_hash: API.Auth.hashPassword(password)
+				}))
+
+			res.status(200).send({ message: `changed password for user!` })
+
+			const emailArgs = require('./emails/changedPassword')({
+				appName: process.env.APP_NAME,
+				appAuthor: process.env.APP_AUTHOR,
+				appAuthorEmail: process.env.APP_AUTHOR_EMAIL,
+			})
+
+			//sending email
+			API.Utils.try('Auth.resetPassword(put):email.send', 
+				API.Notifications.email.send(emailArgs))
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
+	API.post('/user/verify/:method', [API.Auth.requireToken, API.Auth.requireUser], async(req, res) => {
+		const { email, sms, _id } = req.user
+		let payload = { method, value: '' }
+		try {
+			
+			//ensuring appropriate verification value given method
+			if (method === 'email') {
+				payload.value = email
+			} else if (method === 'sms') {
+				payload.value = sms
+			}
+
+			//creating necessary token and link for verifying method
+			const token = await API.Utils.try('Auth.verify:createToken',
+				API.Auth.createToken('verify', _id, payload))
+			const url = process.env.APP_URL_VERIFY.replace(':token', token)
+
+			//delivering email verification notification
+			if (method === 'email') {
+				const emailArgs = require('./emails/verifyEmail')({
+					url,
+					appName: process.env.APP_NAME,
+					appAuthor: process.env.APP_AUTHOR,
+				})
+
+				//sending email
+				API.Utils.try('Auth.verify:email.send', 
+					API.Notifications.email.send(emailArgs))
+
+			//delivering sms verification notification
+			} else if (method === 'sms') {
+				console.log({ method, token })
+			}
+
+			res.status(200).send({ message: `verification sent!` })
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
+	API.get('/user/verify', [API.Auth.requireToken], async (req, res) => {
+
+		//verify token carries all necessary info (w/ verify method)
+		const { _id, method, value } = req.verify
+		try {
+
+			//we pass the value (email or sms) to ensure less likely for anonymous public attempts at gaining user status, as opposed to via url param (since only requiring jwt token and not user auth)
+			let where = { _id }
+			where[method] = value 
+			where[`${method}_verified`] = true
+
+			//updating user verification status
+			const user = await API.Utils.try('Auth.verify(get):user.read', 
+				API.DB.user.read(where))
+
+			res.status(200).send({
+				status: user ? true : false,
+				message: `user ${method} is ${user ? 'verified' : 'not verified'}!`
+			})
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
+	//complete verification of method
+	API.put('/user/verify', [API.Auth.requireToken], async (req, res) => {
+
+		//verify token carries all necessary info (w/ verify method)
+		const { _id, method, value } = req.verify
+		try {
+			let where, values
+
+			//we pass the value (email or sms) to ensure less likely for anonymous public attempts at gaining user status, as opposed to via url param (since only requiring jwt token and not user auth)
+			where = { _id }
+			where[method] = value 
+			values[`${method}_verified`] = true
+
+			//updating user verification status
+			await API.Utils.try('Auth.verify(get):user.update', 
+				API.DB.user.update(where, values))
+
+			res.status(200).send({ message: `user ${method} verified!` })
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
 
 
 
 
 
 
-	// API = require('./db')(API, { auth })
 
-	// API = require('./services')(API, { auth })
 
-	// API = require('./middlewares')(API, { auth })
 
-	// API = require('./routes')(API, { auth })
+
+
+
+
+
+
+
+
+
+
 
 	return API
 
