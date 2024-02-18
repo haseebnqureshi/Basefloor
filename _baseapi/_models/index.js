@@ -45,9 +45,7 @@ module.exports = (API, { models }) => {
 				const valueType = _values[key][0]
 				const dbActions = _values[key][1].split(',')
 				const defaultValue = _values[key][2] || null;
-				console.log({ dbActions, dbAction }, dbActions.indexOf(dbAction))
 				if (dbActions.indexOf(dbAction) > -1) {
-					console.log(dbAction)
 					dummy[key] = API.Utils.dummyValue(valueType, defaultValue)
 				}
 			}

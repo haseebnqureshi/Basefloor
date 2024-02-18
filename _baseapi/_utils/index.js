@@ -120,12 +120,10 @@ module.exports = (API) => {
 	}
 
 	API.Utils.dummyValue = (valueType, defaultValue) => {
-		console.log({ valueType, defaultValue })
 
 		let value
 		if (defaultValue) {
 			const key = defaultValue[0]
-			console.log(key)
 			if (key === '_default') {
 				return defaultValue[1]
 			} else {
