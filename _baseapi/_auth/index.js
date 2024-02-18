@@ -1,4 +1,6 @@
 
+const _ = require('underscore')
+
 module.exports = (API, { config }) => {
 
 	const { _verify } = config
@@ -132,6 +134,39 @@ module.exports = (API, { config }) => {
 			API.Utils.errorHandler({ res, err })
 		}
 	})
+
+	API.Checks.register({
+		resource: '/register',
+		description: 'register new user',
+		method: 'POST',
+		params: ``,
+		bearerToken: ``,
+		body: `({ first_name: 'Haseeb', last_name: 'Qureshi', email: 'haseeb.n.qureshi@gmail.com', password: 'admin' })`,
+		output: ``,
+		expectedStatusCode: 200,
+	})
+
+	API.Checks.register({
+		resource: '/login',
+		description: 'login user',
+		method: 'POST',
+		params: ``,
+		bearerToken: ``,
+		body: `({ email: 'haseeb.n.qureshi@gmail.com', password: 'admin' })`,
+		output: ``,
+		expectedStatusCode: 200,
+	})
+
+	// API.Checks.register({
+	// 	resource: '/user',
+	// 	description: 'get user information',
+	// 	method: 'GET',
+	// 	params: ``,
+	// 	bearerToken: ``,
+	// 	body: ``,
+	// 	output: ``,
+	// 	expectedStatusCode: 200,
+	// })
 
 	//request reset password instructions be emailed 
 	API.post('/user/reset/password', [], async (req, res) => {

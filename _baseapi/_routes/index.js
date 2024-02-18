@@ -186,8 +186,6 @@ module.exports = (API, { routes }) => {
 
 				API.Checks.register(newCheck)
 
-
-
 			}
 		}
 	}

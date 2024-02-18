@@ -58,7 +58,7 @@ module.exports = (API, { models }) => {
 			if (collectionFilter) { 
 				values = { ...values, ...collectionFilter } 
 			}
-			return await API.Utils.tryCatch(`try:${collectionName}:create`,
+			return await API.Utils.try(`try:${collectionName}:create`,
 				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).insertOne(values)
 			)
 		}
@@ -66,7 +66,7 @@ module.exports = (API, { models }) => {
 		API.DB[_name].readAll = async () => {
 			let where = {}
 			if (collectionFilter) { where = collectionFilter }
-			return await API.Utils.tryCatch(`try:${collectionName}:readAll(where:${JSON.stringify(where)})`,
+			return await API.Utils.try(`try:${collectionName}:readAll(where:${JSON.stringify(where)})`,
 				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).find(where).toArray()
 			)
 		}
@@ -76,7 +76,7 @@ module.exports = (API, { models }) => {
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}
-			return await API.Utils.tryCatch(`try:${collectionName}:read(where:${JSON.stringify(where)})`,
+			return await API.Utils.try(`try:${collectionName}:read(where:${JSON.stringify(where)})`,
 				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).findOne(where)
 			)
 		}
@@ -88,7 +88,7 @@ module.exports = (API, { models }) => {
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}	
-			return await API.Utils.tryCatch(`try:${collectionName}:update(where:${JSON.stringify(where)})`,
+			return await API.Utils.try(`try:${collectionName}:update(where:${JSON.stringify(where)})`,
 				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).updateOne(where, { $set: values })
 			)
 		}
@@ -98,7 +98,7 @@ module.exports = (API, { models }) => {
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}
-			return await API.Utils.tryCatch(`try:${collectionName}:delete(where:${JSON.stringify(where)})`,
+			return await API.Utils.try(`try:${collectionName}:delete(where:${JSON.stringify(where)})`,
 				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).deleteOne(where)
 			)
 		}
