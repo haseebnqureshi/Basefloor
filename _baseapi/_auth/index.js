@@ -17,7 +17,7 @@ module.exports = (API, { config }) => {
 			if (authorization) {
 				const authToken = authorization.split('Bearer ')[1]
 				if (!token && !authToken) {
-					throw `missing token or malformed headers!`
+					throw { code: 422, err: `missing token or malformed headers!` }
 				} else if (!token && authToken) {
 					token = authToken
 				}
@@ -26,7 +26,7 @@ module.exports = (API, { config }) => {
 			//checking token validity
 			const decoded = await API.Utils.try('Auth.requireToken', 
 				API.Auth.validateToken(token))
-			if (!decoded) { throw `malformed, expired, or invalid token!` }
+			if (!decoded) { throw { code: 422, err: `malformed, expired, or invalid token!` } }
 
 			//persisting decoded token if whitelisted
 			switch (decoded.sub) {
@@ -36,12 +36,12 @@ module.exports = (API, { config }) => {
 					req[decoded.sub] = decoded
 					break
 				default:
-					throw `invalid token subject!`
+					throw { code: 422, err: `invalid token subject!` }
 			}
 			next()
 		}
 		catch (err) {
-			res.status(422).send({ err })
+			API.Utils.errorHandler({ res, err })
 		}
 	}
 
@@ -50,10 +50,11 @@ module.exports = (API, { config }) => {
 		let { _id } = req.auth
 		try {
 			req.user = await API.DB.user.read({ where: { _id } })
+			if (!req.user) { throw { code: 422, err: `user could not be found with credentials!` }}
 			next()
 		}
 		catch (err) {
-			res.status(422).send({ err })
+			API.Utils.errorHandler({ res, err })
 		}
 	}
 
@@ -62,12 +63,12 @@ module.exports = (API, { config }) => {
 		const { user } = req
 		try {
 			if (user.email_verified !== true && user.sms_verified !== true) { 
-				throw `user not yet verified!`
+				throw { code: 422, err: `user not yet verified!` }
 			}
 			next()
 		}
 		catch (err) {
-			res.status(422).send({ err })
+			API.Utils.errorHandler({ res, err })
 		}
 	}
 
@@ -114,7 +115,7 @@ module.exports = (API, { config }) => {
 			if (!user) { throw `user not found!` }
 			const correctPassword = await API.Utils.try('Auth.login:comparePasswordWithHashed', 
 				API.Auth.comparePasswordWithHashed(password, user.password_hash))
-			if (!correctPassword) { throw 422 }
+			if (!correctPassword) { throw { code: 422, err: `incorrect login information!` } }
 			const token = await API.Utils.try('Auth.login:createToken', 
 				API.Auth.createToken('auth', user._id, {}))
 			res.status(200).send({ token, message: `logged in!` })
