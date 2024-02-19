@@ -77,7 +77,9 @@ module.exports = (API, { config }) => {
 		try {
 			//checking if user email already registered
 			let user = await API.DB.user.read({ where: { email } })
-			if (user) { throw `${email} is already registered!` }
+			if (user) { 
+				throw { code: 400, err: `${email} is already registered!` }
+			}
 
 			//normalize sms to acceptable format
 			// const validSMS = API.Auth.normalizePhone(sms)
@@ -141,7 +143,7 @@ module.exports = (API, { config }) => {
 		params: ``,
 		bearerToken: ``,
 		body: `({ first_name: 'Haseeb', last_name: 'Qureshi', email: 'haseeb.n.qureshi@gmail.com', password: 'admin' })`,
-		output: ``,
+		output: `({ output, request }) => ({ ...output, email: request.body.email, password: request.body.password })`,
 		expectedStatusCode: 200,
 	})
 
@@ -151,21 +153,21 @@ module.exports = (API, { config }) => {
 		method: 'POST',
 		params: ``,
 		bearerToken: ``,
-		body: `({ email: 'haseeb.n.qureshi@gmail.com', password: 'admin' })`,
-		output: ``,
+		body: `({ email: output.email, password: output.password })`,
+		output: `({ data }) => ({ ...output, token: data.token })`,
 		expectedStatusCode: 200,
 	})
 
-	// API.Checks.register({
-	// 	resource: '/user',
-	// 	description: 'get user information',
-	// 	method: 'GET',
-	// 	params: ``,
-	// 	bearerToken: ``,
-	// 	body: ``,
-	// 	output: ``,
-	// 	expectedStatusCode: 200,
-	// })
+	API.Checks.register({
+		resource: '/user',
+		description: 'get user information',
+		method: 'GET',
+		params: ``,
+		bearerToken: `(output.token)`,
+		body: ``,
+		output: `({ data }) => ({ ...output, user: data })`,
+		expectedStatusCode: 200,
+	})
 
 	//request reset password instructions be emailed 
 	API.post('/user/reset/password', [], async (req, res) => {
