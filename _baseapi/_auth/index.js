@@ -49,8 +49,7 @@ module.exports = (API, { config }) => {
 	API.Auth.requireUser = async (req, res, next) => {
 		let { _id } = req.auth
 		try {
-			req.user = await API.Utils.try('Auth.requireUser', 
-				API.DB.user.read({ _id }))
+			req.user = await API.DB.user.read({ where: { _id } })
 			next()
 		}
 		catch (err) {
@@ -77,23 +76,23 @@ module.exports = (API, { config }) => {
 		const { email, password } = req.body
 		try {
 			//checking if user email already registered
-			let user = await API.Utils.try('Auth.register:user.read', 
-				API.DB.user.read({ email }))
-			if (user) { throw `${user} is already registered!` }
+			let user = await API.DB.user.read({ where: { email } })
+			if (user) { throw `${email} is already registered!` }
 
 			//normalize sms to acceptable format
 			// const validSMS = API.Auth.normalizePhone(sms)
 
 			//checking if user sms already registered
-			// user = await API.Utils.try('Auth.register:user.read', API.DB.user.read({ sms: validSMS.normalized	}))
+			// user = await API.DB.user.read({ where: { sms: validSMS.normalized } })
 			// if (user) { throw `${validSMS.normalized} is already registered!` }
 
 			//creating user
-			user = await API.Utils.try('Auth.register:user.create', 
-				API.DB.user.create({
+			user = await API.DB.user.create({ 
+				values: {
 					..._.omit(req.body, ['sms', 'password']),
-					password_hash: await API.Auth.hashPassword(password)
-				}))
+					password_hash: await API.Auth.hashPassword(password),
+				}
+			})
 
 			res.status(200).send({
 				message: `user registered!`,
@@ -109,10 +108,10 @@ module.exports = (API, { config }) => {
 	API.post('/login', [], async (req, res) => {
 		const { email, password } = req.body
 		try {
-			const user = await API.Utils.try('Auth.login:user.read', 
-				API.DB.user.read({ email }))
+			const user = await API.DB.user.read({ where: { email } })
 			if (!user) { throw `user not found!` }
-			const correctPassword = await API.Utils.try('Auth.login:comparePasswordWithHashed', API.Auth.comparePasswordWithHashed(password, user.password_hash))
+			const correctPassword = await API.Utils.try('Auth.login:comparePasswordWithHashed', 
+				API.Auth.comparePasswordWithHashed(password, user.password_hash))
 			if (!correctPassword) { throw 422 }
 			const token = await API.Utils.try('Auth.login:createToken', 
 				API.Auth.createToken('auth', user._id, {}))
@@ -174,8 +173,7 @@ module.exports = (API, { config }) => {
 		try {
 
 			//checking if user exists via email
-			const user = await API.Utils.try('Auth.resetPassword:user.read', 
-				API.DB.user.read({ email }))
+			const user = await API.DB.user.read({ where: { email } })
 
 			//creating jwt token
 			const token = await API.Utils.try('Auth.resetPassword:createToken',
@@ -210,10 +208,10 @@ module.exports = (API, { config }) => {
 		try {
 
 			//resetting user's password
-			await API.Utils.try('Auth.resetPassword(put):user.update', 
-				API.DB.user.update({ _id }, {
-					password_hash: API.Auth.hashPassword(password)
-				}))
+			await API.DB.user.update({ 
+				where: { _id }, 
+				values: { password_hash: API.Auth.hashPassword(password) },
+			})
 
 			res.status(200).send({ message: `changed password for user!` })
 
@@ -285,8 +283,7 @@ module.exports = (API, { config }) => {
 			where[`${method}_verified`] = true
 
 			//updating user verification status
-			const user = await API.Utils.try('Auth.verify(get):user.read', 
-				API.DB.user.read(where))
+			const user = await API.DB.user.read({ where })
 
 			res.status(200).send({
 				status: user ? true : false,
@@ -312,8 +309,7 @@ module.exports = (API, { config }) => {
 			values[`${method}_verified`] = true
 
 			//updating user verification status
-			await API.Utils.try('Auth.verify(get):user.update', 
-				API.DB.user.update(where, values))
+			await API.DB.user.update({ where, values })
 
 			res.status(200).send({ message: `user ${method} verified!` })
 		}
