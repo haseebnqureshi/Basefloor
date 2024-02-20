@@ -118,6 +118,7 @@ module.exports = (API, { config }) => {
 			if (!correctPassword) { throw { code: 422, err: `incorrect login information!` } }
 			const token = await API.Utils.try('Auth.login:createToken', 
 				API.Auth.createToken('auth', user._id, {}))
+			console.log({ token })
 			res.status(200).send({ token, message: `logged in!` })
 		}
 		catch (err) {
@@ -182,7 +183,17 @@ module.exports = (API, { config }) => {
 			const token = await API.Utils.try('Auth.resetPassword:createToken',
 				API.Auth.createToken('reset', user._id, {}))
 
-			//send email for reset password
+			res.status(200).send({ 
+				token,
+				message: `emailing reset password instructions!` 
+			})
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+
+		try {
+			//send email for reset password (outside of main try catch)
 			const duration = API.Auth.expirations('reset')
 			const url = process.env.APP_URL_RESET_PASSWORD.replace(':token', token)
 			const emailArgs = require('./emails/resetPassword')(email, {
@@ -196,20 +207,15 @@ module.exports = (API, { config }) => {
 			//sending email
 			await API.Utils.try('Auth.resetPassword:email.send', 
 				API.Notifications.email.send(emailArgs))
-
-			res.status(200).send({ 
-				token,
-				message: `reset password instructions emailed!` 
-			})
 		}
 		catch (err) {
-			API.Utils.errorHandler({ res, err })
+			console.log('Auth.resetPassword', err)
 		}
 	})
 
 	API.Checks.register({
 		resource: '/user/reset/password',
-		description: 'send password reset instructions to email',
+		description: 'emailing password reset instructions',
 		method: 'POST',
 		params: ``,
 		bearerToken: ``,
@@ -231,7 +237,12 @@ module.exports = (API, { config }) => {
 			})
 
 			res.status(200).send({ message: `changed password for user!` })
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
 
+		try {
 			//getting user information
 			const user = await API.DB.user.read({ where: { _id } })
 
@@ -246,7 +257,7 @@ module.exports = (API, { config }) => {
 				API.Notifications.email.send(emailArgs))
 		}
 		catch (err) {
-			API.Utils.errorHandler({ res, err })
+			console.log(err)
 		}
 	})
 
@@ -267,7 +278,7 @@ module.exports = (API, { config }) => {
 		method: 'POST',
 		params: ``,
 		bearerToken: ``,
-		body: `({ email: output.email, password: output.password })`,
+		body: `({ email: output.email, password: output.newPassword })`,
 		output: `({ data }) => ({ ...output, token: data.token })`,
 		expectedStatusCode: 200,
 	})
@@ -298,6 +309,14 @@ module.exports = (API, { config }) => {
 			//creating necessary token and link for verifying method
 			const token = await API.Utils.try('Auth.verify:createToken',
 				API.Auth.createToken('verify', _id, payload))
+
+			res.status(200).send({ message: `sending verification!`, token })
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+
+		try {
 			const url = process.env.APP_URL_VERIFY.replace(':token', token)
 
 			//delivering email verification notification
@@ -316,11 +335,9 @@ module.exports = (API, { config }) => {
 			} else if (method === 'sms') {
 				console.log({ method, token })
 			}
-
-			res.status(200).send({ message: `verification sent!` })
 		}
 		catch (err) {
-			API.Utils.errorHandler({ res, err })
+			console.log(err)
 		}
 	})
 
