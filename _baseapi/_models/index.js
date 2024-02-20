@@ -72,10 +72,12 @@ module.exports = (API, { models }) => {
 		}
 
 		API.DB[_name].read = async ({ where }) => {
+			console.log({ where })
 			where = API.DB[_name].sanitize(where, 'r')
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}
+			console.log({ where })
 			return await API.Utils.try(`try:${collectionName}:read(where:${JSON.stringify(where)})`,
 				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).findOne(where)
 			)

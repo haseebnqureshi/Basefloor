@@ -185,7 +185,7 @@ module.exports = (API, { config }) => {
 			//send email for reset password
 			const duration = API.Auth.expirations('reset')
 			const url = process.env.APP_URL_RESET_PASSWORD.replace(':token', token)
-			const emailArgs = require('./emails/resetPassword')({
+			const emailArgs = require('./emails/resetPassword')(email, {
 				url,
 				durationText: duration.text,
 				appName: process.env.APP_NAME,
@@ -194,7 +194,7 @@ module.exports = (API, { config }) => {
 			})
 
 			//sending email
-			API.Utils.try('Auth.resetPassword:email.send', 
+			await API.Utils.try('Auth.resetPassword:email.send', 
 				API.Notifications.email.send(emailArgs))
 
 			res.status(200).send({ 
@@ -227,12 +227,15 @@ module.exports = (API, { config }) => {
 			//resetting user's password
 			await API.DB.user.update({ 
 				where: { _id }, 
-				values: { password_hash: API.Auth.hashPassword(password) },
+				values: { password_hash: await API.Auth.hashPassword(password) },
 			})
 
 			res.status(200).send({ message: `changed password for user!` })
 
-			const emailArgs = require('./emails/changedPassword')({
+			//getting user information
+			const user = await API.DB.user.read({ where: { _id } })
+
+			const emailArgs = require('./emails/changedPassword')(user.email, {
 				appName: process.env.APP_NAME,
 				appAuthor: process.env.APP_AUTHOR,
 				appAuthorEmail: process.env.APP_AUTHOR_EMAIL,
@@ -299,7 +302,7 @@ module.exports = (API, { config }) => {
 
 			//delivering email verification notification
 			if (method === 'email') {
-				const emailArgs = require('./emails/verifyEmail')({
+				const emailArgs = require('./emails/verifyEmail')(email, {
 					url,
 					appName: process.env.APP_NAME,
 					appAuthor: process.env.APP_AUTHOR,

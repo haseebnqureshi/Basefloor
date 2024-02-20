@@ -18,7 +18,7 @@ module.exports = {
 			_collection: 'user',
 			_values: {
 				_id: 							['ObjectId', 'r,u,d'], /* for r, u, d, simply for where -- what about safe views, data returns? */
-				email: 						['String', 'c,u', ['email']],
+				email: 						['String', 'c,r,u', ['email']],
 				email_verified: 	['Boolean', 'c,u'],
 				sms: 							['String', 'c,u', ['email']],
 				sms_verified: 		['Boolean', 'c,u'],
@@ -191,6 +191,7 @@ module.exports = {
 			"postmark": {
 				_env: {
 					getToken: () => process.env.POSTMARK_SERVER_API_TOKEN,
+					getFrom: () => process.env.EMAIL_FROM,
 				},
 			},
 		},

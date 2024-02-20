@@ -11,7 +11,7 @@ module.exports = (API, { config }) => {
 		const provider = require(`./providers/${providerName}`)({ config: providerConfig })
 		API.Notifications[method] = require(`./methods/${method}`)({ 
 			client: provider.client,
-			services: provider.services,
+			helpers: provider.helpers,
 		})
 	}
 

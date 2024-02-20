@@ -1,5 +1,6 @@
 
-module.exports = ({ url, appName, appAuthor }) => ({
+module.exports = (To, { url, appName, appAuthor }) => ({
+	To,
 	Subject: `${appName} - Email Verification`,
 	TextBody: `
 Hey there,

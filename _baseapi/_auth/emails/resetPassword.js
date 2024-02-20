@@ -1,5 +1,6 @@
 
-module.exports = ({ url, appName, appAuthor, appAuthorEmail, durationText }) => ({
+module.exports = (To, { url, appName, appAuthor, appAuthorEmail, durationText }) => ({
+	To,
 	Subject: `${appName} - Password Reset Link`,
 	TextBody: `
 Hey there,

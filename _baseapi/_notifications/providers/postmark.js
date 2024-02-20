@@ -1,4 +1,6 @@
 
+const _ = require('underscore') 
+
 const postmark = require('postmark')
 
 module.exports = ({ config }) => {
@@ -11,6 +13,7 @@ module.exports = ({ config }) => {
 
 	helpers.emailFields = [
 		'From',
+		'To',
 		'Cc',
 		'Bcc',
 		'Subject',
@@ -25,6 +28,11 @@ module.exports = ({ config }) => {
 		'Metadata',
 		'MessageStream',
 	]
+
+	helpers.filterEmailValues = (values) => {
+		values = { ...values, From: _env.getFrom() }
+		return _.pick(values, helpers.emailFields)
+	}
 
 	return { client, helpers }
 	
