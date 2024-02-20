@@ -61,7 +61,7 @@ module.exports = ({ config }) => {
 	helpers.createToken = async (sub, _id, payload) => {
 		const expiry = helpers.expirations(sub)
 		if (!expiry) { return undefined }
-		return await jwt.sign({ sub, _id, payload }, secret, {
+		return await jwt.sign({ sub, _id, ...payload }, secret, {
 			algorithm: 'HS256',
 			expiresIn: expiry.value,
 		})
