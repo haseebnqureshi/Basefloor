@@ -65,7 +65,7 @@ module.exports = (API, { config }) => {
 			const contents = JSON.stringify({
 				name: 'Auto-Generated BaseAPI Checks',
 				endpoint: 'http://localhost:4000',
-				output: { message: 'Hello, there!', itemId: 1234567654 },
+				output: { firstName: '', lastName: '', email: '', password: '', newPassword: '' },
 				coverage: 0,
 				requests: API.Checks.requests.map(v => {
 					v.id = id

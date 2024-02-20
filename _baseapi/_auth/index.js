@@ -143,7 +143,7 @@ module.exports = (API, { config }) => {
 		method: 'POST',
 		params: ``,
 		bearerToken: ``,
-		body: `({ first_name: 'Haseeb', last_name: 'Qureshi', email: 'haseeb.n.qureshi@gmail.com', password: 'admin' })`,
+		body: `({ first_name: output.firstName, last_name: output.lastName, email: output.email, password: output.password })`,
 		output: `({ output, request }) => ({ ...output, email: request.body.email, password: request.body.password })`,
 		expectedStatusCode: 200,
 	})
@@ -197,11 +197,25 @@ module.exports = (API, { config }) => {
 			API.Utils.try('Auth.resetPassword:email.send', 
 				API.Notifications.email.send(emailArgs))
 
-			res.status(200).send({ message: `reset password instructions emailed!` })
+			res.status(200).send({ 
+				token,
+				message: `reset password instructions emailed!` 
+			})
 		}
 		catch (err) {
 			API.Utils.errorHandler({ res, err })
 		}
+	})
+
+	API.Checks.register({
+		resource: '/user/reset/password',
+		description: 'send password reset instructions to email',
+		method: 'POST',
+		params: ``,
+		bearerToken: ``,
+		body: `({ email: output.email })`,
+		output: `({ data, output }) => ({ ...output, token: data.token })`,
+		expectedStatusCode: 200,
 	})
 
 	//change user's password
@@ -231,6 +245,39 @@ module.exports = (API, { config }) => {
 		catch (err) {
 			API.Utils.errorHandler({ res, err })
 		}
+	})
+
+	API.Checks.register({
+		resource: '/user/reset/password',
+		description: 'update password after clicking email link',
+		method: 'PUT',
+		params: ``,
+		bearerToken: `(output.token)`,
+		body: `({ password: output.newPassword })`,
+		output: `({ output, request }) => ({ ...output, password: request.body.password })`,
+		expectedStatusCode: 200,
+	})
+
+	API.Checks.register({
+		resource: '/login',
+		description: 'login user after changing password',
+		method: 'POST',
+		params: ``,
+		bearerToken: ``,
+		body: `({ email: output.email, password: output.password })`,
+		output: `({ data }) => ({ ...output, token: data.token })`,
+		expectedStatusCode: 200,
+	})
+
+	API.Checks.register({
+		resource: '/user',
+		description: 'get user information after changing password',
+		method: 'GET',
+		params: ``,
+		bearerToken: `(output.token)`,
+		body: ``,
+		output: `({ data }) => ({ ...output, user: data })`,
+		expectedStatusCode: 200,
 	})
 
 	API.post('/user/verify/:method', [API.Auth.requireToken, API.Auth.requireUser], async(req, res) => {
