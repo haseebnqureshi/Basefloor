@@ -91,49 +91,45 @@ module.exports = (API, { routes }) => {
 		}
 	}
 
-	//figuring out permissions
-	for (let r of routers) {
-		for (let m in methods) {
-			if (r[m]) {
-				const { allow } = r[m]
-				if (allow) {
 
-					const json = JSON.stringify(allow)
-					const pattern = RegExp(/\"([a-z0-9\_]+)\./g)
-					const models = _.unique(json.match(pattern).map(v => v.substr(1, v.length-2)))
 
-					//finding params to find required model rows
-					let params = {}
-					_.each(routers, router => {
-						_.each(models, model => {
-							if (router.model === model) {
-								params[model] = router._read.params || {}
-							}
-						})
-					})
+					// //finding params to find required model rows
+					// let params = {}
+					// _.each(routers, router => {
+					// 	_.each(models, model => {
+					// 		if (router.model === model) {
+					// 			params[model] = router._read.params || {}
+					// 		}
+					// 	})
+					// })
 
-					r[m].allowMiddleware = async (req, res, next) => {
-						let data = {}
-						if (models.indexOf('user') > -1) {
-							data.user = req.user || {}
-						}
-						for (let model of models) {
-							let where = {}
-							let whereKey = Object.keys(params[model])
-							let whereValue = req.params[whereKey]
-							where[whereKey] = whereValue
-							data[model] = await API.DB[model].read(where)
-						}
+					// r[m].allowMiddleware = async (req, res, next) => {
 
-						//this is where the route allow logic gets applied to the found data
-						console.log(data)
-						next()
-					}
+					// 	let data = {}
+					// 	if (models.indexOf('user') > -1) {
+					// 		data.user = req.user || {}
+					// 	}
 
-				}
-			}
-		}
-	}
+					// 	for (let model of models) {
+					// 		if (params[model]) {
+					// 			let where = {}
+					// 			let whereKeys = Object.keys(params[model])
+					// 			for (let whereKey of whereKeys) {
+					// 				let whereValue = req.params[whereKey]
+					// 				where[whereKey] = whereValue
+					// 			}
+					// 			data[model] = await API.DB[model].read(where)
+					// 			console.log({ where, 'data[model]': data[model] })
+					// 		}
+					// 	}
+
+					// 	console.log({ json, models, params, data })
+
+					// 	//this is where the route allow logic gets applied to the found data
+					// 	console.log(data)
+					// 	next()
+					// }
+
 
 	//loading all controllers and routes onto API
 	for (const router of routers) {
@@ -142,7 +138,24 @@ module.exports = (API, { routes }) => {
 				const { http, db } = methods[m]
 				const r = router[m]
 
-				API[http](r.url, [], async (req, res) => {
+				API[http](r.url, [function(req, res, next) {
+
+					if (r.allow) {
+						//getting allow logic
+						const allowJSON = JSON.stringify(r.allow)
+						const pattern = RegExp(/\"([a-z0-9\_]+)\./g)
+						const modelsInAllow = _.unique(allowJSON.match(pattern).map(v => v.substr(1, v.length-2)))
+
+						//mapping allow db keys with params keyValues
+						let keyMaps = []
+
+						console.log({ allowJSON, modelsInAllow })
+
+					}
+
+					next() 
+
+				}], async (req, res) => {
 					try {
 
 						const paramsAllowed = [
