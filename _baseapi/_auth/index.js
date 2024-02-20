@@ -47,6 +47,9 @@ module.exports = (API, { config }) => {
 
 	//middleware loading user from db
 	API.Auth.requireUser = async (req, res, next) => {
+		if (!req.auth) {
+			throw { code: 422, err: `invalid authentication provided!` }
+		}
 		let { _id } = req.auth
 		try {
 			req.user = await API.DB.user.read({ where: { _id } })
@@ -94,6 +97,7 @@ module.exports = (API, { config }) => {
 				values: {
 					..._.omit(req.body, ['sms', 'password']),
 					password_hash: await API.Auth.hashPassword(password),
+					email_verified: false,
 				}
 			})
 
@@ -156,7 +160,7 @@ module.exports = (API, { config }) => {
 		params: ``,
 		bearerToken: ``,
 		body: `({ email: output.email, password: output.password })`,
-		output: `({ data }) => ({ ...output, token: data.token })`,
+		output: `({ data, output }) => ({ ...output, token: data.token })`,
 		expectedStatusCode: 200,
 	})
 
@@ -167,20 +171,21 @@ module.exports = (API, { config }) => {
 		params: ``,
 		bearerToken: `(output.token)`,
 		body: ``,
-		output: `({ data }) => ({ ...output, user: data })`,
+		output: `({ data, output }) => ({ ...output, user: data })`,
 		expectedStatusCode: 200,
 	})
 
 	//request reset password instructions be emailed 
 	API.post('/user/reset/password', [], async (req, res) => {
 		const { email } = req.body
+		let user, token
 		try {
 
 			//checking if user exists via email
-			const user = await API.DB.user.read({ where: { email } })
+			user = await API.DB.user.read({ where: { email } })
 
 			//creating jwt token
-			const token = await API.Utils.try('Auth.resetPassword:createToken',
+			token = await API.Utils.try('Auth.resetPassword:createToken',
 				API.Auth.createToken('reset', user._id, {}))
 
 			res.status(200).send({ 
@@ -279,7 +284,7 @@ module.exports = (API, { config }) => {
 		params: ``,
 		bearerToken: ``,
 		body: `({ email: output.email, password: output.newPassword })`,
-		output: `({ data }) => ({ ...output, token: data.token })`,
+		output: `({ data, output }) => ({ ...output, token: data.token })`,
 		expectedStatusCode: 200,
 	})
 
@@ -290,13 +295,16 @@ module.exports = (API, { config }) => {
 		params: ``,
 		bearerToken: `(output.token)`,
 		body: ``,
-		output: `({ data }) => ({ ...output, user: data })`,
+		output: `({ data, output }) => ({ ...output, user: data })`,
 		expectedStatusCode: 200,
 	})
 
 	API.post('/user/verify/:method', [API.Auth.requireToken, API.Auth.requireUser], async(req, res) => {
 		const { email, sms, _id } = req.user
+		const { method } = req.params
 		let payload = { method, value: '' }
+		let token
+
 		try {
 			
 			//ensuring appropriate verification value given method
@@ -307,7 +315,7 @@ module.exports = (API, { config }) => {
 			}
 
 			//creating necessary token and link for verifying method
-			const token = await API.Utils.try('Auth.verify:createToken',
+			token = await API.Utils.try('Auth.verify:createToken',
 				API.Auth.createToken('verify', _id, payload))
 
 			res.status(200).send({ message: `sending verification!`, token })
@@ -341,11 +349,29 @@ module.exports = (API, { config }) => {
 		}
 	})
 
+	API.Checks.register({
+		resource: '/user/verify/:method',
+		description: 'verifying email',
+		method: 'POST',
+		params: `({ method: 'email' })`,
+		bearerToken: `(output.token)`,
+		body: ``,
+		output: `({ data, output, request }) => ({ ...output, token: data.token, method: request.params.method })`,
+		expectedStatusCode: 200,
+	})
+
 	API.get('/user/verify', [API.Auth.requireToken], async (req, res) => {
 
 		//verify token carries all necessary info (w/ verify method)
 		const { _id, method, value } = req.verify
 		try {
+			switch (method) {
+				case 'email':
+				case 'sms':
+					break
+				default:
+					throw `${method} verification unavailable!`
+			}
 
 			//we pass the value (email or sms) to ensure less likely for anonymous public attempts at gaining user status, as opposed to via url param (since only requiring jwt token and not user auth)
 			let where = { _id }
@@ -354,15 +380,28 @@ module.exports = (API, { config }) => {
 
 			//updating user verification status
 			const user = await API.DB.user.read({ where })
+			console.log('user/verify', where, { user })
+
 
 			res.status(200).send({
 				status: user ? true : false,
-				message: `user ${method} is ${user ? 'verified' : 'not verified'}!`
+				message: `user ${method} ${user ? 'is verified' : 'not verified'}!`
 			})
 		}
 		catch (err) {
 			API.Utils.errorHandler({ res, err })
 		}
+	})
+
+	API.Checks.register({
+		resource: '/user/verify',
+		description: 'checking email verification status',
+		method: 'GET',
+		params: ``,
+		bearerToken: `(output.token)`,
+		body: ``,
+		output: `({ output }) => ({ ...output })`,
+		expectedStatusCode: 200,
 	})
 
 	//complete verification of method
@@ -371,11 +410,20 @@ module.exports = (API, { config }) => {
 		//verify token carries all necessary info (w/ verify method)
 		const { _id, method, value } = req.verify
 		try {
+			switch (method) {
+				case 'email':
+				case 'sms':
+					break
+				default:
+					throw `${method} verification unavailable!`
+			}
+
 			let where, values
 
 			//we pass the value (email or sms) to ensure less likely for anonymous public attempts at gaining user status, as opposed to via url param (since only requiring jwt token and not user auth)
 			where = { _id }
 			where[method] = value 
+			values = {}
 			values[`${method}_verified`] = true
 
 			//updating user verification status
@@ -388,8 +436,27 @@ module.exports = (API, { config }) => {
 		}
 	})
 
+	API.Checks.register({
+		resource: '/user/verify',
+		description: 'completing email verification',
+		method: 'PUT',
+		params: ``,
+		bearerToken: `(output.token)`,
+		body: ``,
+		output: `({ output }) => ({ ...output })`,
+		expectedStatusCode: 200,
+	})
 
-
+	API.Checks.register({
+		resource: '/user/verify',
+		description: 'checking email verification status',
+		method: 'GET',
+		params: ``,
+		bearerToken: `(output.token)`,
+		body: ``,
+		output: `({ output }) => ({ ...output })`,
+		expectedStatusCode: 200,
+	})
 
 
 
