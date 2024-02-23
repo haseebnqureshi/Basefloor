@@ -138,43 +138,56 @@ module.exports = (API, { routes }) => {
 				const { http, db } = methods[m]
 				const r = router[m]
 
-				API[http](r.url, [async function(req, res, next) {
+				const middlewares = [
+					API.Auth.requireToken,
+					API.Auth.requireUser,
+				]
 
-					if (r.allow) {
-						//getting allow logic
-						const allowJSON = JSON.stringify(r.allow)
-						const pattern = RegExp(/\"([a-z0-9\_]+)\./g)
-						const modelsInAllow = _.unique(allowJSON.match(pattern).map(v => v.substr(1, v.length-2)))
+				API[http](r.url, [...middlewares, async function(req, res, next) {
+					try {
+						if (r.allow) {
+							//getting allow logic
+							const allowJSON = JSON.stringify(r.allow)
+							const pattern = RegExp(/\"([a-z0-9\_]+)\./g)
+							const modelsInAllow = _.unique(allowJSON.match(pattern).map(v => v.substr(1, v.length-2)))
 
-						//mapping allow db keys with params keyValues (mapping route params with db keys)
-						let allParams = {
-							...router.parentsParams || {},
-							...r.params || {},						
+							//mapping allow db keys with params keyValues (mapping route params with db keys)
+							let allParams = {
+								...router.parentsParams || {},
+								...r.params || {},						
+							}
+							let keys = {}
+							let modelData = {}
+
+							//loading user model if specified and authenticated
+							if (modelsInAllow.indexOf('user') > -1) {
+								modelData.user = await API.DB.user.read({
+									where: {
+										_id: req.user._id
+									}
+								})
+							}
+
+							for (let routeParam in allParams) {
+
+								//we're only loading models that are referenced in the url path (including the user object)
+								let [model, key] = allParams[routeParam].split('.')
+								
+								//creating a where object to locate the correct data
+								let where = {}
+								where[key] = req.params[routeParam] || null
+
+								//pulling data from each route w/ params
+								modelData[model] = await API.DB[model].read({ where })
+							}
+
+							console.log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
+							next() 
 						}
-						let keys = {}
-						let modelData = {}
-						for (let routeParam in allParams) {
-
-							//we're only loading models that are referenced in the url path (including the user object)
-							let [model, key] = allParams[routeParam].split('.')
-							
-							//creating a where object to locate the correct data
-							let where = {}
-							where[key] = req.params[routeParam] || null
-
-							//pulling data from each route w/ params
-							modelData[model] = await API.DB[model].read({ where })
-
-
-
-						}
-
-						console.log({ modelData, allowJSON, modelsInAllow })
-
 					}
-
-					next() 
-
+					catch (err) {
+						API.Utils.errorHandler({ res, err })
+					}
 				}], async (req, res) => {
 					try {
 
