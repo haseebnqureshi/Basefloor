@@ -146,10 +146,12 @@ module.exports = (API, { routes }) => {
 				API[http](r.url, [...middlewares, async function(req, res, next) {
 					try {
 						if (r.allow) {
+							
 							//getting allow logic
 							const allowJSON = JSON.stringify(r.allow)
-							const pattern = RegExp(/\"([a-z0-9\_]+)\./g)
-							const modelsInAllow = _.unique(allowJSON.match(pattern).map(v => v.substr(1, v.length-2)))
+							const pattern = RegExp(/\@([a-z0-9\_]+)\./g)
+							const matches = allowJSON.match(pattern) || []
+							const modelsInAllow = _.unique(matches).map(v => v.substr(1, v.length-2))
 
 							//mapping allow db keys with params keyValues (mapping route params with db keys)
 							let allParams = {
@@ -168,6 +170,7 @@ module.exports = (API, { routes }) => {
 								})
 							}
 
+							//loading other models if specified and w/ req.params values
 							for (let routeParam in allParams) {
 
 								//we're only loading models that are referenced in the url path (including the user object)
@@ -182,6 +185,13 @@ module.exports = (API, { routes }) => {
 							}
 
 							console.log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
+
+							
+
+
+
+
+
 							next() 
 						}
 					}

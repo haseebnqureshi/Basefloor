@@ -141,7 +141,7 @@ module.exports = {
 			{
 				_id: "courses/assignments(assignment)",
 				_create: { allow: professor },
-				_readAll: { allow: { $or: [professor, students] }},
+				_readAll: { allow: { or: [professor, students] }},
 				_read: { where, allow: {or: [professor, students] }},
 				_update: { where, allow: professor },
 				_delete: { where, allow: professor },
