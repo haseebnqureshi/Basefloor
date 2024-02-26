@@ -186,11 +186,40 @@ module.exports = (API, { routes }) => {
 
 							console.log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
 
-							
 
 
+							const processAllowString = str => {
+								
 
+								
+								return 'processed'
+							}
 
+							const traverseAllowCommands = allow => {
+								let result
+								if (_.isString(allow)) {
+									result = { and: processAllowString(allow) }
+								}
+								else if (Array.isArray(allow)) {
+									console.log(' in array ', allow)
+									result = allow.map(item => traverseAllowCommands(item))
+								}
+								else if (_.isObject(allow)) {
+									console.log(' in object ')
+									if (allow.and) {
+										console.log(' in object and ', allow.and)
+										result = { and: traverseAllowCommands(allow.and) }
+									} 
+									else if (allow.or) {
+										console.log(' in object or ', allow.or)
+										result = { or: traverseAllowCommands(allow.or) }
+									}
+								}
+								return result
+							}
+
+							const permissions = traverseAllowCommands(r.allow)
+							console.log(JSON.stringify(permissions))
 
 							next() 
 						}
@@ -214,7 +243,7 @@ module.exports = (API, { routes }) => {
 						let statusCode = 200
 						if (data === undefined) { statusCode = 500 }
 						else if (data === null) { statusCode = 404 }
-						else if (_.isArray(data) && data.length === 0) { statusCode = 404 }
+						else if (Array.isArray(data) && data.length === 0) { statusCode = 404 }
 						res.status(statusCode).send({ data })
 					}
 					catch (err) {
