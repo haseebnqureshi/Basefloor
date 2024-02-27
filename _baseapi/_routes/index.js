@@ -205,18 +205,23 @@ module.exports = (API, { routes }) => {
 										let collection = partMatches[1]
 										let field = partMatches[2]
 										let value = modelData[collection][field]
+
+										if (API.DB.mongodb.ObjectId.isValid(value)) {
+											value = String(value)
+										}
 										values[i] = value
 										// console.log('values', i, collection, field, values[i])
 										if (value === null || value === undefined) {
-											console.log(`  @${collection}.${field} didn't exist in db!`)
+											console.log(`-- @${collection}.${field} didn't exist in db!`)
 											return null
 										}
 									}
 								}
-
+								// console.log({ operator, values, str })
 								switch (operator) {
 									case '=':
-										return values[0] === values[1]
+										// console.log(values[0] == values[1])
+										return values[0] == values[1]
 										break
 									case '=in=':
 										return values[0] in values[1]
@@ -226,33 +231,52 @@ module.exports = (API, { routes }) => {
 								return false
 							}
 
-							const traverseAllowCommands = allow => {
+							const traverseAllowCommands = (allow, comparison) => {
 								let result
 								if (_.isString(allow)) {
 									result = processAllowString(allow)
 								}
 								else if (Array.isArray(allow)) {
 									// console.log(' in array ', allow)
-									result = allow.map(item => traverseAllowCommands(item))
+									arrResult = allow.map(item => traverseAllowCommands(item))
+									// console.log(comparison, { arrResult })
+									switch (comparison) {
+										case 'and':
+											result = true
+											for (let value of arrResult) {
+												if (value === null) { result = false }
+												else if (value === false) { result = false }
+											}
+											break
+										case 'or':
+											result = false
+											for (let value of arrResult) {
+												if (value === true) { result = true }
+											}
+											break
+									}
 								}
 								else if (_.isObject(allow)) {
 									// console.log(' in object ')
 									if (allow.and) {
 										// console.log(' in object and ', allow.and)
-										result = { and: traverseAllowCommands(allow.and) }
+										result = traverseAllowCommands(allow.and, 'and')
 									} 
 									else if (allow.or) {
 										// console.log(' in object or ', allow.or)
-										result = { or: traverseAllowCommands(allow.or) }
+										result = traverseAllowCommands(allow.or, 'or')
 									}
 								}
 								return result
 							}
 
 
-							const permissions = traverseAllowCommands(r.allow)
-							console.log('permissions', JSON.stringify(permissions))
+							const isAuthorized = traverseAllowCommands(r.allow)
+							console.log({ isAuthorized })
 
+							if (!isAuthorized) { 
+								throw { code: 422, err: `user not authorized! permissions invalid.` }
+							}
 							next() 
 						}
 					}
