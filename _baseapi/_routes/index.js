@@ -166,6 +166,16 @@ module.exports = (API, { routes }) => {
 							if (API.DB.mongodb.ObjectId.isValid(value)) {
 								value = String(value)
 							}
+							if (Array.isArray(value)) {
+								value = value.map(item => {
+									if (API.DB.mongodb.ObjectId.isValid(item)) {
+										return String(item)
+									} else {
+										return item
+									}
+								})
+							}
+
 							values[i] = value
 							// console.log('values', i, collection, field, values[i])
 							if (value === null || value === undefined) {
@@ -174,14 +184,16 @@ module.exports = (API, { routes }) => {
 							}
 						}
 					}
-					// console.log({ operator, values, str })
+					console.log({ operator, values, str })
 					switch (operator) {
 						case '=':
 							// console.log(values[0] == values[1])
 							return values[0] == values[1]
 							break
 						case '=in=':
-							return values[0] in values[1]
+							if (!Array.isArray(values[1])) { return false }
+							// console.log(values[1].indexOf(values[0]) > -1)
+							return values[1].indexOf(values[0]) > -1
 							break
 					}
 
@@ -268,9 +280,9 @@ module.exports = (API, { routes }) => {
 								modelData[model] = await API.DB[model].read({ where })
 							}
 
-							// console.log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
+							console.log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
 							const isAuthorized = traverseAllowCommands(r.allow)
-							// console.log({ isAuthorized })
+							console.log({ isAuthorized })
 
 							if (!isAuthorized) { 
 								throw { code: 422, err: `user not authorized! permissions invalid.` }
