@@ -143,24 +143,108 @@ module.exports = (API, { routes }) => {
 					API.Auth.requireUser,
 				]
 
+
+
+				const processAllowString = str => {
+					let values = []
+
+					let operatorPattern = RegExp(/[^\=]+(\=[in]*\=?)/)
+					let operator = str.match(operatorPattern)[1]
+					let parts = str.split(operator)
+					for (let i in parts) {
+						let part = parts[i]
+						let partPattern = RegExp(/^\@([^\.]+)\.(.*)$/)
+						let partMatches = part.match(partPattern)
+						if (!partMatches) {
+							values[i] = part
+							// console.log('values', i, part)
+						} else {
+							let collection = partMatches[1]
+							let field = partMatches[2]
+							let value = modelData[collection][field]
+
+							if (API.DB.mongodb.ObjectId.isValid(value)) {
+								value = String(value)
+							}
+							values[i] = value
+							// console.log('values', i, collection, field, values[i])
+							if (value === null || value === undefined) {
+								console.log(`-- @${collection}.${field} didn't exist in db!`)
+								return null
+							}
+						}
+					}
+					// console.log({ operator, values, str })
+					switch (operator) {
+						case '=':
+							// console.log(values[0] == values[1])
+							return values[0] == values[1]
+							break
+						case '=in=':
+							return values[0] in values[1]
+							break
+					}
+
+					return false
+				}
+
+				const traverseAllowCommands = (allow, comparison) => {
+					let result
+					if (_.isString(allow)) {
+						result = processAllowString(allow)
+					}
+					else if (Array.isArray(allow)) {
+						// console.log(' in array ', allow)
+						arrResult = allow.map(item => traverseAllowCommands(item))
+						// console.log(comparison, { arrResult })
+						switch (comparison) {
+							case 'and':
+								result = true
+								for (let value of arrResult) {
+									if (value === null) { result = false }
+									else if (value === false) { result = false }
+								}
+								break
+							case 'or':
+								result = false
+								for (let value of arrResult) {
+									if (value === true) { result = true }
+								}
+								break
+						}
+					}
+					else if (_.isObject(allow)) {
+						// console.log(' in object ')
+						if (allow.and) {
+							// console.log(' in object and ', allow.and)
+							result = traverseAllowCommands(allow.and, 'and')
+						} 
+						else if (allow.or) {
+							// console.log(' in object or ', allow.or)
+							result = traverseAllowCommands(allow.or, 'or')
+						}
+					}
+					return result
+				}
+
+				//getting allow logic
+				const allowJSON = JSON.stringify(r.allow)
+				const pattern = RegExp(/\@([a-z0-9\_]+)\./g)
+				const matches = allowJSON.match(pattern) || []
+				const modelsInAllow = _.unique(matches).map(v => v.substr(1, v.length-2))
+
+				//mapping allow db keys with params keyValues (mapping route params with db keys)
+				let allParams = {
+					...router.parentsParams || {},
+					...r.params || {},						
+				}
+				let keys = {}
+				let modelData = {}
+
 				API[http](r.url, [...middlewares, async function(req, res, next) {
 					try {
 						if (r.allow) {
 							
-							//getting allow logic
-							const allowJSON = JSON.stringify(r.allow)
-							const pattern = RegExp(/\@([a-z0-9\_]+)\./g)
-							const matches = allowJSON.match(pattern) || []
-							const modelsInAllow = _.unique(matches).map(v => v.substr(1, v.length-2))
-
-							//mapping allow db keys with params keyValues (mapping route params with db keys)
-							let allParams = {
-								...router.parentsParams || {},
-								...r.params || {},						
-							}
-							let keys = {}
-							let modelData = {}
-
 							//loading user model if specified and authenticated
 							if (modelsInAllow.indexOf('user') > -1) {
 								modelData.user = await API.DB.user.read({
@@ -184,95 +268,9 @@ module.exports = (API, { routes }) => {
 								modelData[model] = await API.DB[model].read({ where })
 							}
 
-							console.log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
-
-
-
-							const processAllowString = str => {
-								let values = []
-
-								let operatorPattern = RegExp(/[^\=]+(\=[in]*\=?)/)
-								let operator = str.match(operatorPattern)[1]
-								let parts = str.split(operator)
-								for (let i in parts) {
-									let part = parts[i]
-									let partPattern = RegExp(/^\@([^\.]+)\.(.*)$/)
-									let partMatches = part.match(partPattern)
-									if (!partMatches) {
-										values[i] = part
-										// console.log('values', i, part)
-									} else {
-										let collection = partMatches[1]
-										let field = partMatches[2]
-										let value = modelData[collection][field]
-
-										if (API.DB.mongodb.ObjectId.isValid(value)) {
-											value = String(value)
-										}
-										values[i] = value
-										// console.log('values', i, collection, field, values[i])
-										if (value === null || value === undefined) {
-											console.log(`-- @${collection}.${field} didn't exist in db!`)
-											return null
-										}
-									}
-								}
-								// console.log({ operator, values, str })
-								switch (operator) {
-									case '=':
-										// console.log(values[0] == values[1])
-										return values[0] == values[1]
-										break
-									case '=in=':
-										return values[0] in values[1]
-										break
-								}
-
-								return false
-							}
-
-							const traverseAllowCommands = (allow, comparison) => {
-								let result
-								if (_.isString(allow)) {
-									result = processAllowString(allow)
-								}
-								else if (Array.isArray(allow)) {
-									// console.log(' in array ', allow)
-									arrResult = allow.map(item => traverseAllowCommands(item))
-									// console.log(comparison, { arrResult })
-									switch (comparison) {
-										case 'and':
-											result = true
-											for (let value of arrResult) {
-												if (value === null) { result = false }
-												else if (value === false) { result = false }
-											}
-											break
-										case 'or':
-											result = false
-											for (let value of arrResult) {
-												if (value === true) { result = true }
-											}
-											break
-									}
-								}
-								else if (_.isObject(allow)) {
-									// console.log(' in object ')
-									if (allow.and) {
-										// console.log(' in object and ', allow.and)
-										result = traverseAllowCommands(allow.and, 'and')
-									} 
-									else if (allow.or) {
-										// console.log(' in object or ', allow.or)
-										result = traverseAllowCommands(allow.or, 'or')
-									}
-								}
-								return result
-							}
-
-
+							// console.log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
 							const isAuthorized = traverseAllowCommands(r.allow)
-							console.log({ isAuthorized })
+							// console.log({ isAuthorized })
 
 							if (!isAuthorized) { 
 								throw { code: 422, err: `user not authorized! permissions invalid.` }
