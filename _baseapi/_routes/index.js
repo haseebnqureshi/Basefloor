@@ -189,37 +189,69 @@ module.exports = (API, { routes }) => {
 
 
 							const processAllowString = str => {
-								
+								let values = []
 
-								
-								return 'processed'
+								let operatorPattern = RegExp(/[^\=]+(\=[in]*\=?)/)
+								let operator = str.match(operatorPattern)[1]
+								let parts = str.split(operator)
+								for (let i in parts) {
+									let part = parts[i]
+									let partPattern = RegExp(/^\@([^\.]+)\.(.*)$/)
+									let partMatches = part.match(partPattern)
+									if (!partMatches) {
+										values[i] = part
+										// console.log('values', i, part)
+									} else {
+										let collection = partMatches[1]
+										let field = partMatches[2]
+										let value = modelData[collection][field]
+										values[i] = value
+										// console.log('values', i, collection, field, values[i])
+										if (value === null || value === undefined) {
+											console.log(`  @${collection}.${field} didn't exist in db!`)
+											return null
+										}
+									}
+								}
+
+								switch (operator) {
+									case '=':
+										return values[0] === values[1]
+										break
+									case '=in=':
+										return values[0] in values[1]
+										break
+								}
+
+								return false
 							}
 
 							const traverseAllowCommands = allow => {
 								let result
 								if (_.isString(allow)) {
-									result = { and: processAllowString(allow) }
+									result = processAllowString(allow)
 								}
 								else if (Array.isArray(allow)) {
-									console.log(' in array ', allow)
+									// console.log(' in array ', allow)
 									result = allow.map(item => traverseAllowCommands(item))
 								}
 								else if (_.isObject(allow)) {
-									console.log(' in object ')
+									// console.log(' in object ')
 									if (allow.and) {
-										console.log(' in object and ', allow.and)
+										// console.log(' in object and ', allow.and)
 										result = { and: traverseAllowCommands(allow.and) }
 									} 
 									else if (allow.or) {
-										console.log(' in object or ', allow.or)
+										// console.log(' in object or ', allow.or)
 										result = { or: traverseAllowCommands(allow.or) }
 									}
 								}
 								return result
 							}
 
+
 							const permissions = traverseAllowCommands(r.allow)
-							console.log(JSON.stringify(permissions))
+							console.log('permissions', JSON.stringify(permissions))
 
 							next() 
 						}
