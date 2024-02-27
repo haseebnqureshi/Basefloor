@@ -184,7 +184,7 @@ module.exports = (API, { routes }) => {
 							}
 						}
 					}
-					console.log({ operator, values, str })
+					// console.log({ operator, values, str })
 					switch (operator) {
 						case '=':
 							// console.log(values[0] == values[1])
