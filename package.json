@@ -16,5 +16,30 @@
     "phone": "^3.1.42",
     "postmark": "^4.0.2",
     "underscore": "^1.13.6"
-  }
+  },
+  "description": "API w/ authentication and permissions, CRUD and resource management",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "node example"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avenuedigital/BaseAPI.git"
+  },
+  "keywords": [
+    "framework",
+    "mongodb",
+    "api",
+    "express",
+    "auth",
+    "jwt",
+    "backend"
+  ],
+  "author": "Haseeb Qureshi (HQ)",
+  "bugs": {
+    "url": "https://github.com/avenuedigital/BaseAPI/issues"
+  },
+  "homepage": "https://github.com/avenuedigital/BaseAPI#readme"
 }
