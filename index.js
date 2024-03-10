@@ -1,7 +1,7 @@
 
 const path = require('path')
 
-const API = require('./_baseAPI')({
+const API = require('./_baseapi')({
 	envPath: path.resolve(__dirname, '.env'),
 	projectPath: path.resolve(__dirname),
 })
