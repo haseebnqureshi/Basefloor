@@ -7,7 +7,7 @@ module.exports = (API, { config }) => {
 
 	const { projectPath } = config
 
-	const filepath = path.resolve(projectPath, 'baseapi.test.js')
+	const filepath = path.resolve(projectPath, 'minapi.test.js')
 
 	API.Checks = {}
 
@@ -22,7 +22,7 @@ module.exports = (API, { config }) => {
 	}
 
 	//creating our sync route for tester view
-	API.post('/baseapi/checks', [notInProduction], async (req, res) => {
+	API.post('/minapi/checks', [notInProduction], async (req, res) => {
 		try {
 			const json = JSON.stringify(req.body)
 			fs.writeFileSync(filepath, json, 'utf8')
@@ -33,7 +33,7 @@ module.exports = (API, { config }) => {
 		}
 	})
 
-	API.get('/baseapi/checks', [notInProduction], async (req, res) => {
+	API.get('/minapi/checks', [notInProduction], async (req, res) => {
 		try {
 			const json = fs.readFileSync(filepath)
 			const data = JSON.parse(json)
@@ -59,11 +59,11 @@ module.exports = (API, { config }) => {
 
 	API.Checks.enable = () => {
 
-		//ensure we have baseapi.test.js in projectpath
+		//ensure we have minapi.test.js in projectpath
 		if (!fs.existsSync(filepath)) {
 			let id = 1
 			const contents = JSON.stringify({
-				name: 'Auto-Generated BaseAPI Checks',
+				name: 'Auto-Generated MinAPI Checks',
 				endpoint: 'http://localhost:4000',
 				output: { firstName: '', lastName: '', email: '', password: '', newPassword: '' },
 				coverage: 0,

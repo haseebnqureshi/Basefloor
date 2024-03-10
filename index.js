@@ -14,7 +14,7 @@ module.exports = ({ projectPath, envPath }) => {
 		routes, 
 		models, 
 		notifications 
-	} = require(path.resolve(projectPath, 'baseapi.config.js'))
+	} = require(path.resolve(projectPath, 'minapi.config.js'))
 
 	let API = express()
 	API.Express = express
@@ -32,13 +32,13 @@ module.exports = ({ projectPath, envPath }) => {
 	API.Start = () => {
 		const port = process.env.PORT || 4000
 		API.listen(port, () => {
-			API.Log(`${name} BaseAPI started HTTP:${port} in ${process.env.NODE_ENV || 'development'} node environment ...`)
+			API.Log(`${name} MinAPI started HTTP:${port} in ${process.env.NODE_ENV || 'development'} node environment ...`)
 		})
 	}
 
 	API.StartHTTPS = ({ key, crt }) => {
 		if (process.env.NODE_ENV !== 'production') {
-			return API.Log(`${name} BaseAPI attempted to start HTTPS in not-production node environment, quitting now ...`)
+			return API.Log(`${name} MinAPI attempted to start HTTPS in not-production node environment, quitting now ...`)
 		}
 		const httpServer = require('http').createServer(API)
 		const httpsServer = require('https').createServer({
@@ -47,7 +47,7 @@ module.exports = ({ projectPath, envPath }) => {
 		}, API)
 		httpServer.listen(80)
 		httpsServer.listen(443)
-		API.Log(`${name} BaseAPI started HTTPS in production node environment ...`)
+		API.Log(`${name} MinAPI started HTTPS in production node environment ...`)
 	}
 
 	return API
