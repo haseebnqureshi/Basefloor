@@ -335,7 +335,7 @@ module.exports = (API, { routes }) => {
 						break
 				}
 
-				// API.Checks.register(newCheck)
+				API.Checks.register(newCheck)
 
 			}
 		}
