@@ -116,6 +116,14 @@ module.exports = (API) => {
 			case 'Array(ObjectId)':
 				return Array(...value).map(v => new mongodb.ObjectId(v))
 				break
+			case 'Object(ObjectId)':
+				let obj = Object(value)
+				Object.keys(obj).forEach(key => {
+					let v = obj[key]
+					obj[key] = new mongodb.ObjectId(v)
+				})
+				return obj
+				break
 		}
 	}
 
