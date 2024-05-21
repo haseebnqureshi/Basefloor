@@ -307,9 +307,11 @@ module.exports = (API, { routes }) => {
 						const data = await API.DB[router.model][db]({ where, values })
 						await API.DB.close()
 						let statusCode = 200
+						// console.log({ data, http })
 						if (data === undefined) { statusCode = 500 }
 						else if (data === null) { statusCode = 404 }
-						else if (Array.isArray(data) && data.length === 0) { statusCode = 404 }
+						// else if (Array.isArray(data) && data.length === 0) { statusCode = 404 }
+						else if (Array.isArray(data) && data.length === 0) { statusCode = 200 } //opting to send 200 with empty data instead
 						res.status(statusCode).send({ data })
 					}
 					catch (err) {
