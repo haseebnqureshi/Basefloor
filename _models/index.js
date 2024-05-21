@@ -26,13 +26,16 @@ module.exports = (API, { models }) => {
 		API.DB[_name].collection = _collection
 
 		API.DB[_name].sanitize = (values, dbAction /* c, rA, r, u, d */ ) => {
+			// console.log({ dbAction, values })
 			let sanitized = {}
 			for (let key in values) {
 				if (key in _values) {
 					const valueType = _values[key][0]
 					const dbActions = _values[key][1].split(',')
 					if (dbActions.indexOf(dbAction) > -1) {
+						// console.log({ key, valueType })
 						sanitized[key] = API.Utils.valueType(values[key], valueType)
+						// console.log(API.Utils.valueType(values[key], valueType))
 					}
 				}
 			}

@@ -458,17 +458,22 @@ module.exports = (API, { config }) => {
 		expectedStatusCode: 200,
 	})
 
-
-
-
-
-
-
-
-
-
-
-
+	//update user
+	API.put('/user', [API.Auth.requireToken, API.Auth.requireUser], async(req, res) => {
+		const { _id } = req.user
+		const values = { 
+			...API.DB.user.sanitize(req.body, 'u'), 
+			updated_at: new Date() 
+		}
+		try {
+			const where = { _id }
+			await API.DB.user.update({ where, values })
+			res.status(200).send({ message: `updated user!` })
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
 
 
 
