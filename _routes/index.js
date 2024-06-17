@@ -280,9 +280,9 @@ module.exports = (API, { routes }) => {
 								modelData[model] = await API.DB[model].read({ where })
 							}
 
-							console.log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
+							// console.log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
 							const isAuthorized = traverseAllowCommands(r.allow)
-							console.log({ isAuthorized })
+							// console.log({ isAuthorized })
 
 							if (!isAuthorized) { 
 								throw { code: 422, err: `user not authorized! permissions invalid.` }
