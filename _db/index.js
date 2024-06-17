@@ -10,7 +10,7 @@ module.exports = (API) => {
 
   API.DB.mongodb = mongodb
 
-  API.DB.connectionString = `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_HOST}/?retryWrites=true&w=majority`
+  API.DB.connectionString = `mongodb+srv://${process.env.MONGODB_USERNAME}:${process.env.MONGODB_PASSWORD}@${process.env.MONGODB_HOST}/?retryWrites=true&w=majority&appName=${process.env.MONGODB_APPNAME}`
 
   // Create a MongoClient with a MongoClientOptions object to set the Stable API version
   API.DB.client = new MongoClient(API.DB.connectionString, {
