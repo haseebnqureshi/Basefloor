@@ -25,9 +25,20 @@ module.exports = (API, { models }) => {
 
 		API.DB[_name].collection = _collection
 
-		API.DB[_name].sanitize = (values, dbAction /* c, rA, r, u, d */ ) => {
+		API.DB[_name].sanitize = (values, dbAction /* c, rA, r, u, d */ , modelName) => {
 			// console.log({ dbAction, values })
 			let sanitized = {}
+
+			//first, ensure no `${modelName}_${key}` formats in keys
+			for (let key in values) {
+				const pattern = new RegExp('^' + modelName)
+				// console.log(key, modelName, key.match(pattern))
+				if (key.match(pattern)) {
+					const newKey = key.replace(modelName, '')
+					values[newKey] = values[key]
+				}
+			}
+
 			for (let key in values) {
 				if (key in _values) {
 					const valueType = _values[key][0]
@@ -75,7 +86,7 @@ module.exports = (API, { models }) => {
 		}
 
 		API.DB[_name].read = async ({ where }) => {
-			where = API.DB[_name].sanitize(where, 'r')
+			where = API.DB[_name].sanitize(where, 'r', _name)
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}
@@ -85,19 +96,21 @@ module.exports = (API, { models }) => {
 		}
 
 		API.DB[_name].update = async ({ where, values }) => {
-			where = API.DB[_name].sanitize(where, 'r')
-			values = API.DB[_name].sanitize(values, 'u')
+			// console.log({ where, values })
+			where = API.DB[_name].sanitize(where, 'r', _name)
+			values = API.DB[_name].sanitize(values, 'u', _name)
 			values = { ...values, updated_at: new Date() }
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}	
+			// console.log({ where, values })
 			return await API.Utils.try(`try:${collectionName}:update(where:${JSON.stringify(where)})`,
 				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).updateOne(where, { $set: values })
 			)
 		}
 
 		API.DB[_name].delete = async ({ where }) => {
-			where = API.DB[_name].sanitize(where, 'd')
+			where = API.DB[_name].sanitize(where, 'd', _name)
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}
