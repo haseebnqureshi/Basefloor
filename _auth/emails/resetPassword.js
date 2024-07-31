@@ -2,7 +2,7 @@
 module.exports = (To, { url, appName, appAuthor, appAuthorEmail, durationText }) => ({
 	To,
 	Subject: `${appName} - Password Reset Link`,
-	TextBody: `
+	Text: `
 Hey there,
 
 You recently requested to reset your password for your ${appName} account. Use the link below to reset it. This password reset is only valid for the next ${durationText}.

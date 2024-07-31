@@ -188,8 +188,9 @@ module.exports = (API, { config }) => {
 			token = await API.Utils.try('Auth.resetPassword:createToken',
 				API.Auth.createToken('reset', user._id, {}))
 
+			console.log('creating reset password request', { token })
+
 			res.status(200).send({ 
-				token,
 				message: `emailing reset password instructions!` 
 			})
 		}

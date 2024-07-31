@@ -3,10 +3,7 @@ module.exports = ({ client, helpers }) => {
 
 	let email = {}
 
-	email.send = async (values) => {
-		values = helpers.filterEmailValues(values)
-		return client.sendEmail(values)	
-	}
+	email.send = async (values) => helpers.send(values)
 
 	return email
 	

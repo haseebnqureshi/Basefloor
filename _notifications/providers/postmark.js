@@ -29,9 +29,10 @@ module.exports = ({ config }) => {
 		'MessageStream',
 	]
 
-	helpers.filterEmailValues = (values) => {
+	helpers.send = (values) => {
 		values = { ...values, From: _env.getFrom() }
-		return _.pick(values, helpers.emailFields)
+		values = _.pick(values, helpers.emailFields)
+		return client.sendEmail(values)
 	}
 
 	return { client, helpers }

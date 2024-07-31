@@ -106,15 +106,22 @@ module.exports = {
 	},
 	"notifications": {
 		_active: {
-			"email": 'postmark',
+			"email": 'mailgun',
 		},
 		_providers: {
 			"postmark": {
 				_env: {
-					getToken: () => process.env.POSTMARK_SERVER_API_TOKEN,
-					getFrom: () => process.env.EMAIL_FROM,
+					getToken: () => process.env.POSTMARK_TOKEN,
+					getFrom: () => process.env.POSTMARK_FROM,
 				},
 			},
+			"mailgun": {
+				_env: {
+					getToken: () => process.env.MAILGUN_TOKEN,
+					getDomain: () => process.env.MAILGUN_DOMAIN, //forthlaw.com
+					getFrom: () => process.env.MAILGUN_FROM, //Forthlaw PLLC <hello@forthlaw.com>
+				}
+			}
 		},
 	},	
 }

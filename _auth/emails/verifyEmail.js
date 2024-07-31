@@ -2,7 +2,7 @@
 module.exports = (To, { url, appName, appAuthor }) => ({
 	To,
 	Subject: `${appName} - Email Verification`,
-	TextBody: `
+	Text: `
 Hey there,
 
 Here's your verification email for ${appName}. Please follow the link to complete your email verification:

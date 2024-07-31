@@ -2,7 +2,7 @@
 module.exports = (To, { appName, appAuthor, appAuthorEmail }) => ({
 	To,
 	Subject: `${appName} - Password Changed`,
-	TextBody: `
+	Text: `
 Hey there,
 
 You recently changed your password for your ${appName} account.
