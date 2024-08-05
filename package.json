@@ -1,6 +1,6 @@
 {
   "name": "minapi",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
@@ -17,6 +17,7 @@
     "morgan": "^1.10.0",
     "phone": "^3.1.42",
     "postmark": "^4.0.2",
+    "speakeasy": "^2.0.0",
     "underscore": "^1.13.6"
   },
   "description": "Minimum viable API w/ authentication and permissions, CRUD and resource management",

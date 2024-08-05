@@ -2,11 +2,13 @@
 const bcrypt = require('bcrypt')
 const crypto = require('crypto')
 const jwt = require('jsonwebtoken')
+const speakeasy = require('speakeasy')
 const { promisify } = require('util')
 const fs = require('fs')
 const { phone } = require('phone')
 const writeFileAsync = promisify(fs.writeFile)
 const unlinkAsync = promisify(fs.unlink)
+const totpEncoding = 'base32'
 
 module.exports = ({ config }) => {
 
@@ -89,6 +91,32 @@ module.exports = ({ config }) => {
 				break
 		}
 	}
+
+	helpers.createTotpCode = async () => {
+		const secret = speakeasy.generateSecret({ length: 20 })[totpEncoding]
+		const code = speakeasy.totp({ secret, encoding: totpEncoding })
+		return { code, secret }
+	}
+
+	helpers.validateTotpCode = async ({ code, secret }) => {
+		return speakeasy.totp.verify({
+			token: code,
+			secret,
+			encoding: totpEncoding,
+			window: 6,
+		})
+	}
+
+
+
+
+
+
+
+
+
+
+
 
 	return helpers
 

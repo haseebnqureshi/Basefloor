@@ -132,6 +132,7 @@ module.exports = (API, { config }) => {
 
 	//user information
 	API.get('/user', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+		console.log(req.user)
 		try {
 			res.status(200).send(
 				_.omit(req.user, ['password_hash', '_id', 'created_at'])
@@ -175,35 +176,28 @@ module.exports = (API, { config }) => {
 		expectedStatusCode: 200,
 	})
 
-	//request reset password instructions be emailed 
+	//request reset password verification code to email 
 	API.post('/user/reset/password', [], async (req, res) => {
 		const { email } = req.body
-		let user, token
+		let user, token, totp
 		try {
 
 			//checking if user exists via email
 			user = await API.DB.user.read({ where: { email } })
 
 			//creating jwt token
+			totp = await API.Auth.createTotpCode()
+
 			token = await API.Utils.try('Auth.resetPassword:createToken',
-				API.Auth.createToken('reset', user._id, {}))
+				API.Auth.createToken('reset', user._id, { 
+					code: totp.code, 
+					secret: totp.secret 
+				})
+			)
 
-			console.log('creating reset password request', { token })
-
-			res.status(200).send({ 
-				message: `emailing reset password instructions!` 
-			})
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-
-		try {
-			//send email for reset password (outside of main try catch)
 			const duration = API.Auth.expirations('reset')
-			const url = process.env.APP_URL_RESET_PASSWORD.replace(':token', token)
-			const emailArgs = require('./emails/resetPassword')(email, {
-				url,
+			const emailArgs = require('./emails/resetPasswordWithCode')(email, {
+				code: totp.code,
 				durationText: duration.text,
 				appName: process.env.APP_NAME,
 				appAuthor: process.env.APP_AUTHOR,
@@ -213,21 +207,47 @@ module.exports = (API, { config }) => {
 			//sending email
 			await API.Utils.try('Auth.resetPassword:email.send', 
 				API.Notifications.email.send(emailArgs))
+
+			console.log('emailed code and return jwt token to client. payload has secret, must be provided with emailed code to verify identity.', { token, totp })
+
+			res.status(200).send({ 
+				token,
+				message: `emailed code!` 
+			})
+
 		}
 		catch (err) {
-			console.log('Auth.resetPassword', err)
+			API.Utils.errorHandler({ res, err })
 		}
+
 	})
 
 	API.Checks.register({
 		resource: '/user/reset/password',
-		description: 'emailing password reset instructions',
+		description: 'emailing password reset verification code',
 		method: 'POST',
 		params: ``,
 		bearerToken: ``,
 		body: `({ email: output.email })`,
 		output: `({ data, output }) => ({ ...output, token: data.token })`,
 		expectedStatusCode: 200,
+	})
+
+	API.get('/user/reset/password/:code', [API.Auth.requireToken], async(req, res) => {
+		const { _id, secret } = req.reset
+		try {
+			const { code } = req.params
+			if (!code) { throw 'no code provided' }
+			const validated = await API.Auth.validateTotpCode({ code, secret })
+			if (!validated) { throw 'invalid code' }
+			const token = validated ? await API.Utils.try('Auth.resetPasswordValidCode:createToken',
+				API.Auth.createToken('reset', _id, {})
+			) : null
+			res.status(200).send({ token, validated })
+		}
+		catch(err) {
+			API.Utils.errorHandler({ res, err })
+		}
 	})
 
 	//change user's password
@@ -242,13 +262,6 @@ module.exports = (API, { config }) => {
 				values: { password_hash: await API.Auth.hashPassword(password) },
 			})
 
-			res.status(200).send({ message: `changed password for user!` })
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-
-		try {
 			//getting user information
 			const user = await API.DB.user.read({ where: { _id } })
 
@@ -259,11 +272,18 @@ module.exports = (API, { config }) => {
 			})
 
 			//sending email
-			API.Utils.try('Auth.resetPassword(put):email.send', 
+			await API.Utils.try('Auth.resetPassword:email.send', 
 				API.Notifications.email.send(emailArgs))
+
+			//creating login token for presumed login
+			const token = await API.Utils.try('Auth.resetPasswordChange:createToken', 
+				API.Auth.createToken('auth', _id, {}))
+			console.log({ token })
+			res.status(200).send({ token, message: `password changed and logged in!` })
+
 		}
 		catch (err) {
-			console.log(err)
+			API.Utils.errorHandler({ res, err })
 		}
 	})
 

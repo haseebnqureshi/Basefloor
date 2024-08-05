@@ -7,10 +7,13 @@ Hey there,
 
 You recently changed your password for your ${appName} account.
 
-If you did not request this password reset, please check the security of your passwords and contact ${appAuthorEmail}.
-
 Thanks!
 ${appAuthor}
 
+-------
+
+If you did not request a password reset, please ignore this email or contact ${appAuthorEmail} if you have any questions.
+
 `
+
 })
