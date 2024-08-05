@@ -122,7 +122,7 @@ module.exports = (API, { config }) => {
 			if (!correctPassword) { throw { code: 422, err: `incorrect login information!` } }
 			const token = await API.Utils.try('Auth.login:createToken', 
 				API.Auth.createToken('auth', user._id, {}))
-			console.log({ token })
+			// console.log({ token })
 			res.status(200).send({ token, message: `logged in!` })
 		}
 		catch (err) {
@@ -132,7 +132,6 @@ module.exports = (API, { config }) => {
 
 	//user information
 	API.get('/user', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
-		console.log(req.user)
 		try {
 			res.status(200).send(
 				_.omit(req.user, ['password_hash', '_id', 'created_at'])
@@ -278,7 +277,7 @@ module.exports = (API, { config }) => {
 			//creating login token for presumed login
 			const token = await API.Utils.try('Auth.resetPasswordChange:createToken', 
 				API.Auth.createToken('auth', _id, {}))
-			console.log({ token })
+			// console.log({ token })
 			res.status(200).send({ token, message: `password changed and logged in!` })
 
 		}
