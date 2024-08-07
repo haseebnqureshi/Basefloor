@@ -13,7 +13,8 @@ module.exports = ({ projectPath, envPath }) => {
 		auth,
 		routes, 
 		models, 
-		notifications 
+		notifications,
+		files
 	} = require(path.resolve(projectPath, 'minapi.config.js'))
 
 	let API = express()
@@ -22,6 +23,7 @@ module.exports = ({ projectPath, envPath }) => {
 	API = require('./_middlewares')(API) //must be the first thing, loads json middleware
 	API = require('./_checks')(API, { config: { projectPath }}) //before, so other features can load checks into the checker
 	API = require('./_notifications')(API, { config: notifications })
+	API = require('./_files')(API, { config: files })
 	API = require('./_db')(API)
 	API = require('./_models')(API, { models })
 	API = require('./_auth')(API, { config: auth })

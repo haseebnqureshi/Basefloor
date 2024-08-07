@@ -123,5 +123,21 @@ module.exports = {
 				}
 			}
 		},
-	},	
+	},
+	"files": {
+		_active: {
+			"storage": "digitalocean",
+		},
+		_providers: {
+			"digitalocean": {
+				_env: {
+					getAccess: () => process.env.DIGITALOCEAN_SPACES_ACCESS,
+					getSecret: () => process.env.DIGITALOCEAN_SPACES_SECRET,
+					getEndpoint: () => process.env.DIGITALOCEAN_SPACES_ENDPOINT,
+					getRegion: () => process.env.DIGITALOCEAN_SPACES_REGION,
+					getBucket: () => process.env.DIGITALOCEAN_SPACES_BUCKET,
+				}
+			}
+		}
+	}
 }
