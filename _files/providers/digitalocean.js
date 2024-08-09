@@ -28,6 +28,11 @@ module.exports = ({ config }) => {
 		})
 	}
 
+	output.getObjectCommand = ({ }) => {
+
+		
+	}
+
 	output.presign = async (command) => {
 		try {
 			return await getSignedUrl(client, command, { 

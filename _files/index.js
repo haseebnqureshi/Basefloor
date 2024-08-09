@@ -11,6 +11,23 @@ module.exports = (API, { config }) => {
 		API.Files[method] = require(`./providers/${providerName}`)({ config: providerConfig })
 	}
 
+	API.post('/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+		const { _id } = req.user
+		const { key, contentType } = req.body
+		try {
+			const url = await API.Files.storage.presign(
+				API.Files.storage.putObjectCommand({
+					Key: key,
+					ContentType: contentType,
+				})
+			)
+			res.status(200).send({ url })
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
 	return API
 
 }
