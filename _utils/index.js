@@ -2,6 +2,7 @@
 const util = require('util')
 const _ = require('underscore')
 const mongodb = require('mongodb')
+const hashObject = require('object-hash')
 const chance = new require('chance')()
 
 module.exports = (API) => {
@@ -21,6 +22,8 @@ module.exports = (API) => {
 			colors: true,
 		}))
 	}
+
+	API.Utils.hashObject = (obj) => hashObject(obj)
 
 	API.Utils.errorHandler = ({ res, err }) => {
 		API.Log(err)
