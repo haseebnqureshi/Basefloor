@@ -59,11 +59,15 @@ module.exports = (API) => {
 			const hash = API.Utils.hashObject(values)
 
 			const { user_id } = values
-			const existingFile = API.DB.file.read({ where: { hash, user_id } })
+			// console.log({ values, hash, user_id })
+			const existingFile = await API.DB.file.read({ where: { hash, user_id } })
+			// console.log({ existingFile })
 			if (existingFile) { throw `file hash already exsits for user!` }
 
-			const extension = values.name.split('.')[1]
-			const filename = `${hash}.${extension}`
+			const extension = values.name.match(/(\.[a-z]+)$/)[1]
+			if (!extension) { throw `file extension not propertly extracted` }
+
+			const filename = `${hash}${extension}`
 			const url = `${endpoint}/${filename}`
 			const created_at = new Date()
 			values = { ...values, hash, extension, filename, url, created_at }

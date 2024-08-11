@@ -19,12 +19,14 @@ module.exports = (API, { config }) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		const { file, endpoint } = req.body
+		console.log({ file, endpoint })
 		try {
 			const { name, size, type, lastModified } = file
 			const file_modified_at = new Date(lastModified)
 			const values = { name, size, type, file_modified_at, user_id }
-			const result = await API.DB.file.create({ values, endpoint })
-			if (!result) { throw 'error occured when creating file' }
+			const { insertedId } = await API.DB.file.create({ values, endpoint })
+			if (!insertedId) { throw 'error occured when creating file' }
+			const result = await API.DB.file.read({ where: { _id: insertedId }})
 			res.status(200).send(result)
 		}
 		catch (err) {
