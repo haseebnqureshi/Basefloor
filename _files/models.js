@@ -5,11 +5,14 @@ module.exports = (API) => {
 	const _collection = 'file'
 	const _values = {
 		_id: 							['ObjectId', 'r,u,d'],
-		user_id: 					['ObjectId', 'c,r,u'],
+		user_id: 					['ObjectId', 'c,r'],
 		name: 						['String', 'c,r,u'],
-		hash: 						['String', 'c,r,u'],
-		size: 						['Number', 'c,r,u'],
-		type: 						['String', 'c,r,u'],
+		hash: 						['String', 'c,r'],
+		size: 						['Number', 'c,r'],
+		type: 						['String', 'c,r'],
+		extension:  			['String', 'r'],
+		filename: 				['String', 'r'],
+		url: 							['String', 'r,u'],
 		file_modified_at: ['Date', 'c,r,u'],
 	}
 
@@ -50,12 +53,28 @@ module.exports = (API) => {
 
 	}
 
-	API.DB[_name].create = async ({ values }) => {
-		values = API.DB[_name].sanitize(values, 'c')
-		values = { ...values, created_at: new Date() }
-		return await API.Utils.try(`try:${_collection}:create`,
-			API.DB.client.db(process.env.MONGODB_DATABASE).collection(_collection).insertOne(values)
-		)
+	API.DB[_name].create = async ({ values, endpoint }) => {
+		try {
+			values = API.DB[_name].sanitize(values, 'c')
+			const hash = API.Utils.hashObject(values)
+
+			const { user_id } = values
+			const existingFile = API.DB.file.read({ where: { hash, user_id } })
+			if (existingFile) { throw `file hash already exsits for user!` }
+
+			const extension = values.name.split('.')[1]
+			const filename = `${hash}.${extension}`
+			const url = `${endpoint}/${filename}`
+			const created_at = new Date()
+			values = { ...values, hash, extension, filename, url, created_at }
+			return await API.Utils.try(`try:${_collection}:create`,
+				API.DB.client.db(process.env.MONGODB_DATABASE).collection(_collection).insertOne(values)
+			)
+		}
+		catch (err) {
+			console.log(err)
+			return undefined
+		}
 	}
 
 	API.DB[_name].readAll = async ({ where }) => {

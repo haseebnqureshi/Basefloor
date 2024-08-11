@@ -18,13 +18,12 @@ module.exports = (API, { config }) => {
 	API.post('/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
-		const { file } = req.body
+		const { file, endpoint } = req.body
 		try {
 			const { name, size, type, lastModified } = file
 			const file_modified_at = new Date(lastModified)
-			const hash = API.Utils.hashObject({ name, size, type, file_modified_at })
-			const values = { hash, name, size, type, file_modified_at, user_id }
-			const result = await API.DB.file.create({ values })
+			const values = { name, size, type, file_modified_at, user_id }
+			const result = await API.DB.file.create({ values, endpoint })
 			if (!result) { throw 'error occured when creating file' }
 			res.status(200).send(result)
 		}
