@@ -56,7 +56,21 @@ module.exports = (API) => {
 	API.DB[_name].create = async ({ values, endpoint }) => {
 		try {
 			values = API.DB[_name].sanitize(values, 'c')
-			const hash = API.Utils.hashObject(values)
+
+			const hash = API.Utils.hashObject({
+				user_id: values.user_id,
+				size: values.size,
+				type: values.type,
+				name: values.name, //@todo: still not ideal, as same files may have different names, and so we're still storing duplicates. may need client to send hash of file contents, because it's the client's duty to pipeline the body of the file to end cdn.
+			})
+
+			// console.log({
+			// 	hash,
+			// 	user_id: values.user_id,
+			// 	size: values.size,
+			// 	type: values.type,
+			// 	name: values.name, 
+			// })
 
 			const { user_id } = values
 			// console.log({ values, hash, user_id })
