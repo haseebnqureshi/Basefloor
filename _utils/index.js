@@ -108,7 +108,7 @@ module.exports = (API) => {
 				return Number(value)
 				break
 			case 'Date':
-				return Date(value)
+				return new Date(value).toISOString()
 				break
 			case 'ObjectId':
 				return new mongodb.ObjectId(value)

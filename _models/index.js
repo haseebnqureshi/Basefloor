@@ -68,7 +68,7 @@ module.exports = (API, { models }) => {
 
 		API.DB[_name].create = async ({ values }) => {
 			values = API.DB[_name].sanitize(values, 'c')
-			values = { ...values, created_at: new Date() }
+			values = { ...values, created_at: new Date().toISOString() }
 			if (collectionFilter) { 
 				values = { ...values, ...collectionFilter } 
 			}
@@ -99,7 +99,7 @@ module.exports = (API, { models }) => {
 			// console.log({ where, values })
 			where = API.DB[_name].sanitize(where, 'r', _name)
 			values = API.DB[_name].sanitize(values, 'u', _name)
-			values = { ...values, updated_at: new Date() }
+			values = { ...values, updated_at: new Date().toISOString() }
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}	

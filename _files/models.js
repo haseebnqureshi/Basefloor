@@ -13,7 +13,7 @@ module.exports = (API) => {
 		extension:  			['String', 'r'],
 		filename: 				['String', 'r'],
 		url: 							['String', 'r,u'],
-		uploaded: 				['Boolean', 'c,r,u'],
+		uploaded_at: 			['Date', 'c,r,u'],
 		file_modified_at: ['Date', 'c,r,u'],
 	}
 
@@ -89,8 +89,9 @@ module.exports = (API) => {
 
 			const filename = `${hash}${extension}`
 			const url = `${endpoint}/${filename}`
-			const created_at = new Date()
-			values = { ...values, hash, extension, filename, url, created_at }
+			const uploaded_at = null
+			const created_at = new Date().toISOString()
+			values = { ...values, hash, extension, filename, url, uploaded_at, created_at }
 			return await API.Utils.try(`try:${_collection}:create`,
 				API.DB.client.db(process.env.MONGODB_DATABASE).collection(_collection).insertOne(values)
 			)
@@ -119,7 +120,7 @@ module.exports = (API) => {
 	API.DB[_name].update = async ({ where, values }) => {
 		where = API.DB[_name].sanitize(where, 'r')
 		values = API.DB[_name].sanitize(values, 'u')
-		values = { ...values, updated_at: new Date() }
+		values = { ...values, updated_at: new Date().toISOString() }
 		return await API.Utils.try(`try:${_collection}:update(where:${JSON.stringify(where)})`,
 			API.DB.client.db(process.env.MONGODB_DATABASE).collection(_collection).updateOne(where, { $set: values })
 		)
@@ -129,7 +130,7 @@ module.exports = (API) => {
 		where = where || {}
 		where = API.DB[_name].sanitize(where, 'r')
 		values = API.DB[_name].sanitize(values, 'u')
-		values = { ...values, updated_at: new Date() }
+		values = { ...values, updated_at: new Date().toISOString() }
 		//haven't tested mongodb.update function
 		return await API.Utils.try(`try:${_collection}:updateAll(where:${JSON.stringify(where)})`,
 			API.DB.client.db(process.env.MONGODB_DATABASE).collection(_collection).update(where, { $set: values })

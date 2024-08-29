@@ -483,7 +483,7 @@ module.exports = (API, { config }) => {
 		const { _id } = req.user
 		const values = { 
 			...API.DB.user.sanitize(req.body, 'u'), 
-			updated_at: new Date() 
+			updated_at: new Date().toISOString()
 		}
 		try {
 			const where = { _id }
