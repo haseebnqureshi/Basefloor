@@ -19,10 +19,9 @@ module.exports = (API, { config }) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		const { file, endpoint } = req.body
-		console.log({ file, endpoint })
 		try {
 			const { name, size, type, lastModified } = file
-			const file_modified_at = new Date(lastModified)
+			const file_modified_at = new Date(lastModified).toISOString()
 			const values = { name, size, type, file_modified_at, user_id }
 			const { insertedId } = await API.DB.file.create({ values, endpoint })
 			if (!insertedId) { throw 'error occured when creating file' }
@@ -107,6 +106,23 @@ module.exports = (API, { config }) => {
 			API.Utils.errorHandler({ res, err })
 		}
 	})
+
+	API.put('/files/:_id/uploaded', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+		//files are specific to authenticated user
+		const user_id = req.user._id
+		const { _id } = req.params
+		const values = { uploaded_at: new Date().toISOString() }
+		try {
+			const where = { _id, user_id }
+			const result = await API.DB.file.update({ where, values })
+			if (!result) { throw 'error occured when updating file' }
+			res.status(200).send(result)
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
 
 	API.delete('/files/:_id', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
 		//files are specific to authenticated user
