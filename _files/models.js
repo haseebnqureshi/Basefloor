@@ -13,6 +13,7 @@ module.exports = (API) => {
 		extension:  			['String', 'r'],
 		filename: 				['String', 'r'],
 		url: 							['String', 'r,u'],
+		uploaded: 				['Boolean', 'c,r,u'],
 		file_modified_at: ['Date', 'c,r,u'],
 	}
 
@@ -58,15 +59,17 @@ module.exports = (API) => {
 			values = API.DB[_name].sanitize(values, 'c')
 
 			const hash = API.Utils.hashObject({
-				user_id: values.user_id,
+				user_id: values.user_id.toString(),
 				size: values.size,
 				type: values.type,
 				name: values.name, //@todo: still not ideal, as same files may have different names, and so we're still storing duplicates. may need client to send hash of file contents, because it's the client's duty to pipeline the body of the file to end cdn.
+			}, {
+				algorithm: 'md5'
 			})
 
 			// console.log({
 			// 	hash,
-			// 	user_id: values.user_id,
+			// 	user_id: values.user_id.toString(),
 			// 	size: values.size,
 			// 	type: values.type,
 			// 	name: values.name, 
@@ -76,7 +79,10 @@ module.exports = (API) => {
 			// console.log({ values, hash, user_id })
 			const existingFile = await API.DB.file.read({ where: { hash, user_id } })
 			// console.log({ existingFile })
-			if (existingFile) { throw `file hash already exsits for user!` }
+			if (existingFile) { 
+				return { insertedId: existingFile._id }
+				// throw { code: 303, err: `File already exists for user!` }
+			}
 
 			const extension = values.name.match(/(\.[a-z]+)$/)[1]
 			if (!extension) { throw `file extension not propertly extracted` }

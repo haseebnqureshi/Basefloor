@@ -23,7 +23,7 @@ module.exports = (API) => {
 		}))
 	}
 
-	API.Utils.hashObject = (obj) => hashObject(obj)
+	API.Utils.hashObject = (obj, options) => hashObject(obj, options || null)
 
 	API.Utils.errorHandler = ({ res, err }) => {
 		API.Log(err)
