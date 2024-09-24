@@ -7,7 +7,7 @@ const chance = new require('chance')()
 
 module.exports = (API) => {
 
-	API.Utils = {}
+	API.Utils = { ...API.Utils }
 
 	API.Log = API.Utils.log = (...args) => {
 		// if (process.env.NODE_ENV !== 'production') {

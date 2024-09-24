@@ -7,6 +7,7 @@ module.exports = (API) => {
 		_id: 							['ObjectId', 'r,u,d'],
 		user_id: 					['ObjectId', 'c,r'],
 		name: 						['String', 'c,r,u'],
+		description:  		['String', 'c,r,u'],
 		hash: 						['String', 'c,r'],
 		size: 						['Number', 'c,r'],
 		type: 						['String', 'c,r'],

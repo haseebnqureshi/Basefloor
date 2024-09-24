@@ -9,7 +9,7 @@ module.exports = (API, { config }) => {
 
 	const filepath = path.resolve(projectPath, 'minapi.test.js')
 
-	API.Checks = {}
+	API.Checks = { ...API.Checks }
 
 	API.Checks.requests = []
 

@@ -67,6 +67,7 @@ module.exports = (API, { models }) => {
 		}
 
 		API.DB[_name].create = async ({ values }) => {
+			if (!values) { return undefined }
 			values = API.DB[_name].sanitize(values, 'c')
 			values = { ...values, created_at: new Date().toISOString() }
 			if (collectionFilter) { 
@@ -86,6 +87,7 @@ module.exports = (API, { models }) => {
 		}
 
 		API.DB[_name].read = async ({ where }) => {
+			if (!where) { return undefined }
 			where = API.DB[_name].sanitize(where, 'r', _name)
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
@@ -97,6 +99,8 @@ module.exports = (API, { models }) => {
 
 		API.DB[_name].update = async ({ where, values }) => {
 			// console.log({ where, values })
+			if (!where) { return undefined }
+			if (!values) { return undefined }
 			where = API.DB[_name].sanitize(where, 'r', _name)
 			values = API.DB[_name].sanitize(values, 'u', _name)
 			values = { ...values, updated_at: new Date().toISOString() }
@@ -110,6 +114,7 @@ module.exports = (API, { models }) => {
 		}
 
 		API.DB[_name].delete = async ({ where }) => {
+			if (!where) { return undefined }
 			where = API.DB[_name].sanitize(where, 'd', _name)
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 

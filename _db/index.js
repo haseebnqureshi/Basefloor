@@ -6,7 +6,7 @@ const { MongoClient, ServerApiVersion } = mongodb
 
 module.exports = (API) => {
 
-  API.DB = {}
+  API.DB = { ...API.DB }
 
   API.DB.mongodb = mongodb
 
@@ -35,7 +35,7 @@ module.exports = (API) => {
   }
 
   API.DB.open = async () => {
-    API.Log('opening mongodb connection')
+    API.Log('mongodb connection')
     await API.DB.client.connect()
   }
 

@@ -3,7 +3,7 @@ module.exports = (API, { config }) => {
 
 	const { _active, _providers } = config
 
-	API.Notifications = {}
+	API.Notifications = { ...API.Notifications }
 
 	for (let method in _active) {
 		const providerName = _active[method]

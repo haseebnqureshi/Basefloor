@@ -138,12 +138,11 @@ module.exports = (API, { routes }) => {
 				const { http, db } = methods[m]
 				const r = router[m]
 
-				const middlewares = [
+				let middlewares = [
 					API.Auth.requireToken,
 					API.Auth.requireUser,
+					API.Auth.getAfterRequireUserMiddleware()
 				]
-
-
 
 				const processAllowString = str => {
 					let values = []

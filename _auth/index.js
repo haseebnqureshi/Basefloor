@@ -5,7 +5,14 @@ module.exports = (API, { config }) => {
 
 	const { _verify } = config
 
-	API.Auth = { ...require('./helpers')({ config }) }
+	API.Auth = { ...API.Auth, ...require('./helpers')({ config }) }
+
+	API.Auth.getAfterRequireUserMiddleware = () => {
+		return API.Auth.afterRequireUser || (async (req, res, next) => {
+			console.log('_auth/index.js')
+			next()
+		})
+	}
 
 	//middleware requiring jwt tokens (verify, auth, and reset jwt tokens)
 	API.Auth.requireToken = async (req, res, next) => {
@@ -131,7 +138,7 @@ module.exports = (API, { config }) => {
 	})
 
 	//user information
-	API.get('/user', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	API.get('/user', [API.Auth.requireToken, API.Auth.requireUser, API.Auth.getAfterRequireUserMiddleware()], async (req, res) => {
 		try {
 			res.status(200).send(
 				_.omit(req.user, ['password_hash', '_id', 'created_at'])
@@ -319,7 +326,7 @@ module.exports = (API, { config }) => {
 		expectedStatusCode: 200,
 	})
 
-	API.post('/user/verify/:method', [API.Auth.requireToken, API.Auth.requireUser], async(req, res) => {
+	API.post('/user/verify/:method', [API.Auth.requireToken, API.Auth.requireUser, API.Auth.getAfterRequireUserMiddleware()], async(req, res) => {
 		const { email, sms, _id } = req.user
 		const { method } = req.params
 		let payload = { method, value: '' }
@@ -479,7 +486,7 @@ module.exports = (API, { config }) => {
 	})
 
 	//update user
-	API.put('/user', [API.Auth.requireToken, API.Auth.requireUser], async(req, res) => {
+	API.put('/user', [API.Auth.requireToken, API.Auth.requireUser, API.Auth.getAfterRequireUserMiddleware()], async(req, res) => {
 		const { _id } = req.user
 		const values = { 
 			...API.DB.user.sanitize(req.body, 'u'), 

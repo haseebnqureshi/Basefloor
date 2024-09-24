@@ -19,17 +19,19 @@ module.exports = ({ projectPath, envPath }) => {
 
 	let API = express()
 	API.Express = express
-	API = require('./_utils')(API)
-	API = require('./_middlewares')(API) //must be the first thing, loads json middleware
-	API = require('./_checks')(API, { config: { projectPath }}) //before, so other features can load checks into the checker
-	API = require('./_notifications')(API, { config: notifications })
-	API = require('./_db')(API)
-	API = require('./_models')(API, { models })
-	API = require('./_auth')(API, { config: auth })
-	API = require('./_routes')(API, { routes: routes() })
-	API = require('./_files')(API, { config: files })
 
-	API.Checks.enable()
+	API.Init = () => {
+		API = require('./_utils')(API)
+		API = require('./_middlewares')(API) //must be the first thing, loads json middleware
+		API = require('./_checks')(API, { config: { projectPath }}) //before, so other features can load checks into the checker
+		API = require('./_notifications')(API, { config: notifications })
+		API = require('./_db')(API)
+		API = require('./_models')(API, { models })
+		API = require('./_auth')(API, { config: auth })
+		API = require('./_routes')(API, { routes: routes() })
+		API = require('./_files')(API, { config: files })
+		API.Checks.enable()
+	}
 
 	API.Start = () => {
 		const port = process.env.PORT || 4000
@@ -51,6 +53,14 @@ module.exports = ({ projectPath, envPath }) => {
 		httpsServer.listen(443)
 		API.Log(`${name} MinAPI started HTTPS in production node environment ...`)
 	}
+
+	API.Utils = {}
+	API.Checks = {}
+	API.Auth = {}
+	API.DB = {}
+	API.Auth = {}
+	API.Files = {}
+	API.Notifications = {}
 
 	return API
 
