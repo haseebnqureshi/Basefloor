@@ -158,8 +158,9 @@ module.exports = (API, { routes }) => {
 							values[i] = part
 							// console.log('values', i, part)
 						} else {
-							let collection = partMatches[1]
-							let field = partMatches[2]
+
+							let collection = partMatches[1] //@user, or @__user, or @ some other collection in the allow statement (i.e., 'Member=in=@user.role')
+							let field = partMatches[2] // that's the '.role', or other field comparing against
 							let value = modelData[collection][field]
 
 							if (API.DB.mongodb.ObjectId.isValid(value)) {
@@ -200,6 +201,7 @@ module.exports = (API, { routes }) => {
 				}
 
 				const traverseAllowCommands = (allow, comparison) => {
+					// console.log({ allow, comparison })
 					let result
 					if (_.isString(allow)) {
 						result = processAllowString(allow)
@@ -257,8 +259,8 @@ module.exports = (API, { routes }) => {
 						if (r.allow) {
 							
 							//loading user model if specified and authenticated
-							if (modelsInAllow.indexOf('user') > -1) {
-								modelData.user = await API.DB.user.read({
+							if (modelsInAllow.indexOf('_user') > -1) {
+								modelData['_user'] = await API.DB.user.read({
 									where: {
 										_id: req.user._id
 									}
@@ -276,6 +278,7 @@ module.exports = (API, { routes }) => {
 								where[key] = req.params[routeParam] || null
 
 								//pulling data from each route w/ params
+								// console.log({ modelData, model, where })
 								modelData[model] = await API.DB[model].read({ where })
 							}
 
