@@ -23,8 +23,9 @@ module.exports = (API, { config }) => {
 			const { name, size, type, lastModified } = file
 			const file_modified_at = new Date(lastModified).toISOString()
 			const values = { name, size, type, file_modified_at, user_id }
-			const { insertedId } = await API.DB.file.create({ values, endpoint })
-			if (!insertedId) { throw 'error occured when creating file' }
+			const response = await API.DB.file.create({ values, endpoint })
+			if (!response) { throw response }
+			const { insertedId } = response
 			const result = await API.DB.file.read({ where: { _id: insertedId }})
 			res.status(200).send(result)
 		}

@@ -85,9 +85,10 @@ module.exports = (API) => {
 				// throw { code: 303, err: `File already exists for user!` }
 			}
 
-			const extension = values.name.match(/(\.[a-z]+)$/)[1]
-			if (!extension) { throw `file extension not propertly extracted` }
-
+			// console.log({ values })
+			const matches = values.name.match(/(\.[a-z0-9]+)$/)
+			if (!matches) { throw `file extension not propertly extracted` }
+			const extension = matches[1]
 			const filename = `${hash}${extension}`
 			const url = `${endpoint}/${filename}`
 			const uploaded_at = null

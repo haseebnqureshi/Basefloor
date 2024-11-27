@@ -13,8 +13,10 @@ module.exports = (API, { routes }) => {
 
 	//getting base information for each router's routes
 	let routers = routes.map(r => {
-		const pattern = RegExp(/([^\/]*)\/([^\(]+)\(([^\(]+)\)/)
+		const pattern = RegExp(/\/?([^\/]*)\/([^\(]+)\(([^\(]+)\)/)
 		const [id, parentPath, path, model] = r._id.match(pattern)
+		//@TODO - need to ensure parent paths are loading and referenceable for permissions
+		// console.log({ id, parentPath, path, model })
 		for (let m in methods) {
 			if (r[m]) {
 				if (!r[m].where) {
