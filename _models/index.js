@@ -78,12 +78,13 @@ module.exports = (API, { models }) => {
 			)
 		}
 
-		API.DB[_name].readAll = async () => {
-			let where = {}
-			if (collectionFilter) { where = collectionFilter }
-			return await API.Utils.try(`try:${collectionName}:readAll(where:${JSON.stringify(where)})`,
-				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).find(where).toArray()
-			)
+		API.DB[_name].readAll = async ({ where }) => {
+			return await API.DB[_name].read({ where })
+			// let where = {}
+			// if (collectionFilter) { where = collectionFilter }
+			// return await API.Utils.try(`try:${collectionName}:readAll(where:${JSON.stringify(where)})`,
+			// 	API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).find(where).toArray()
+			// )
 		}
 
 		API.DB[_name].read = async ({ where }) => {

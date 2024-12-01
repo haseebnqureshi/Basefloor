@@ -280,11 +280,14 @@ module.exports = (API, { routes }) => {
 								where[key] = req.params[routeParam] || null
 
 								//pulling data from each route w/ params
-								// console.log({ modelData, model, where })
 								modelData[model] = await API.DB[model].read({ where })
+
+								// console.log({ modelData, model, where, 'modelData[model]':modelData[model] })
 							}
 
+							// console.log({ allParams, 'r.url':r.url })
 							// console.log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
+
 							const isAuthorized = traverseAllowCommands(r.allow)
 							// console.log({ isAuthorized })
 
@@ -306,6 +309,8 @@ module.exports = (API, { routes }) => {
 						]
 						const where = _.pick(req.params, paramsAllowed)
 						const values = { ...req.body, ...where }
+
+						// console.log({ model: router.model, where, values })
 
 						await API.DB.open()
 						const data = await API.DB[router.model][db]({ where, values })
