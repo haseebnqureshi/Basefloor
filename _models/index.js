@@ -102,11 +102,12 @@ module.exports = (API, { models }) => {
 		}
 
 		API.DB[_name].update = async ({ where, values }) => {
-			// console.log({ where, values })
+			// console.log('before sanitization', { where, values })
 			if (!where) { return undefined }
 			if (!values) { return undefined }
 			where = API.DB[_name].sanitize(where, 'r', _name)
 			values = API.DB[_name].sanitize(values, 'u', _name)
+			// console.log('after sanitization', { where, values })
 			values = { ...values, updated_at: new Date().toISOString() }
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 

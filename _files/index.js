@@ -5,6 +5,8 @@ module.exports = (API, { config }) => {
 
 	API = require('./models.js')(API)
 
+	const flatten = require('./utils/flatten.js')
+
 	const { _active, _providers } = config
 
 	API.Files = { ...API.Files }
@@ -124,6 +126,47 @@ module.exports = (API, { config }) => {
 		}
 	})
 
+	API.put('/files/:_id/flatten', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+		const user_id = req.user._id
+		const { _id } = req.params
+		try {
+			const where = { _id, user_id }
+			let result = await API.DB.file.read({ where })
+			if (!result) { throw 'error occured when getting file' }
+
+			// console.log({ result })
+
+			const { filename, extension, url } = result
+			if (extension === '.png') { 
+				return res.status(200).send()
+			}
+
+			const flattened_filename = filename.replace(extension, '.png')
+			const flattened_extension = '.png'
+			const flattened_url = await flatten.processDocument(
+				filename,
+				flattened_filename,
+				'png'
+			)
+			const flattened_at = new Date().toISOString() 
+
+			const values = {
+				flattened_filename,
+				flattened_extension,
+				flattened_url,
+				flattened_at,
+			}
+			
+			// console.log({ values })
+
+			result = await API.DB.file.update({ where, values })
+			if (!result) { throw 'error occured when updating file' }
+			res.status(200).send()
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
 
 	API.delete('/files/:_id', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
 		//files are specific to authenticated user

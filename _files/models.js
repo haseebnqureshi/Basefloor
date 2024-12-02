@@ -16,6 +16,10 @@ module.exports = (API) => {
 		url: 							['String', 'r,u'],
 		uploaded_at: 			['Date', 'c,r,u'],
 		file_modified_at: ['Date', 'c,r,u'],
+		flattened_at: 		['Date', 'c,r,u'],
+		flattened_url: 		['String', 'r,u'],
+		flattened_filename: ['String', 'r,u'],
+		flattened_extension: ['String', 'r,u'],
 	}
 
 	API.DB[_name] = {
