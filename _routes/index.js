@@ -15,7 +15,7 @@ module.exports = (API, { routes }) => {
 	let routers = routes.map(r => {
 		const pattern = RegExp(/\/?([^\/]*)\/([^\(]+)\(([^\(]+)\)/)
 		const [id, parentPath, path, model] = r._id.match(pattern)
-		//@TODO - need to ensure parent paths are loading and referenceable for permissions
+		//@TODO - need to *ensure* indeed that parent paths are loading and referenceable for permissions
 		// console.log({ id, parentPath, path, model })
 		for (let m in methods) {
 			if (r[m]) {
@@ -256,7 +256,12 @@ module.exports = (API, { routes }) => {
 				let keys = {}
 				let modelData = {}
 
+				// console.log({ allParams, 'r.url':r.url })
+
 				API[http](r.url, [...middlewares, async function(req, res, next) {
+
+					// console.log({ http, 'r.url':r.url })
+					
 					try {
 						if (r.allow) {
 							
@@ -316,7 +321,9 @@ module.exports = (API, { routes }) => {
 						const data = await API.DB[router.model][db]({ where, values })
 						await API.DB.close()
 						let statusCode = 200
+						
 						// console.log({ data, http })
+
 						if (data === undefined) { statusCode = 500 }
 						else if (data === null) { statusCode = 404 }
 						// else if (Array.isArray(data) && data.length === 0) { statusCode = 404 }
