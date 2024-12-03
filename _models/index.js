@@ -78,6 +78,21 @@ module.exports = (API, { models }) => {
 			)
 		}
 
+		API.DB[_name].createMany = async ({ values }) => {
+			if (!values) { return undefined }
+			values = values.map(row => {
+				let v = API.DB[_name].sanitize(row, 'c')
+				v = { ...v, created_at: new Date().toISOString() }
+				if (collectionFilter) { 
+					v = { ...v, ...collectionFilter } 
+				}
+				return v
+			})
+			return await API.Utils.try(`try:${collectionName}:createMany`,
+				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).insertMany(values)
+			)
+		}
+
 		API.DB[_name].readAll = async ({ where }) => {
 			where = API.DB[_name].sanitize(where, 'r', _name)
 			if (collectionFilter) { 

@@ -30,6 +30,7 @@ module.exports = ({ projectPath, envPath }) => {
 		API = require('./_auth')(API, { config: auth })
 		API = require('./_routes')(API, { routes: routes() })
 		API = require('./_files')(API, { config: files })
+		API = require('./_ai')(API, {})
 		API.Checks.enable()
 	}
 
