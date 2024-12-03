@@ -139,25 +139,78 @@ async function processDocument(sourceKey, destKey, format = 'jpg', quality = 80)
     }
     
     const imageFiles = await convertPdfToImages(pdfPath, tempDir);
+    
+    if (!imageFiles.length) {
+      throw new Error('No images were generated from the PDF');
+    }
 
+    // Verify first file exists and can be processed
+    if (!fs.existsSync(imageFiles[0])) {
+      throw new Error('Generated image files not found');
+    }
+
+    // Get dimensions of first page
     const firstImageMetadata = await sharp(imageFiles[0]).metadata();
-    const totalHeight = firstImageMetadata.height * imageFiles.length;
+    if (!firstImageMetadata) {
+      throw new Error('Could not read metadata from first image');
+    }
 
-    await sharp({
+    const { width, height } = firstImageMetadata;
+    const resizedImages = [];
+
+    // Process each image sequentially instead of in parallel
+    for (let i = 0; i < imageFiles.length; i++) {
+      const originalFile = imageFiles[i];
+      const resizedPath = path.join(tempDir, `resized-${i}.png`);
+      
+      try {
+        await sharp(originalFile)
+          .resize(width, height, {
+            fit: 'contain',
+            background: { r: 255, g: 255, b: 255, alpha: 1 }
+          })
+          .toFormat('png')
+          .toFile(resizedPath);
+
+        // Verify the resized file exists
+        if (fs.existsSync(resizedPath)) {
+          resizedImages.push(resizedPath);
+        } else {
+          throw new Error(`Failed to create resized image for page ${i + 1}`);
+        }
+      } catch (error) {
+        console.error(`Error processing page ${i + 1}:`, error);
+        throw error;
+      }
+    }
+
+    if (!resizedImages.length) {
+      throw new Error('No images were successfully processed');
+    }
+
+    const totalHeight = height * resizedImages.length;
+
+    // Create composite image
+    const composite = sharp({
       create: {
-        width: firstImageMetadata.width,
+        width,
         height: totalHeight,
         channels: 4,
         background: { r: 255, g: 255, b: 255, alpha: 1 }
       }
-    })
-    .composite(imageFiles.map((file, index) => ({
+    });
+
+    // Add all images to composite
+    composite.composite(resizedImages.map((file, index) => ({
       input: file,
-      top: index * firstImageMetadata.height,
+      top: index * height,
       left: 0
-    })))
-    [format.toLowerCase()]({ quality })
-    .toFile(tempImagePath);
+    })));
+
+    // Save final image
+    await composite
+      .toFormat(format.toLowerCase())
+      .toFile(tempImagePath);
 
     let publicUrl = await uploadToSpace(
       destKey, 
@@ -167,14 +220,17 @@ async function processDocument(sourceKey, destKey, format = 'jpg', quality = 80)
 
     publicUrl = process.env.DIGITALOCEAN_STORAGE_CDN_ENDPOINT + '/' + destKey;
 
+    // Cleanup
     fs.rmSync(tempDir, { recursive: true, force: true });
 
     return publicUrl;
   } catch (error) {
+    console.error('Process document error:', error);
     fs.rmSync(tempDir, { recursive: true, force: true });
     throw error;
   }
 }
+
 
 module.exports = { 
   processDocument, 
