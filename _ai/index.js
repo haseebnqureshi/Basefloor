@@ -30,8 +30,15 @@ module.exports = (API, {}) => {
 			]
 		}
 
-
-		return await API.AI.Anthropic.client.messages.create({ model, max_tokens, temperature, messages })
+		let res
+		try {
+			res = await API.AI.Anthropic.client.messages.create({ model, max_tokens, temperature, messages })
+			return res
+		}
+		catch (err) {
+			console.log(err, res)
+			return undefined
+		}
 
 	}
 

@@ -85,10 +85,10 @@ async function convertToPdf(inputPath, outputPath) {
   }
 }
 
-function optimizeImage(inputPath, outputPath, maxSize = MAX_FILE_SIZE) {
+async function optimizeImage(inputPath, outputPath, maxSize = MAX_FILE_SIZE) {
   let metadata;
   try {
-    metadata = sharp(inputPath).metadata();
+    metadata = await sharp(inputPath).metadata();
   } catch (error) {
     return {
       success: false,
@@ -104,7 +104,7 @@ function optimizeImage(inputPath, outputPath, maxSize = MAX_FILE_SIZE) {
     currentWidth = Math.floor(currentWidth * 0.8);
     currentHeight = Math.floor(currentHeight * 0.8);
     try {
-      sharp(inputPath)
+      await sharp(inputPath)
         .resize(currentWidth, currentHeight, {
           fit: 'contain',
           background: { r: 255, g: 255, b: 255, alpha: 1 },
@@ -127,8 +127,8 @@ function optimizeImage(inputPath, outputPath, maxSize = MAX_FILE_SIZE) {
   };
 }
 
-async function scaleDimensions({ inputPath, maxDimension }) {
-  const metadata = await sharp(inputFile).metadata()
+async function getNewDimensions({ inputPath, maxDimension }) {
+  const metadata = await sharp(inputPath).metadata()
   if (!metadata) { throw new Error('Could not read metadata from inputPath') }
   let { width, height } = metadata
   const scale = maxDimension / (width > height ? width : height)
@@ -172,8 +172,8 @@ async function convertPdfToImages(pdfPath, outputDir) {
     const imageFiles = files
       .filter(f => f.startsWith('page-') && f.endsWith('.png'))
       .sort((a, b) => {
-        const pageA = parseInt(a.match(/\\d+/)[0]);
-        const pageB = parseInt(b.match(/\\d+/)[0]);
+        const pageA = parseInt(a.match(/\d+/)[0]);
+        const pageB = parseInt(b.match(/\d+/)[0]);
         return pageA - pageB;
       })
       .map(f => path.join(outputDir, f));
@@ -186,7 +186,7 @@ async function convertPdfToImages(pdfPath, outputDir) {
         const filename = path.basename(imagePath);
         const smallerPath = path.join(outputDir, filename);
         const newDimensions = await getNewDimensions({ 
-          inputPath, 
+          imagePath, 
           maxDimension: MAX_DIMENSION_ON_RESIZE 
         })
         resizeImage({ 
