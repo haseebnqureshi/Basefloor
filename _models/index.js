@@ -108,9 +108,12 @@ module.exports = (API, { models }) => {
 		API.DB[_name].read = async ({ where }) => {
 			if (!where) { return undefined }
 			where = API.DB[_name].sanitize(where, 'r', _name)
+			// console.log('in minapi models/index.js', { where })
 			if (collectionFilter) { 
 				where = { ...where, ...collectionFilter } 
 			}
+			// console.log('in minapi models/index.js', { where })
+			if (Object.values(where).length === 0) { return undefined }
 			return await API.Utils.try(`try:${collectionName}:read(where:${JSON.stringify(where)})`,
 				API.DB.client.db(process.env.MONGODB_DATABASE).collection(collectionName).findOne(where)
 			)

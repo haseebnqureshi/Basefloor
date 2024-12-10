@@ -91,7 +91,8 @@ module.exports = (API) => {
 	}
 
 	API.Utils.valueType = (value, valueType) => {
-
+		// console.log({ value, valueType })
+		let obj
 		switch (valueType) {
 			case 'String':
 				return String(value)
@@ -119,8 +120,16 @@ module.exports = (API) => {
 			case 'Array(ObjectId)':
 				return Array(...value).map(v => new mongodb.ObjectId(v))
 				break
+			case 'Object':
+				obj = Object(value)
+				Object.keys(obj).forEach(key => {
+					let v = obj[key]
+					obj[key] = v
+				})
+				return obj
+				break
 			case 'Object(ObjectId)':
-				let obj = Object(value)
+				obj = Object(value)
 				Object.keys(obj).forEach(key => {
 					let v = obj[key]
 					obj[key] = new mongodb.ObjectId(v)

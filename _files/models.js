@@ -13,13 +13,12 @@ module.exports = (API) => {
 		type: 						['String', 'c,r'],
 		extension:  			['String', 'r'],
 		filename: 				['String', 'r'],
-		url: 							['String', 'r,u'],
+		url: 							['String', 'c,r,u'],
 		uploaded_at: 			['Date', 'c,r,u'],
 		file_modified_at: ['Date', 'c,r,u'],
+		parent_file: 			['ObjectId', 'c,r,u'],
 		flattened_at: 		['Date', 'c,r,u'],
-		flattened_url: 		['String', 'r,u'],
-		flattened_filename: ['String', 'r,u'],
-		flattened_extension: ['String', 'r,u'],
+		flattened_pages: 	['Object(ObjectId)', 'c,r,u'], //'static CDN url':'ObjectID to file object'
 	}
 
 	API.DB[_name] = {
@@ -100,6 +99,63 @@ module.exports = (API) => {
 			values = { ...values, hash, extension, filename, url, uploaded_at, created_at }
 			return await API.Utils.try(`try:${_collection}:create`,
 				API.DB.client.db(process.env.MONGODB_DATABASE).collection(_collection).insertOne(values)
+			)
+		}
+		catch (err) {
+			console.log(err)
+			return undefined
+		}
+	}
+
+	API.DB[_name].createSimple = async ({ values }) => {
+		try {
+			values = API.DB[_name].sanitize(values, 'c')
+			const hash = API.Utils.hashObject({
+				user_id: values.user_id.toString(),
+				size: values.size,
+				type: values.type,
+				name: values.name, //@todo: still not ideal, as same files may have different names, and so we're still storing duplicates. may need client to send hash of file contents, because it's the client's duty to pipeline the body of the file to end cdn.
+			}, {
+				algorithm: 'md5'
+			})
+			const { user_id } = values
+			// console.log({ values, hash, user_id })
+			const existingFile = await API.DB.file.read({ where: { hash, user_id } })
+			// console.log({ existingFile })
+			if (existingFile) { 
+				return { insertedId: existingFile._id }
+				// throw { code: 303, err: `File already exists for user!` }
+			}
+
+			values = { 
+				...values, 
+				hash, 
+				created_at: new Date().toISOString(), 
+			}
+			
+			return await API.Utils.try(`try:${_collection}:createSimple`,
+				API.DB.client.db(process.env.MONGODB_DATABASE).collection(_collection).insertOne(values)
+			)
+		}
+		catch (err) {
+			console.log(err)
+			return undefined
+		}
+	}
+
+	API.DB[_name].createMany = async ({ values }) => {
+		try {
+			if (!values) { return undefined }
+			values = values.map(row => {
+				let v = API.DB[_name].sanitize(row, 'c')
+				v = { ...v, created_at: new Date().toISOString() }
+				if (collectionFilter) { 
+					v = { ...v, ...collectionFilter } 
+				}
+				return v
+			})
+			return await API.Utils.try(`try:${_collection}:createMany`,
+				API.DB.client.db(process.env.MONGODB_DATABASE).collection(_collection).insertMany(values)
 			)
 		}
 		catch (err) {

@@ -7,6 +7,9 @@ module.exports = (API, { config }) => {
 
 	const flatten = require('./utils/flatten.js')
 
+	API.Files.downloadFromSpace = flatten.downloadFromSpace
+	API.Files.removeFilepath = flatten.removeFilepath
+
 	const { _active, _providers } = config
 
 	API.Files = { ...API.Files }
@@ -131,35 +134,43 @@ module.exports = (API, { config }) => {
 		const { _id } = req.params
 		try {
 			const where = { _id, user_id }
-			let result = await API.DB.file.read({ where })
-			if (!result) { throw 'error occured when getting file' }
+			let file = await API.DB.file.read({ where })
+			if (!file) { throw 'error occured when getting file' }
 
-			// console.log({ result })
+			// console.log({ file })
 
-			const { filename, extension, url } = result
-			if (extension === '.png') { 
+			const { filename, extension, url, name } = file
+
+			if (!flatten.SUPPORTED_FORMATS[extension]) { //file is not a convertible format, so return out 
 				return res.status(200).send()
 			}
 
-			const flattened_filename = filename.replace(extension, '.png')
-			const flattened_extension = '.png'
-			const flattened_url = await flatten.processDocument(
-				filename,
-				flattened_filename,
-				'png'
-			)
+			let pages = await flatten.processDocument({
+				name,
+				inputKey: filename,
+				outputBasename: filename.replace(extension, ''),
+			})
+
 			const flattened_at = new Date().toISOString() 
+			let flattened_pages = {}
 
-			const values = {
-				flattened_filename,
-				flattened_extension,
-				flattened_url,
-				flattened_at,
+			for (let page of pages) {
+				page = {
+					...page,
+					user_id: file.user_id,
+					parent_file: file._id,
+				}
+				let result = await API.DB.file.createSimple({ values: page })
+				flattened_pages[page.url] = result.insertedId
 			}
-			
-			// console.log({ values })
 
-			result = await API.DB.file.update({ where, values })
+			// console.log({ flattened_pages, flattened_at })
+
+			result = await API.DB.file.update({ where, values: {
+				flattened_at,
+				flattened_pages,
+			}})
+
 			if (!result) { throw 'error occured when updating file' }
 			res.status(200).send()
 		}
