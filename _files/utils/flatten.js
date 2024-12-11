@@ -6,6 +6,7 @@ const sharp = require('sharp');
 const util = require('util');
 const execPromise = util.promisify(require('child_process').exec);
 
+const TIME_TO_RETAIN_FILES = 60 * 1000 //in milliseconds
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 const MAX_DIMENSION_ON_RESIZE = 1200; //in pixels
 const SUPPORTED_FORMATS = {
@@ -76,6 +77,7 @@ async function convertToPdf(inputPath, outputPath) {
     const convertedPdfPath = path.join(outDir, baseNamePdf);
     
     if (convertedPdfPath !== outputPath) {
+      // console.log({ convertedPdfPath, outputPath })
       fs.renameSync(convertedPdfPath, outputPath);
     }
     
@@ -138,7 +140,8 @@ async function getNewDimensions({ inputPath, maxDimension }) {
   }
 }
 
-async function resizeImage({ inputPath, outputPath, width, height }) {
+async function resizeImageSimple({ inputPath, outputPath, width, height }) {
+  console.log({ inputPath, outputPath, width, height })
   return await sharp(inputPath)
     .resize(width, height, {
       fit: 'contain',
@@ -147,6 +150,47 @@ async function resizeImage({ inputPath, outputPath, width, height }) {
     .toFormat('png')
     .toFile(outputPath)
 }
+
+async function resizeImage({ inputPath, outputPath, width, height }) {
+  try {
+    // First verify we can read the input
+    const inputBuffer = fs.readFileSync(inputPath);
+    
+    // Add logging to track the process
+    console.log(`Attempting to resize image:
+      - Input path: ${inputPath}
+      - Output path: ${outputPath}
+      - Target dimensions: ${width}x${height}
+      - Input file size: ${inputBuffer.length} bytes`);
+
+    // Create a new Sharp instance with the buffer
+    const image = sharp(inputBuffer, {
+      failOn: 'none',  // More permissive error handling
+      limitInputPixels: false  // Remove pixel limit
+    });
+
+    // Add error handling to the pipeline
+    return await image
+      .resize(width, height, {
+        fit: 'contain',
+        background: { r: 255, g: 255, b: 255, alpha: 1 },
+      })
+      .toFormat('png', {
+        compression: 6,  // Lower compression for better reliability
+        adaptiveFiltering: true,
+        palette: false
+      })
+      .toFile(outputPath)
+      .catch(err => {
+        console.error('Detailed resize error:', err);
+        throw err;
+      });
+  } catch (error) {
+    console.error('Failed to resize image:', error);
+    throw new Error(`Image resize failed: ${error.message}`);
+  }
+}
+
 
 async function convertPdfToImages(pdfPath, outputDir) {
   try {
@@ -177,31 +221,34 @@ async function convertPdfToImages(pdfPath, outputDir) {
         return pageA - pageB;
       })
       .map(f => path.join(outputDir, f));
-
+    // console.log({ imageFiles })
     for (const imagePath of imageFiles) {
       let stats = fs.statSync(imagePath);
       if (stats.size >= MAX_FILE_SIZE) {
         console.log(`Image too large, attempting to make smaller...`);
         
         const filename = path.basename(imagePath);
-        const smallerPath = path.join(outputDir, filename);
+        const smallerPath = path.join(outputDir, 'smaller-' + filename);
+
         const newDimensions = await getNewDimensions({ 
-          imagePath, 
+          inputPath: imagePath, 
           maxDimension: MAX_DIMENSION_ON_RESIZE 
         })
-        resizeImage({ 
+        // console.log({ filename, imagePath, smallerPath, newDimensions })
+        await resizeImage({ 
           inputPath: imagePath,
           outputPath: smallerPath,
           width: newDimensions.width,
           height: newDimensions.height,
         })
-        stats = fs.statSync(imagePath);
-        console.log(`Resized image to max of ${MAX_FILE_SIZE} bytes: ${stats.size <= MAX_FILE_SIZE}`)
-        if (stats.size <= MAX_FILE_SIZE) {
-          fs.rmSync(imagePath);
-          fs.copyFileSync(smallerPath, imagePath);
-          fs.rmSync(smallerPath);
-        }
+
+        console.log(`Resized image, getting stats`, smallerPath)
+        // stats = fs.statSync(smallerPath);
+        // console.log(`Resized image to max of ${MAX_FILE_SIZE} bytes: ${stats.size <= MAX_FILE_SIZE}, ${stats.size}`)
+        // if (stats.size <= MAX_FILE_SIZE) {
+        // fs.rmSync(imagePath);
+        fs.renameSync(smallerPath, imagePath);
+        // }
       }
     }
     return imageFiles;
@@ -216,7 +263,9 @@ async function processDocument({ name, inputKey, outputBasename, outputFormat = 
 
 async function processDocumentAsMany({ name, inputKey, outputBasename, outputFormat }) {
 
-  const tempDir = path.join(process.cwd(), 'temp');
+  const timestamp = Date.now()
+
+  const tempDir = path.join(process.cwd(), 'temp-' + timestamp);
   fs.mkdirSync(tempDir, { recursive: true });
 
   const sourceExt = path.extname(inputKey).toLowerCase();
@@ -225,7 +274,7 @@ async function processDocumentAsMany({ name, inputKey, outputBasename, outputFor
   }
 
   const tempSourcePath = path.join(tempDir, `source${sourceExt}`);
-  const tempPdfPath = path.join(tempDir, 'converted.pdf');
+  const tempPdfPath = path.join(tempDir, 'source.pdf');
   const tempImagePath = path.join(tempDir, `output.${outputFormat}`);
 
   try {
@@ -234,6 +283,7 @@ async function processDocumentAsMany({ name, inputKey, outputBasename, outputFor
     let pdfPath = tempSourcePath;
     if (sourceExt !== '.pdf') {
       pdfPath = await convertToPdf(tempSourcePath, tempPdfPath);
+      // console.log(pdfPath)
     }
     
     let flattenedPages = await convertPdfToImages(pdfPath, tempDir);
@@ -276,12 +326,18 @@ async function processDocumentAsMany({ name, inputKey, outputBasename, outputFor
     }
 
     // Cleanup
-    fs.rmSync(tempDir, { recursive: true, force: true });
-
+    setInterval(() => {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }, TIME_TO_RETAIN_FILES)
     return pages
+
   } catch (error) {
     console.log(error);
-    fs.rmSync(tempDir, { recursive: true, force: true });
+
+    setInterval(() => {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }, TIME_TO_RETAIN_FILES)
+
     return []
   }
 
