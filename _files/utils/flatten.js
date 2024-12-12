@@ -7,7 +7,7 @@ const util = require('util');
 const execPromise = util.promisify(require('child_process').exec);
 
 const TIME_TO_RETAIN_FILES = 60 * 1000 //in milliseconds
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+const MAX_FILE_SIZE = Math.round(5 * 1024 * 1024 * 2/3); // 5MB in bytes
 const MAX_DIMENSION_ON_RESIZE = 1200; //in pixels
 const SUPPORTED_FORMATS = {
     '.pdf': 'pdf',
