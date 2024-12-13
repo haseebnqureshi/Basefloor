@@ -8,7 +8,7 @@ const execPromise = util.promisify(require('child_process').exec);
 
 const TIME_TO_RETAIN_FILES = 60 * 1000 //in milliseconds
 const MAX_FILE_SIZE = Math.round(5 * 1024 * 1024 * 2/3); // 5MB in bytes
-const MAX_DIMENSION_ON_RESIZE = 1200; //in pixels
+const MAX_DIMENSION_FOR_RESIZE = 1500; //in pixels
 const SUPPORTED_FORMATS = {
     '.pdf': 'pdf',
     '.doc': 'word',
@@ -134,6 +134,7 @@ async function getNewDimensions({ inputPath, maxDimension }) {
   if (!metadata) { throw new Error('Could not read metadata from inputPath') }
   let { width, height } = metadata
   const scale = maxDimension / (width > height ? width : height)
+  if (scale >= 1) { return  false } //longest size is already max = maxDimension, therefore no resize needed
   return {
     width: Math.round(width * scale),
     height: Math.round(height * scale),
@@ -222,34 +223,30 @@ async function convertPdfToImages(pdfPath, outputDir) {
       })
       .map(f => path.join(outputDir, f));
     // console.log({ imageFiles })
-    for (const imagePath of imageFiles) {
-      let stats = fs.statSync(imagePath);
-      if (stats.size >= MAX_FILE_SIZE) {
-        console.log(`Image too large, attempting to make smaller...`);
-        
-        const filename = path.basename(imagePath);
-        const smallerPath = path.join(outputDir, 'smaller-' + filename);
 
-        const newDimensions = await getNewDimensions({ 
-          inputPath: imagePath, 
-          maxDimension: MAX_DIMENSION_ON_RESIZE 
-        })
-        // console.log({ filename, imagePath, smallerPath, newDimensions })
+    for (const imagePath of imageFiles) {  
+      let stats = fs.statSync(imagePath);
+      const filename = path.basename(imagePath);
+      const optimizedPath = path.join(outputDir, 'optimized-' + filename);
+      const newDimensions = await getNewDimensions({ 
+        inputPath: imagePath, 
+        maxDimension: MAX_DIMENSION_FOR_RESIZE 
+      })
+
+      if (newDimensions || stats.size >= MAX_FILE_SIZE) {
+        console.log(`Image too large in dimensions or size, attempting to optimize...`);
+
+        // console.log({ filename, imagePath, optimizedPath, newDimensions })
         await resizeImage({ 
           inputPath: imagePath,
-          outputPath: smallerPath,
+          outputPath: optimizedPath,
           width: newDimensions.width,
           height: newDimensions.height,
         })
-
-        console.log(`Resized image, getting stats`, smallerPath)
-        // stats = fs.statSync(smallerPath);
-        // console.log(`Resized image to max of ${MAX_FILE_SIZE} bytes: ${stats.size <= MAX_FILE_SIZE}, ${stats.size}`)
-        // if (stats.size <= MAX_FILE_SIZE) {
-        // fs.rmSync(imagePath);
-        fs.renameSync(smallerPath, imagePath);
-        // }
+        console.log(`Resized image...`, optimizedPath)
+        fs.renameSync(optimizedPath, imagePath);
       }
+
     }
     return imageFiles;
   } catch (error) {
