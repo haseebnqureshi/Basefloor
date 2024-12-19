@@ -24,6 +24,10 @@ module.exports = (API, {}) => {
 						{
 							type: 'text',
 							text: textPrompt,
+						},
+						{
+							type: 'text',
+							text: `\ngenerated_at: ${Date.now()}]\n`
 						}
 					]
 				} 
