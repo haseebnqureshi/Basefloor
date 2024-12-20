@@ -1,39 +1,56 @@
+/**
+ * Routes Module
+ * This module handles the creation and configuration of API routes, including:
+ * - CRUD operations mapping
+ * - Permission handling
+ * - Hierarchical routing
+ * - Database operations
+ */
 
 const _ = require('underscore')
 
 module.exports = (API, { routes }) => {
 
+	// Map internal CRUD operations to HTTP methods and database actions
 	const methods = {
-		_create: { http: 'post', db: 'create' },
-		_readAll: { http: 'get', db: 'readAll' },
-		_read: { http: 'get', db: 'read' },
-		_update: { http: 'put', db: 'update' },
-		_delete: { http: 'delete', db: 'delete' },
+		_create: { http: 'post', db: 'create' },     // Create -> POST
+		_readAll: { http: 'get', db: 'readAll' },    // List -> GET
+		_read: { http: 'get', db: 'read' },          // Read -> GET
+		_update: { http: 'put', db: 'update' },      // Update -> PUT
+		_delete: { http: 'delete', db: 'delete' },   // Delete -> DELETE
 	}
 
-	//getting base information for each router's routes
+	// Process route configurations from minapi.config.js
 	let routers = routes.map(r => {
+		// Parse route pattern like '/parent/path(model)'
 		const pattern = RegExp(/\/?([^\/]*)\/([^\(]+)\(([^\(]+)\)/)
 		const [id, parentPath, path, model] = r._id.match(pattern)
-		//@TODO - need to *ensure* indeed that parent paths are loading and referenceable for permissions
-		// console.log({ id, parentPath, path, model })
+
+		// For each CRUD method defined in the route
 		for (let m in methods) {
 			if (r[m]) {
+				// If no 'where' clause, it's a collection endpoint
 				if (!r[m].where) {
 					r[m].url = `/${path}`
 				} else {
+					// If 'where' exists, it's a single resource endpoint
 					r[m].params = {}
 					let paramKey
 					let dbKey
+					
+					// Handle string and object where clauses
 					if (_.isString(r[m].where)) {
+						// Simple where clause like '_id'
 						paramKey = `${model}${r[m].where}`
 						dbKey = `${model}.${r[m].where}`
 					} 
 					else if (_.isObject(r[m].where)) {
+						// Complex where clause with multiple fields
 						const key = Object.keys(r[m].where)[0]
 						paramKey = `${model}${key}`
 						dbKey = r[m].where[key].map(v => `${model}.${v}`)
 					}
+					// Build URL with parameters (e.g., /users/:userId)
 					r[m].url = `/${path}/:${paramKey}`
 					r[m].params[paramKey] = dbKey
 				}
@@ -42,14 +59,16 @@ module.exports = (API, { routes }) => {
 		return { ...r, model, path, parentPath, parents: [] }
 	})
 
-	//chaining parent routers together
+	// Build hierarchical routing structure
 	let processed = 0
 	while (processed < routers.length) {
 		for (const r of routers) {
 			let cursor = r.parentPath
 			let depth = 0
+			// Walk up the parent chain
 			while (cursor !== '') {
 				const found = routers.find(router => cursor === router.path)
+				// Add parent route information
 				r.parents.unshift({
 					path: found.path,
 					parentPath: found.parentPath,
@@ -68,11 +87,12 @@ module.exports = (API, { routes }) => {
 		}
 	}
 
-	//determining full url for each router's routes
+	// Build complete URLs including parent paths
 	for (let r of routers) {
 		for (let m in methods) {
 			if (r[m]) {
 				let url = ''
+				// Add parent URLs to create full path
 				for (let parent of r.parents) {
 					const p = parent._read
 					url += p.url
@@ -83,7 +103,7 @@ module.exports = (API, { routes }) => {
 		}
 	}
 
-	//cataloging all parent req.params for each router's routes
+	// Collect parameters from parent routes
 	for (let r of routers) {
 		if (r.parents.length > 0) {
 			r.parentsParams = {}
@@ -93,78 +113,48 @@ module.exports = (API, { routes }) => {
 		}
 	}
 
-
-
-					// //finding params to find required model rows
-					// let params = {}
-					// _.each(routers, router => {
-					// 	_.each(models, model => {
-					// 		if (router.model === model) {
-					// 			params[model] = router._read.params || {}
-					// 		}
-					// 	})
-					// })
-
-					// r[m].allowMiddleware = async (req, res, next) => {
-
-					// 	let data = {}
-					// 	if (models.indexOf('user') > -1) {
-					// 		data.user = req.user || {}
-					// 	}
-
-					// 	for (let model of models) {
-					// 		if (params[model]) {
-					// 			let where = {}
-					// 			let whereKeys = Object.keys(params[model])
-					// 			for (let whereKey of whereKeys) {
-					// 				let whereValue = req.params[whereKey]
-					// 				where[whereKey] = whereValue
-					// 			}
-					// 			data[model] = await API.DB[model].read(where)
-					// 			console.log({ where, 'data[model]': data[model] })
-					// 		}
-					// 	}
-
-					// 	console.log({ json, models, params, data })
-
-					// 	//this is where the route allow logic gets applied to the found data
-					// 	console.log(data)
-					// 	next()
-					// }
-
-
-	//loading all controllers and routes onto API
+	// Create actual Express routes
 	for (const router of routers) {
 		for (const m in methods) {
 			if (router[m]) {
 				const { http, db } = methods[m]
 				const r = router[m]
 
+				// Default middleware stack
 				let middlewares = [
 					API.Auth.requireToken,
 					API.Auth.requireUser,
 					API.Auth.getAfterRequireUserMiddleware()
 				]
 
+				/**
+				 * Process permission rules in the format:
+				 * - Simple: '@user._id=123'
+				 * - Array membership: 'admin=in=@user.roles'
+				 * Returns: boolean indicating if permission is granted
+				 */
 				const processAllowString = str => {
 					let values = []
 
+					// Parse operator (=, =in=, etc.)
 					let operatorPattern = RegExp(/[^\=]+(\=[in]*\=?)/)
 					let operator = str.match(operatorPattern)[1]
 					let parts = str.split(operator)
+					
+					// Process each part of the comparison
 					for (let i in parts) {
 						let part = parts[i]
 						let partPattern = RegExp(/^\@([^\.]+)\.(.*)$/)
 						let partMatches = part.match(partPattern)
 						if (!partMatches) {
 							values[i] = part
-							// console.log('values', i, part)
 						} else {
-
-							let collection = partMatches[1] //@user, or @__user, or @ some other collection in the allow statement (i.e., 'Member=in=@user.role')
-							let field = partMatches[2] // that's the '.role', or other field comparing against
+							// Extract collection and field from @collection.field format
+							let collection = partMatches[1]
+							let field = partMatches[2]
 							let value = modelData[collection][field]
 
+							// Handle ObjectId comparisons
 							if (API.DB.mongodb.ObjectId.isValid(value)) {
 								value = String(value)
 							}
@@ -179,39 +169,36 @@ module.exports = (API, { routes }) => {
 							}
 
 							values[i] = value
-							// console.log('values', i, collection, field, values[i])
 							if (value === null || value === undefined) {
 								console.log(`-- @${collection}.${field} didn't exist in db!`)
 								return null
 							}
 						}
 					}
-					// console.log({ operator, values, str })
+
+					// Evaluate the comparison based on operator
 					switch (operator) {
 						case '=':
-							// console.log(values[0] == values[1])
 							return values[0] == values[1]
-							break
 						case '=in=':
 							if (!Array.isArray(values[1])) { return false }
-							// console.log(values[1].indexOf(values[0]) > -1)
 							return values[1].indexOf(values[0]) > -1
-							break
 					}
 
 					return false
 				}
 
+				/**
+				 * Recursively process permission rules
+				 * Handles complex AND/OR logic in permission rules
+				 */
 				const traverseAllowCommands = (allow, comparison) => {
-					// console.log({ allow, comparison })
 					let result
 					if (_.isString(allow)) {
 						result = processAllowString(allow)
 					}
 					else if (Array.isArray(allow)) {
-						// console.log(' in array ', allow)
 						arrResult = allow.map(item => traverseAllowCommands(item))
-						// console.log(comparison, { arrResult })
 						switch (comparison) {
 							case 'and':
 								result = true
@@ -229,43 +216,35 @@ module.exports = (API, { routes }) => {
 						}
 					}
 					else if (_.isObject(allow)) {
-						// console.log(' in object ')
 						if (allow.and) {
-							// console.log(' in object and ', allow.and)
 							result = traverseAllowCommands(allow.and, 'and')
 						} 
 						else if (allow.or) {
-							// console.log(' in object or ', allow.or)
 							result = traverseAllowCommands(allow.or, 'or')
 						}
 					}
 					return result
 				}
 
-				//getting allow logic
+				// Extract models referenced in permission rules
 				const allowJSON = JSON.stringify(r.allow)
 				const pattern = RegExp(/\@([a-z0-9\_]+)\./g)
 				const matches = allowJSON.match(pattern) || []
 				const modelsInAllow = _.unique(matches).map(v => v.substr(1, v.length-2))
 
-				//mapping allow db keys with params keyValues (mapping route params with db keys)
+				// Collect all parameters from current and parent routes
 				let allParams = {
 					...router.parentsParams || {},
-					...r.params || {},						
+					...r.params || {},                        
 				}
 				let keys = {}
 				let modelData = {}
 
-				// console.log({ allParams, 'r.url':r.url })
-
+				// Add permission middleware
 				API[http](r.url, [...middlewares, async function(req, res, next) {
-
-					// console.log({ http, 'r.url':r.url })
-					
 					try {
 						if (r.allow) {
-							
-							//loading user model if specified and authenticated
+							// Load authenticated user data if needed
 							if (modelsInAllow.indexOf('_user') > -1) {
 								modelData['_user'] = await API.DB.user.read({
 									where: {
@@ -274,7 +253,7 @@ module.exports = (API, { routes }) => {
 								})
 							}
 
-							//loading other models if specified and w/ req.params values
+							// Load data for all models referenced in permission rules
 							for (let routeParam in allParams) {
 
 								//we're only loading models that are referenced in the url path (including the user object)
@@ -307,7 +286,7 @@ module.exports = (API, { routes }) => {
 					}
 				}], async (req, res) => {
 					try {
-
+						// Extract parameters for database query
 						const paramsAllowed = [
 							...Object.keys(router.parentsParams || {}),
 							...Object.keys(r.params || {})
@@ -315,19 +294,17 @@ module.exports = (API, { routes }) => {
 						const where = _.pick(req.params, paramsAllowed)
 						const values = { ...req.body, ...where }
 
-						// console.log({ model: router.model, where, values })
-
+						// Execute database operation
 						await API.DB.open()
 						const data = await API.DB[router.model][db]({ where, values })
 						await API.DB.close()
 						let statusCode = 200
 						
-						// console.log({ data, http })
-
+						// Handle different response scenarios
 						if (data === undefined) { statusCode = 500 }
 						else if (data === null) { statusCode = 404 }
-						// else if (Array.isArray(data) && data.length === 0) { statusCode = 404 }
-						else if (Array.isArray(data) && data.length === 0) { statusCode = 200 } //opting to send 200 with empty data instead
+						else if (Array.isArray(data) && data.length === 0) { statusCode = 200 }
+						
 						res.status(statusCode).send({ data })
 					}
 					catch (err) {
@@ -335,9 +312,11 @@ module.exports = (API, { routes }) => {
 					}
 				})
 
+				// Register route for API testing/documentation
 				let newCheck = {
 					resource: r.url,
 					description: `${m} for accessing ${router.model} items at ${r.url}`,
+					
 					method: http.toUpperCase(),
 					params: ``,
 					bearerToken: ``,
@@ -346,19 +325,17 @@ module.exports = (API, { routes }) => {
 					expectedStatusCode: 200,
 				}
 
-				switch (m) {
-					case '_create':
-						newCheck.body = API.DB[router.model].dummy('c')
-						newCheck.body = `(${JSON.stringify(newCheck.body)})`
-						break
+				if (m === '_create') {
+					newCheck.body = API.DB[router.model].dummy('c')
+					newCheck.body = `(${JSON.stringify(newCheck.body)})`
 				}
 
 				API.Checks.register(newCheck)
-
 			}
 		}
 	}
 
+	// Add health check endpoint
 	API.get('/', (req, res) => {
 		res.status(200).send({ message: 'healthy' })
 	})
@@ -375,6 +352,5 @@ module.exports = (API, { routes }) => {
 	})
 
 	return API
-
 }
 

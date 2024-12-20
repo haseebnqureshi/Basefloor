@@ -9,7 +9,7 @@ module.exports = (API, { config }) => {
 
 	API.Auth.getAfterRequireUserMiddleware = () => {
 		return API.Auth.afterRequireUser || (async (req, res, next) => {
-			console.log('_auth/index.js')
+			// console.log('_auth/index.js')
 			next()
 		})
 	}
@@ -138,7 +138,11 @@ module.exports = (API, { config }) => {
 	})
 
 	//user information
-	API.get('/user', [API.Auth.requireToken, API.Auth.requireUser, API.Auth.getAfterRequireUserMiddleware()], async (req, res) => {
+	API.get('/user', [
+		API.Auth.requireToken, 
+		API.Auth.requireUser, 
+		API.Auth.getAfterRequireUserMiddleware()
+	], async (req, res) => {
 		try {
 			res.status(200).send(
 				_.omit(req.user, ['password_hash', '_id', 'created_at'])
