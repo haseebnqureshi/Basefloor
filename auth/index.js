@@ -11,9 +11,9 @@ APP_URL_VERIFY //optional
 
 const _ = require('underscore')
 
-module.exports = (API) => {
+module.exports = (API, { paths, providers, checks }) => {
 
-	API.Auth = { ...API.Auth, ...require('./helpers')() }
+	API.Auth = { ...API.Auth, ...require('./utils')() }
 
 	API.Auth.getAfterRequireUserMiddleware = () => {
 		return API.Auth.afterRequireUser || (async (req, res, next) => {
@@ -161,38 +161,42 @@ module.exports = (API) => {
 		}
 	})
 
-	API.Checks.register({
-		resource: '/register',
-		description: 'register new user',
-		method: 'POST',
-		params: ``,
-		bearerToken: ``,
-		body: `({ first_name: output.firstName, last_name: output.lastName, email: output.email, password: output.password })`,
-		output: `({ output, request }) => ({ ...output, email: request.body.email, password: request.body.password })`,
-		expectedStatusCode: 200,
-	})
+	if (checks.enabled) {
 
-	API.Checks.register({
-		resource: '/login',
-		description: 'login user',
-		method: 'POST',
-		params: ``,
-		bearerToken: ``,
-		body: `({ email: output.email, password: output.password })`,
-		output: `({ data, output }) => ({ ...output, token: data.token })`,
-		expectedStatusCode: 200,
-	})
+		API.Checks.register({
+			resource: '/register',
+			description: 'register new user',
+			method: 'POST',
+			params: ``,
+			bearerToken: ``,
+			body: `({ first_name: output.firstName, last_name: output.lastName, email: output.email, password: output.password })`,
+			output: `({ output, request }) => ({ ...output, email: request.body.email, password: request.body.password })`,
+			expectedStatusCode: 200,
+		})
 
-	API.Checks.register({
-		resource: '/user',
-		description: 'get user information',
-		method: 'GET',
-		params: ``,
-		bearerToken: `(output.token)`,
-		body: ``,
-		output: `({ data, output }) => ({ ...output, user: data })`,
-		expectedStatusCode: 200,
-	})
+		API.Checks.register({
+			resource: '/login',
+			description: 'login user',
+			method: 'POST',
+			params: ``,
+			bearerToken: ``,
+			body: `({ email: output.email, password: output.password })`,
+			output: `({ data, output }) => ({ ...output, token: data.token })`,
+			expectedStatusCode: 200,
+		})
+
+		API.Checks.register({
+			resource: '/user',
+			description: 'get user information',
+			method: 'GET',
+			params: ``,
+			bearerToken: `(output.token)`,
+			body: ``,
+			output: `({ data, output }) => ({ ...output, user: data })`,
+			expectedStatusCode: 200,
+		})
+
+	}
 
 	//request reset password verification code to email 
 	API.post('/user/reset/password', [], async (req, res) => {
@@ -240,16 +244,18 @@ module.exports = (API) => {
 
 	})
 
-	API.Checks.register({
-		resource: '/user/reset/password',
-		description: 'emailing password reset verification code',
-		method: 'POST',
-		params: ``,
-		bearerToken: ``,
-		body: `({ email: output.email })`,
-		output: `({ data, output }) => ({ ...output, token: data.token })`,
-		expectedStatusCode: 200,
-	})
+	if (checks.enabled) {
+		API.Checks.register({
+			resource: '/user/reset/password',
+			description: 'emailing password reset verification code',
+			method: 'POST',
+			params: ``,
+			bearerToken: ``,
+			body: `({ email: output.email })`,
+			output: `({ data, output }) => ({ ...output, token: data.token })`,
+			expectedStatusCode: 200,
+		})
+	}
 
 	API.get('/user/reset/password/:code', [API.Auth.requireToken], async(req, res) => {
 		const { _id, secret } = req.reset
@@ -305,38 +311,40 @@ module.exports = (API) => {
 		}
 	})
 
-	API.Checks.register({
-		resource: '/user/reset/password',
-		description: 'update password after clicking email link',
-		method: 'PUT',
-		params: ``,
-		bearerToken: `(output.token)`,
-		body: `({ password: output.newPassword })`,
-		output: `({ output, request }) => ({ ...output, password: request.body.password })`,
-		expectedStatusCode: 200,
-	})
+	if (checks.enabled) {
+		API.Checks.register({
+			resource: '/user/reset/password',
+			description: 'update password after clicking email link',
+			method: 'PUT',
+			params: ``,
+			bearerToken: `(output.token)`,
+			body: `({ password: output.newPassword })`,
+			output: `({ output, request }) => ({ ...output, password: request.body.password })`,
+			expectedStatusCode: 200,
+		})
 
-	API.Checks.register({
-		resource: '/login',
-		description: 'login user after changing password',
-		method: 'POST',
-		params: ``,
-		bearerToken: ``,
-		body: `({ email: output.email, password: output.newPassword })`,
-		output: `({ data, output }) => ({ ...output, token: data.token })`,
-		expectedStatusCode: 200,
-	})
+		API.Checks.register({
+			resource: '/login',
+			description: 'login user after changing password',
+			method: 'POST',
+			params: ``,
+			bearerToken: ``,
+			body: `({ email: output.email, password: output.newPassword })`,
+			output: `({ data, output }) => ({ ...output, token: data.token })`,
+			expectedStatusCode: 200,
+		})
 
-	API.Checks.register({
-		resource: '/user',
-		description: 'get user information after changing password',
-		method: 'GET',
-		params: ``,
-		bearerToken: `(output.token)`,
-		body: ``,
-		output: `({ data, output }) => ({ ...output, user: data })`,
-		expectedStatusCode: 200,
-	})
+		API.Checks.register({
+			resource: '/user',
+			description: 'get user information after changing password',
+			method: 'GET',
+			params: ``,
+			bearerToken: `(output.token)`,
+			body: ``,
+			output: `({ data, output }) => ({ ...output, user: data })`,
+			expectedStatusCode: 200,
+		})
+	}
 
 	API.post('/user/verify/:method', [API.Auth.requireToken, API.Auth.requireUser, API.Auth.getAfterRequireUserMiddleware()], async(req, res) => {
 		const { email, sms, _id } = req.user
@@ -388,16 +396,18 @@ module.exports = (API) => {
 		}
 	})
 
-	API.Checks.register({
-		resource: '/user/verify/:method',
-		description: 'verifying email',
-		method: 'POST',
-		params: `({ method: 'email' })`,
-		bearerToken: `(output.token)`,
-		body: ``,
-		output: `({ data, output, request }) => ({ ...output, token: data.token, method: request.params.method })`,
-		expectedStatusCode: 200,
-	})
+	if (checks.enabled) {
+		API.Checks.register({
+			resource: '/user/verify/:method',
+			description: 'verifying email',
+			method: 'POST',
+			params: `({ method: 'email' })`,
+			bearerToken: `(output.token)`,
+			body: ``,
+			output: `({ data, output, request }) => ({ ...output, token: data.token, method: request.params.method })`,
+			expectedStatusCode: 200,
+		})		
+	}
 
 	API.get('/user/verify', [API.Auth.requireToken], async (req, res) => {
 
@@ -432,16 +442,18 @@ module.exports = (API) => {
 		}
 	})
 
-	API.Checks.register({
-		resource: '/user/verify',
-		description: 'checking email verification status',
-		method: 'GET',
-		params: ``,
-		bearerToken: `(output.token)`,
-		body: ``,
-		output: `({ output }) => ({ ...output })`,
-		expectedStatusCode: 200,
-	})
+	if (checks.enabled) {
+		API.Checks.register({
+			resource: '/user/verify',
+			description: 'checking email verification status',
+			method: 'GET',
+			params: ``,
+			bearerToken: `(output.token)`,
+			body: ``,
+			output: `({ output }) => ({ ...output })`,
+			expectedStatusCode: 200,
+		})
+	}
 
 	//complete verification of method
 	API.put('/user/verify', [API.Auth.requireToken], async (req, res) => {
@@ -475,27 +487,29 @@ module.exports = (API) => {
 		}
 	})
 
-	API.Checks.register({
-		resource: '/user/verify',
-		description: 'completing email verification',
-		method: 'PUT',
-		params: ``,
-		bearerToken: `(output.token)`,
-		body: ``,
-		output: `({ output }) => ({ ...output })`,
-		expectedStatusCode: 200,
-	})
+	if (checks.enabled) {
+		API.Checks.register({
+			resource: '/user/verify',
+			description: 'completing email verification',
+			method: 'PUT',
+			params: ``,
+			bearerToken: `(output.token)`,
+			body: ``,
+			output: `({ output }) => ({ ...output })`,
+			expectedStatusCode: 200,
+		})
 
-	API.Checks.register({
-		resource: '/user/verify',
-		description: 'checking email verification status',
-		method: 'GET',
-		params: ``,
-		bearerToken: `(output.token)`,
-		body: ``,
-		output: `({ output }) => ({ ...output })`,
-		expectedStatusCode: 200,
-	})
+		API.Checks.register({
+			resource: '/user/verify',
+			description: 'checking email verification status',
+			method: 'GET',
+			params: ``,
+			bearerToken: `(output.token)`,
+			body: ``,
+			output: `({ output }) => ({ ...output })`,
+			expectedStatusCode: 200,
+		})
+	}
 
 	//update user
 	API.put('/user', [API.Auth.requireToken, API.Auth.requireUser, API.Auth.getAfterRequireUserMiddleware()], async(req, res) => {
@@ -513,10 +527,6 @@ module.exports = (API) => {
 			API.Utils.errorHandler({ res, err })
 		}
 	})
-
-
-
-
 
 	return API
 

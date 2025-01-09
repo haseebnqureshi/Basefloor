@@ -1,26 +1,17 @@
-/*
-ENV VARIABLES
--------------------
-DIGITALOCEAN_SPACES_ACCESS
-DIGITALOCEAN_SPACES_SECRET
-DIGITALOCEAN_SPACES_ENDPOINT
-DIGITALOCEAN_SPACES_REGION
-DIGITALOCEAN_SPACES_BUCKET
-*/
 
-module.exports = (API, { config, paths }) => {
+module.exports = (API, { files, paths, providers }) => {
 
-	const { enabled, provider } = config
+	const { enabled, provider } = files
 
 	if (!enabled) { return API }
 
+	const providerVars = providers[provider]
+
 	API.Files = { 
 		...API.Files,
-		Local: { 
-			...require('./local') 
-		},
-		Remote: { 
-			...require(`${paths.minapi}/_providers/${provider.remote}`)
+		...require('./utils'),
+		Provider: { 
+			...require(`${paths.minapi}/_providers/${provider}`)({ providerVar })
 		},
 	}
 
@@ -151,8 +142,8 @@ module.exports = (API, { config, paths }) => {
 				name,
 				inputKey: filename,
 				outputBasename: filename.replace(extension, ''),
-				downloadFile: API.Files.Remote.downloadFile,
-				uploadFile: API.Files.Remote.uploadFile,
+				downloadFile: API.Files.Provider.downloadFile,
+				uploadFile: API.Files.Provider.uploadFile,
 			})
 
 			const flattened_at = new Date().toISOString() 
@@ -200,8 +191,8 @@ module.exports = (API, { config, paths }) => {
 	// 	const { _id } = req.user
 	// 	const { key, contentType } = req.body
 	// 	try {
-	// 		const url = await API.Files.Remote.presign(
-	// 			API.Files.Remote.putObjectCommand({
+	// 		const url = await API.Files.Provider.presign(
+	// 			API.Files.Provider.putObjectCommand({
 	// 				Key: key,
 	// 				ContentType: contentType,
 	// 			})

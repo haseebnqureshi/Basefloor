@@ -4,11 +4,9 @@ ENV VARIABLES
 MONGODB_DATABASE
 */
 
-const _ = require('underscore')
+module.exports = (API, { models, paths }) => {
 
-module.exports = (API, { models }) => {
-
-	if (!models.file) {
+	if (!models.Files) {
 		models.Files = {
 			collection: 'file',
 			labels: ['File', 'Files'],

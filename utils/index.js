@@ -5,7 +5,7 @@ const mongodb = require('mongodb')
 const hashObject = require('object-hash')
 const chance = new require('chance')()
 
-module.exports = (API) => {
+module.exports = (API, { paths, providers }) => {
 
 	API.Utils = { ...API.Utils }
 

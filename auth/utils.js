@@ -14,29 +14,29 @@ module.exports = () => {
 
 	const secret = process.env.AUTH_SECRET
 
-	let helpers = {}
+	let utils = {}
 
-	helpers.removeFile = async (filepath) => {
+	utils.removeFile = async (filepath) => {
 		return await unlinkAsync(filepath)
 	}
 
-	helpers.md5 = (data) => {
+	utils.md5 = (data) => {
 		return crypto.createHash('md5').update(data).digest('hex')
 	}
 
-	helpers.sha1 = (data) => {
+	utils.sha1 = (data) => {
 		return crypto.createHash('sha1').update(data).digest('hex')
 	}
 
-	helpers.hashPassword = async (password) => {
+	utils.hashPassword = async (password) => {
 		return await bcrypt.hash(password, 10)
 	}
 
-	helpers.comparePasswordWithHashed = async (password, hashed) => {
+	utils.comparePasswordWithHashed = async (password, hashed) => {
 		return await bcrypt.compare(password, hashed)
 	}
 
-	helpers.normalizePhone = (value, countryAbbr) => {
+	utils.normalizePhone = (value, countryAbbr) => {
 		switch (countryAbbr) {
 			default:
 				countryAbbr = 'USA'
@@ -50,7 +50,7 @@ module.exports = () => {
 		}
 	}
 
-	helpers.emailParts = (value) => {
+	utils.emailParts = (value) => {
 		const parts = value.split('@')
 		return {
 			username: parts[0],
@@ -58,8 +58,8 @@ module.exports = () => {
 		}
 	}
 
-	helpers.createToken = async (sub, _id, payload) => {
-		const expiry = helpers.expirations(sub)
+	utils.createToken = async (sub, _id, payload) => {
+		const expiry = utils.expirations(sub)
 		if (!expiry) { return undefined }
 		return await jwt.sign({ sub, _id, ...payload }, secret, {
 			algorithm: 'HS256',
@@ -67,7 +67,7 @@ module.exports = () => {
 		})
 	}
 
-	helpers.validateToken = async (token) => {
+	utils.validateToken = async (token) => {
 		try {
 			return await jwt.verify(token, secret)
 		}
@@ -76,7 +76,7 @@ module.exports = () => {
 		}
 	}
 
-	helpers.expirations = (type) => {
+	utils.expirations = (type) => {
 		switch (type) {
 			case 'auth':
 				return { text: '7 days', value: '7d' }
@@ -90,13 +90,13 @@ module.exports = () => {
 		}
 	}
 
-	helpers.createTotpCode = async () => {
+	utils.createTotpCode = async () => {
 		const secret = speakeasy.generateSecret({ length: 20 })[totpEncoding]
 		const code = speakeasy.totp({ secret, encoding: totpEncoding })
 		return { code, secret }
 	}
 
-	helpers.validateTotpCode = async ({ code, secret }) => {
+	utils.validateTotpCode = async ({ code, secret }) => {
 		return speakeasy.totp.verify({
 			token: code,
 			secret,
@@ -105,17 +105,6 @@ module.exports = () => {
 		})
 	}
 
-
-
-
-
-
-
-
-
-
-
-
-	return helpers
+	return utils
 
 }

@@ -3,11 +3,13 @@ const fs = require('fs')
 const path = require('path')
 const _ = require('underscore')
 
-module.exports = (API, { config }) => {
+module.exports = (API, { checks, paths, providers }) => {
 
-	const { projectPath } = config
+	const { enabled } = checks
 
-	const filepath = path.resolve(projectPath, 'minapi.test.js')
+  if (!enabled) { return API }
+
+	const filepath = path.resolve(paths.app, 'minapi.test.js')
 
 	API.Checks = { ...API.Checks }
 
@@ -77,7 +79,6 @@ module.exports = (API, { config }) => {
 			fs.writeFileSync(filepath, contents, "utf8")
 		}
 	}
-
 
 	return API
 
