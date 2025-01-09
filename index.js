@@ -8,6 +8,12 @@ module.exports = ({ projectPath, envPath }) => {
 
 	require('dotenv').config({ path: envPath })
 
+	const paths = {
+		app: projectPath,
+		env: envPath,
+		minapi: __dirname,
+	}
+
 	const { 
 		name, 
 		auth,
@@ -19,17 +25,38 @@ module.exports = ({ projectPath, envPath }) => {
 
 	let API = express()
 	API.Express = express
+	API.Utils = {}
+	API.Checks = {}
+	API.DB = {}
+	API.Auth = {}
+	API.Files = {}
+	API.Notifications = {}
 
 	API.Init = () => {
 		API = require('./_utils')(API)
-		API = require('./_middlewares')(API) //must be the first thing, loads json middleware
 		API = require('./_checks')(API, { config: { projectPath }}) //before, so other features can load checks into the checker
-		API = require('./_notifications')(API, { config: notifications })
+		API = require('./_middlewares')(API) //must be the first thing, loads json middleware
 		API = require('./_db')(API)
+		
+		API = require('./_auth')(API)
 		API = require('./_models')(API, { models })
-		API = require('./_auth')(API, { config: auth })
+		API = require('./_files')(API, { config, paths })
+
+
+
+
+
+
+
 		API = require('./_routes')(API, { routes: routes() })
-		API = require('./_files')(API, { config: files })
+
+
+
+
+
+
+		API = require('./_notifications')(API, { config: notifications })
+	
 		API = require('./_ai')(API, {})
 		API.Checks.enable()
 	}
@@ -54,14 +81,6 @@ module.exports = ({ projectPath, envPath }) => {
 		httpsServer.listen(443)
 		API.Log(`${name} MinAPI started HTTPS in production node environment ...`)
 	}
-
-	API.Utils = {}
-	API.Checks = {}
-	API.Auth = {}
-	API.DB = {}
-	API.Auth = {}
-	API.Files = {}
-	API.Notifications = {}
 
 	return API
 

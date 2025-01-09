@@ -23,6 +23,18 @@ module.exports = (API) => {
 		}))
 	}
 
+	API.ParseProviderString = (str) => {
+		/*
+		Expecting '@{providerName}/{service}'
+		So for instance, @digitalocean/files means that for our files service,
+		a provider available is digitalocean. The providerVars are loaded
+		from the minapi.config.js and the provider methods are then loaded
+		from the "_providers" directory.
+		*/
+		const [provider, service] = str.split('/')
+		return { provider, service }
+	}
+
 	API.Utils.hashObject = (obj, options) => hashObject(obj, options || null)
 
 	API.Utils.errorHandler = ({ res, err }) => {

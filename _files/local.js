@@ -1,5 +1,4 @@
 
-const { S3 } = require('@aws-sdk/client-s3');
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
@@ -24,46 +23,7 @@ const SUPPORTED_FORMATS = {
     '.csv': 'excel',
 };
 
-const spacesEndpoint = new S3({
-  endpoint: process.env.DIGITALOCEAN_STORAGE_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.DIGITALOCEAN_STORAGE_ACCESS_KEY,
-    secretAccessKey: process.env.DIGITALOCEAN_STORAGE_SECRET_KEY
-  },
-  region: process.env.DIGITALOCEAN_STORAGE_REGION
-});
-
-async function streamToBuffer(stream) {
-  const chunks = [];
-  for await (const chunk of stream) {
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks);
-}
-
-async function downloadFromSpace(key, localPath) {
-  const response = await spacesEndpoint.getObject({
-    Bucket: process.env.DIGITALOCEAN_STORAGE_BUCKET,
-    Key: key
-  });
-  const buffer = await streamToBuffer(response.Body);
-  fs.writeFileSync(localPath, buffer);
-  // console.log({ localPath, buffer })
-  return localPath;
-}
-
-async function uploadToSpace({ key, filepath, contentType }) {
-  await spacesEndpoint.putObject({
-    Bucket: process.env.DIGITALOCEAN_STORAGE_BUCKET,
-    Key: key,
-    Body: fs.readFileSync(filepath),
-    ContentType: contentType,
-    ACL: 'public-read'
-  });
-  return `${process.env.DIGITALOCEAN_STORAGE_CDN_ENDPOINT}/${key}`;
-}
-
-async function convertToPdf(inputPath, outputPath) {
+async function convertToPdf({ inputPath, outputPath }) {
   try {
     await execPromise('libreoffice --version');
   } catch (error) {
@@ -77,7 +37,6 @@ async function convertToPdf(inputPath, outputPath) {
     const convertedPdfPath = path.join(outDir, baseNamePdf);
     
     if (convertedPdfPath !== outputPath) {
-      // console.log({ convertedPdfPath, outputPath })
       fs.renameSync(convertedPdfPath, outputPath);
     }
     
@@ -87,7 +46,7 @@ async function convertToPdf(inputPath, outputPath) {
   }
 }
 
-async function optimizeImage(inputPath, outputPath, maxSize = MAX_FILE_SIZE) {
+async function optimizeImage({ inputPath, outputPath, maxSize = MAX_FILE_SIZE }) {
   let metadata;
   try {
     metadata = await sharp(inputPath).metadata();
@@ -129,12 +88,12 @@ async function optimizeImage(inputPath, outputPath, maxSize = MAX_FILE_SIZE) {
   };
 }
 
-async function getNewDimensions({ inputPath, maxDimension }) {
+async function getNewDimensions({ inputPath, maxDimension = MAX_DIMENSION_FOR_RESIZE }) {
   const metadata = await sharp(inputPath).metadata()
   if (!metadata) { throw new Error('Could not read metadata from inputPath') }
   let { width, height } = metadata
   const scale = maxDimension / (width > height ? width : height)
-  if (scale >= 1) { return  false } //longest size is already max = maxDimension, therefore no resize needed
+  if (scale >= 1) { return false } //longest size is already max = maxDimension, therefore no resize needed
   return {
     width: Math.round(width * scale),
     height: Math.round(height * scale),
@@ -142,7 +101,6 @@ async function getNewDimensions({ inputPath, maxDimension }) {
 }
 
 async function resizeImageSimple({ inputPath, outputPath, width, height }) {
-  console.log({ inputPath, outputPath, width, height })
   return await sharp(inputPath)
     .resize(width, height, {
       fit: 'contain',
@@ -154,30 +112,26 @@ async function resizeImageSimple({ inputPath, outputPath, width, height }) {
 
 async function resizeImage({ inputPath, outputPath, width, height }) {
   try {
-    // First verify we can read the input
     const inputBuffer = fs.readFileSync(inputPath);
     
-    // Add logging to track the process
     console.log(`Attempting to resize image:
       - Input path: ${inputPath}
       - Output path: ${outputPath}
       - Target dimensions: ${width}x${height}
       - Input file size: ${inputBuffer.length} bytes`);
 
-    // Create a new Sharp instance with the buffer
     const image = sharp(inputBuffer, {
-      failOn: 'none',  // More permissive error handling
-      limitInputPixels: false  // Remove pixel limit
+      failOn: 'none',
+      limitInputPixels: false
     });
 
-    // Add error handling to the pipeline
     return await image
       .resize(width, height, {
         fit: 'contain',
         background: { r: 255, g: 255, b: 255, alpha: 1 },
       })
       .toFormat('png', {
-        compression: 6,  // Lower compression for better reliability
+        compression: 6,
         adaptiveFiltering: true,
         palette: false
       })
@@ -192,27 +146,22 @@ async function resizeImage({ inputPath, outputPath, width, height }) {
   }
 }
 
-
-async function convertPdfToImages(pdfPath, outputDir) {
+async function convertPdfToImages({ pdfPath, outputDir }) {
   try {
-    // Check if Ghostscript is installed
     await execPromise('gs --version');
   } catch (error) {
     throw new Error('Ghostscript is not installed. Please install it to convert PDFs to images.');
   }
 
   try {
-
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    // Convert PDF to PNG using Ghostscript
     const gsCommand = `gs -dQuiet -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -sDEVICE=png16m -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r200 -dFirstPage=1 -dLastPage=999999 -sOutputFile="${outputDir}/page-%d.png" "${pdfPath}"`;
     
     await execPromise(gsCommand);
 
-    // Get all generated PNG files
     const files = fs.readdirSync(outputDir);
     const imageFiles = files
       .filter(f => f.startsWith('page-') && f.endsWith('.png'))
@@ -222,31 +171,27 @@ async function convertPdfToImages(pdfPath, outputDir) {
         return pageA - pageB;
       })
       .map(f => path.join(outputDir, f));
-    // console.log({ imageFiles })
 
     for (const imagePath of imageFiles) {  
       let stats = fs.statSync(imagePath);
       const filename = path.basename(imagePath);
       const optimizedPath = path.join(outputDir, 'optimized-' + filename);
       const newDimensions = await getNewDimensions({ 
-        inputPath: imagePath, 
-        maxDimension: MAX_DIMENSION_FOR_RESIZE 
-      })
+        inputPath: imagePath
+      });
 
       if (newDimensions || stats.size >= MAX_FILE_SIZE) {
         console.log(`Image too large in dimensions or size, attempting to optimize...`);
 
-        // console.log({ filename, imagePath, optimizedPath, newDimensions })
         await resizeImage({ 
           inputPath: imagePath,
           outputPath: optimizedPath,
           width: newDimensions.width,
           height: newDimensions.height,
-        })
-        console.log(`Resized image...`, optimizedPath)
+        });
+        console.log(`Resized image...`, optimizedPath);
         fs.renameSync(optimizedPath, imagePath);
       }
-
     }
     return imageFiles;
   } catch (error) {
@@ -254,14 +199,25 @@ async function convertPdfToImages(pdfPath, outputDir) {
   }
 }
 
-async function processDocument({ name, inputKey, outputBasename, outputFormat = 'png' }) {
-  return await processDocumentAsMany({ name, inputKey, outputBasename, outputFormat })
+async function processDocument({ name, inputKey, outputBasename, outputFormat = 'png', storage }) {
+  return await processDocumentAsMany({ 
+    name, 
+    inputKey, 
+    outputBasename, 
+    outputFormat, 
+    storage 
+  });
 }
 
-async function processDocumentAsMany({ name, inputKey, outputBasename, outputFormat }) {
+async function processDocumentAsMany({ name, inputKey, outputBasename, outputFormat, downloadFile, uploadFile }) {
+  if (!downloadFile) {
+    throw new Error('downloadFile() by storage provider is required');
+  }
+  if (!uploadFile) {
+    throw new Error('uploadFile() by storage provider is required');
+  }
 
-  const timestamp = Date.now()
-
+  const timestamp = Date.now();
   const tempDir = path.join(process.cwd(), 'temp-' + timestamp);
   fs.mkdirSync(tempDir, { recursive: true });
 
@@ -272,26 +228,28 @@ async function processDocumentAsMany({ name, inputKey, outputBasename, outputFor
 
   const tempSourcePath = path.join(tempDir, `source${sourceExt}`);
   const tempPdfPath = path.join(tempDir, 'source.pdf');
-  const tempImagePath = path.join(tempDir, `output.${outputFormat}`);
 
   try {
-    await downloadFromSpace(inputKey, tempSourcePath);
+    await downloadFile({
+      key: inputKey, 
+      localPath: tempSourcePath
+    });
 
     let pdfPath = tempSourcePath;
     if (sourceExt !== '.pdf') {
-      pdfPath = await convertToPdf(tempSourcePath, tempPdfPath);
-      // console.log(pdfPath)
+      pdfPath = await convertToPdf({
+        inputPath: tempSourcePath,
+        outputPath: tempPdfPath
+      });
     }
     
-    let flattenedPages = await convertPdfToImages(pdfPath, tempDir);
+    let flattenedPages = await convertPdfToImages({
+      pdfPath,
+      outputDir: tempDir
+    });
     
     if (!flattenedPages.length) {
       throw new Error('No images were generated from the PDF');
-    }
-
-    // Verify first file exists and can be processed
-    if (!fs.existsSync(flattenedPages[0])) {
-      throw new Error('Generated image files not found');
     }
 
     let pages = []
@@ -304,11 +262,13 @@ async function processDocumentAsMany({ name, inputKey, outputBasename, outputFor
       const pageExtension = `.${outputFormat}`
       const pageFilename = `${pageBasename}${pageExtension}`
       const contentType = `image/${outputFormat.toLowerCase()}`
-      const url = await uploadToSpace({
+
+      const url = await uploadFile({
         key: pageFilename,
         filepath: tempImagePath,
         contentType,
-      })
+      });
+
       pages.push({
         url,
         filename: pageFilename,
@@ -318,157 +278,37 @@ async function processDocumentAsMany({ name, inputKey, outputBasename, outputFor
         description: `Page ${pageNumber} of ${flattenedPages.length}`,
         size: pageSize,
         uploaded_at: new Date().toISOString(),
-      })
-
+      });
     }
 
-    // Cleanup
     setInterval(() => {
       fs.rmSync(tempDir, { recursive: true, force: true });
-    }, TIME_TO_RETAIN_FILES)
-    return pages
+    }, TIME_TO_RETAIN_FILES);
+    
+    return pages;
 
   } catch (error) {
-    console.log(error);
+    console.error(error);
 
     setInterval(() => {
       fs.rmSync(tempDir, { recursive: true, force: true });
-    }, TIME_TO_RETAIN_FILES)
+    }, TIME_TO_RETAIN_FILES);
 
-    return []
+    return [];
   }
-
 }
 
-
-// async function processDocumentAsOne(sourceKey, destKey, format = 'jpg', quality = 80) {
-//   const tempDir = path.join(process.cwd(), 'temp');
-//   fs.mkdirSync(tempDir, { recursive: true });
-
-//   const sourceExt = path.extname(sourceKey).toLowerCase();
-//   if (!SUPPORTED_FORMATS[sourceExt]) {
-//     throw new Error(`Unsupported input format: ${sourceExt}. Supported formats are: ${Object.keys(SUPPORTED_FORMATS).join(', ')}`);
-//   }
-
-//   const tempSourcePath = path.join(tempDir, `source${sourceExt}`);
-//   const tempPdfPath = path.join(tempDir, 'converted.pdf');
-//   const tempImagePath = path.join(tempDir, `output.${format}`);
-
-//   try {
-//     await downloadFromSpace(sourceKey, tempSourcePath);
-
-//     let pdfPath = tempSourcePath;
-//     if (sourceExt !== '.pdf') {
-//       pdfPath = await convertToPdf(tempSourcePath, tempPdfPath);
-//     }
-    
-//     const imageFiles = await convertPdfToImages(pdfPath, tempDir);
-    
-//     if (!imageFiles.length) {
-//       throw new Error('No images were generated from the PDF');
-//     }
-
-//     // Verify first file exists and can be processed
-//     if (!fs.existsSync(imageFiles[0])) {
-//       throw new Error('Generated image files not found');
-//     }
-
-//     // Get dimensions of first page
-//     const firstImageMetadata = await sharp(imageFiles[0]).metadata();
-//     if (!firstImageMetadata) {
-//       throw new Error('Could not read metadata from first image');
-//     }
-
-//     let { width, height } = firstImageMetadata;
-//     let percentScale = 800 / width
-//     width = Math.round(width * percentScale)
-//     height = Math.round(height * percentScale)
-
-//     const resizedImages = [];
-
-//     // Process each image sequentially instead of in parallel
-//     for (let i = 0; i < imageFiles.length; i++) {
-//       const originalFile = imageFiles[i];
-//       const resizedPath = path.join(tempDir, `resized-${i}.png`);
-      
-//       try {
-//         await sharp(originalFile)
-//           .resize(width, height, {
-//             fit: 'contain',
-//             background: { r: 255, g: 255, b: 255, alpha: 1 }
-//           })
-//           .toFormat('png')
-//           .toFile(resizedPath);
-
-//         // Verify the resized file exists
-//         if (fs.existsSync(resizedPath)) {
-//           resizedImages.push(resizedPath);
-//         } else {
-//           throw new Error(`Failed to create resized image for page ${i + 1}`);
-//         }
-//       } catch (error) {
-//         console.error(`Error processing page ${i + 1}:`, error);
-//         throw error;
-//       }
-//     }
-
-//     if (!resizedImages.length) {
-//       throw new Error('No images were successfully processed');
-//     }
-
-//     const totalHeight = height * resizedImages.length;
-
-//     // Create composite image
-//     const composite = sharp({
-//       create: {
-//         width,
-//         height: totalHeight,
-//         channels: 4,
-//         background: { r: 255, g: 255, b: 255, alpha: 1 }
-//       }
-//     });
-
-//     // Add all images to composite
-//     composite.composite(resizedImages.map((file, index) => ({
-//       input: file,
-//       top: index * height,
-//       left: 0
-//     })));
-
-//     // Save final image
-//     await composite
-//       .toFormat(format.toLowerCase())
-//       .toFile(tempImagePath);
-
-//     let publicUrl = await uploadToSpace({
-//       key: destKey, 
-//       filepath: tempImagePath, 
-//       contentType: `image/${format.toLowerCase()}`
-//     });
-
-//     publicUrl = process.env.DIGITALOCEAN_STORAGE_CDN_ENDPOINT + '/' + destKey;
-
-//     // Cleanup
-//     fs.rmSync(tempDir, { recursive: true, force: true });
-
-//     return publicUrl;
-//   } catch (error) {
-//     console.error('Process document error:', error);
-//     fs.rmSync(tempDir, { recursive: true, force: true });
-//     throw error;
-//   }
-// }
-
-function removeFilepath(filepath) {
-  fs.rmSync(filepath, { recursive: true, force: true })
+function removeFilepath({ filepath }) {
+  fs.rmSync(filepath, { recursive: true, force: true });
 }
 
 module.exports = { 
+  TIME_TO_RETAIN_FILES,
+  MAX_FILE_SIZE,
+  MAX_DIMENSION_FOR_RESIZE,
+  SUPPORTED_FORMATS,
   processDocument, 
-  downloadFromSpace, 
-  uploadToSpace, 
   convertToPdf, 
   convertPdfToImages,
   removeFilepath,
-  SUPPORTED_FORMATS,
 };

@@ -1,4 +1,14 @@
 
+/*
+ENV VARIABLES
+-------------------
+MONGODB_USERNAME
+MONGODB_PASSWORD
+MONGODB_HOST
+MONGODB_APPNAME
+MONGODB_DATABASE
+*/
+
 //@see https://www.mongodb.com/developer/languages/javascript/node-crud-tutorial/
 
 const mongodb = module.exports.mongodb = require('mongodb')

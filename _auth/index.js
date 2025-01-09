@@ -1,11 +1,19 @@
 
+/*
+ENV VARIABLES
+-------------------
+AUTH_SECRET
+APP_NAME
+APP_AUTHOR //optional
+APP_AUTHOR_EMAIL //optional
+APP_URL_VERIFY //optional
+*/
+
 const _ = require('underscore')
 
-module.exports = (API, { config }) => {
+module.exports = (API) => {
 
-	const { _verify } = config
-
-	API.Auth = { ...API.Auth, ...require('./helpers')({ config }) }
+	API.Auth = { ...API.Auth, ...require('./helpers')() }
 
 	API.Auth.getAfterRequireUserMiddleware = () => {
 		return API.Auth.afterRequireUser || (async (req, res, next) => {

@@ -1,23 +1,27 @@
+/*
+ENV VARIABLES
+-------------------
+DIGITALOCEAN_SPACES_ACCESS
+DIGITALOCEAN_SPACES_SECRET
+DIGITALOCEAN_SPACES_ENDPOINT
+DIGITALOCEAN_SPACES_REGION
+DIGITALOCEAN_SPACES_BUCKET
+*/
 
-const collectionName = 'files'
+module.exports = (API, { config, paths }) => {
 
-module.exports = (API, { config }) => {
+	const { enabled, provider } = config
 
-	API = require('./models.js')(API)
+	if (!enabled) { return API }
 
-	const flatten = require('./utils/flatten.js')
-
-	API.Files.downloadFromSpace = flatten.downloadFromSpace
-	API.Files.removeFilepath = flatten.removeFilepath
-
-	const { _active, _providers } = config
-
-	API.Files = { ...API.Files }
-	
-	for (let method in _active) {
-		const providerName = _active[method]
-		const providerConfig = _providers[providerName]
-		API.Files[method] = require(`./providers/${providerName}`)({ config: providerConfig })
+	API.Files = { 
+		...API.Files,
+		Local: { 
+			...require('./local') 
+		},
+		Remote: { 
+			...require(`${paths.minapi}/_providers/${provider.remote}`)
+		},
 	}
 
 	API.post('/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
@@ -28,10 +32,10 @@ module.exports = (API, { config }) => {
 			const { name, size, type, lastModified } = file
 			const file_modified_at = new Date(lastModified).toISOString()
 			const values = { name, size, type, file_modified_at, user_id }
-			const response = await API.DB.file.create({ values, endpoint })
+			const response = await API.DB.Files.create({ values, endpoint })
 			if (!response) { throw response }
 			const { insertedId } = response
-			const result = await API.DB.file.read({ where: { _id: insertedId }})
+			const result = await API.DB.Files.read({ where: { _id: insertedId }})
 			res.status(200).send(result)
 		}
 		catch (err) {
@@ -44,7 +48,7 @@ module.exports = (API, { config }) => {
 		const user_id = req.user._id
 		try {
 			const where = { user_id }
-			const result = await API.DB.file.readAll({ where })
+			const result = await API.DB.Files.readAll({ where })
 			if (!result) { throw 'error occured when reading files' }
 			res.status(200).send(result)
 		}
@@ -59,7 +63,7 @@ module.exports = (API, { config }) => {
 		const { _id } = req.params
 		try {
 			const where = { _id, user_id }
-			const result = await API.DB.file.read({ where })
+			const result = await API.DB.Files.read({ where })
 			if (!result) { throw 'error occured when reading file' }
 			res.status(200).send(result)
 		}
@@ -74,7 +78,7 @@ module.exports = (API, { config }) => {
 		const values = req.body
 		try {
 			const where = { user_id }
-			const result = await API.DB.file.updateAll({ where, values })
+			const result = await API.DB.Files.updateAll({ where, values })
 			if (!result) { throw 'error occured when updating files' }
 			res.status(200).send(result)
 		}
@@ -88,7 +92,7 @@ module.exports = (API, { config }) => {
 		const user_id = req.user._id
 		try {
 			const where = { user_id }
-			const result = await API.DB.file.deleteAll({ where })
+			const result = await API.DB.Files.deleteAll({ where })
 			if (!result) { throw 'error occured when deleting files' }
 			res.status(200).send(result)
 		}
@@ -104,7 +108,7 @@ module.exports = (API, { config }) => {
 		const values = req.body
 		try {
 			const where = { _id, user_id }
-			const result = await API.DB.file.update({ where, values })
+			const result = await API.DB.Files.update({ where, values })
 			if (!result) { throw 'error occured when updating file' }
 			res.status(200).send(result)
 		}
@@ -120,7 +124,7 @@ module.exports = (API, { config }) => {
 		const values = { uploaded_at: new Date().toISOString() }
 		try {
 			const where = { _id, user_id }
-			const result = await API.DB.file.update({ where, values })
+			const result = await API.DB.Files.update({ where, values })
 			if (!result) { throw 'error occured when updating file' }
 			res.status(200).send(result)
 		}
@@ -134,21 +138,21 @@ module.exports = (API, { config }) => {
 		const { _id } = req.params
 		try {
 			const where = { _id, user_id }
-			let file = await API.DB.file.read({ where })
+			let file = await API.DB.Files.read({ where })
 			if (!file) { throw 'error occured when getting file' }
-
-			// console.log({ file })
 
 			const { filename, extension, url, name } = file
 
-			if (!flatten.SUPPORTED_FORMATS[extension]) { //file is not a convertible format, so return out 
+			if (!API.Files.Local.SUPPORTED_FORMATS[extension]) {
 				return res.status(200).send()
 			}
 
-			let pages = await flatten.processDocument({
+			let pages = await API.Files.Local.processDocument({
 				name,
 				inputKey: filename,
 				outputBasename: filename.replace(extension, ''),
+				downloadFile: API.Files.Remote.downloadFile,
+				uploadFile: API.Files.Remote.uploadFile,
 			})
 
 			const flattened_at = new Date().toISOString() 
@@ -160,13 +164,11 @@ module.exports = (API, { config }) => {
 					user_id: file.user_id,
 					parent_file: file._id,
 				}
-				let result = await API.DB.file.createSimple({ values: page })
+				let result = await API.DB.Files.create({ values: page })
 				flattened_pages[page.url] = result.insertedId
 			}
 
-			// console.log({ flattened_pages, flattened_at })
-
-			result = await API.DB.file.update({ where, values: {
+			result = await API.DB.Files.update({ where, values: {
 				flattened_at,
 				flattened_pages,
 			}})
@@ -185,7 +187,7 @@ module.exports = (API, { config }) => {
 		const { _id } = req.params
 		try {
 			const where = { _id, user_id }
-			const result = await API.DB.file.delete({ where })
+			const result = await API.DB.Files.delete({ where })
 			if (!result) { throw 'error occured when reading file' }
 			res.status(200).send(result)
 		}
@@ -198,8 +200,8 @@ module.exports = (API, { config }) => {
 	// 	const { _id } = req.user
 	// 	const { key, contentType } = req.body
 	// 	try {
-	// 		const url = await API.Files.storage.presign(
-	// 			API.Files.storage.putObjectCommand({
+	// 		const url = await API.Files.Remote.presign(
+	// 			API.Files.Remote.putObjectCommand({
 	// 				Key: key,
 	// 				ContentType: contentType,
 	// 			})
