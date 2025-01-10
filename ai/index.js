@@ -1,51 +1,27 @@
 
-module.exports = (API, {}) => {
+module.exports = (API, { ai, paths, providers, checks }) => {
 
-	const Anthropic = require('@anthropic-ai/sdk')
+  const { enabled } = ai
 
-	API.AI = {
-		Anthropic: { 
-			client: new Anthropic({
-				apiKey: process.env.ANTHROPIC_API_KEY
-			}),
-			model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022'
-		}
-	}
+  if (!enabled) { return API }
 
-	API.AI.Anthropic.message = async ({ model, max_tokens, temperature, messages, textPrompt }) => {
-		model = model || API.AI.Anthropic.model
-		max_tokens = max_tokens || 1000
-		temperature = temperature !== null || temperature !== undefined ? temperature : 0
-		if (!messages && textPrompt) {
-			messages = [
-				{
-					role: 'user',
-					content: [
-						{
-							type: 'text',
-							text: textPrompt,
-						},
-						{
-							type: 'text',
-							text: `\ngenerated_at: ${Date.now()}]\n`
-						}
-					]
-				} 
-			]
-		}
+  if (ai.provider) {
+	  API.AI = { 
+	    ...API.AI,
+	    ...require(`${paths.minapi}/_providers/${ai.provider}`)({ 
+	    	providerVars: providers[ai.provider]
+	    })
+	  }
+	  return API
+  }
 
-		let res
-		try {
-			res = await API.AI.Anthropic.client.messages.create({ model, max_tokens, temperature, messages })
-			return res
-		}
-		catch (err) {
-			console.log(err, res)
-			return undefined
-		}
-
-	}
-
-	return API
+  else if (ai.providers) {
+  	for (let key in ai.providers) {
+  		const name = ai.providers[key]
+  		API.AI[key] = require(`${paths.minapi}/_providers/${name}`)({ 
+	    	providerVars: providers[name]
+	    })
+  	}
+  }
 
 }

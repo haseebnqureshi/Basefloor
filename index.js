@@ -15,6 +15,7 @@ module.exports = ({ projectPath, envPath }) => {
 	}
 
 	const {
+		ai,
 		name,
 		providers,
 		db,
@@ -33,10 +34,11 @@ module.exports = ({ projectPath, envPath }) => {
 	API.DB = {}
 	API.Auth = {}
 	API.Files = {}
-	API.Notifications = {}
+	API.Emails = {}
+	API.AI = {}
 
 	API.Init = () => {
-		API = require('./utils')(API, { paths, providers })
+		API = require('./utils')(API, { paths, providers, checks })
 		API = require('./checks')(API, { checks, paths, providers }) //before, so other features can load checks into the checker
 		API = require('./middlewares')(API, { middlewares, paths, providers, checks }) //must be the first thing, loads json middleware
 		
@@ -45,9 +47,9 @@ module.exports = ({ projectPath, envPath }) => {
 		API = require('./models')(API, { models, paths, providers, checks })
 		API = require('./files')(API, { files, paths, providers, checks })
 
-		API = require('./routes')(API, { routes: routes() })
-		API = require('./notifications')(API, { config: notifications })
-		API = require('./ai')(API, {})
+		API = require('./routes')(API, { routes: routes(), paths, providers, checks })
+		API = require('./emails')(API, { emails, paths, providers, checks })
+		API = require('./ai')(API, { ai, paths, providers, checks })
 
 		if (checks.enabled) {
 			API.Checks.enable()

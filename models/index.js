@@ -107,7 +107,7 @@ module.exports = (API, { models, paths }) => {
 				for (let key in values) {
 					if (key in _values) {
 						const valueType = _values[key][0]
-						const dbActions = _values[key][1].split(',')
+						const dbActions = _values[key][1].split('')
 						if (dbActions.indexOf(dbAction) > -1) {
 							// console.log({ key, valueType })
 							sanitized[key] = API.Utils.valueType(values[key], valueType)
@@ -122,7 +122,7 @@ module.exports = (API, { models, paths }) => {
 				let dummy = {}
 				for (let key in _values) {
 					const valueType = _values[key][0]
-					const dbActions = _values[key][1].split(',')
+					const dbActions = _values[key][1].split('')
 					const defaultValue = _values[key][2] || null;
 					if (dbActions.indexOf(dbAction) > -1) {
 						dummy[key] = API.Utils.dummyValue(valueType, defaultValue)

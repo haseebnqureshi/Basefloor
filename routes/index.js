@@ -9,7 +9,22 @@
 
 const _ = require('underscore')
 
-module.exports = (API, { routes }) => {
+module.exports = (API, { routes, paths, providers, checks }) => {
+
+	//convert new syntax to older (avoids whole code refactor at the moment)
+	let convertedRoutes = Object.keys(routes)
+	convertedRoutes.map(url => {
+		let route = { url }
+		if (routes[url].c) { route._create = routes[url].c }
+		if (routes[url].rA) { route._readAll = routes[url].rA }
+		if (routes[url].r) { route._read = routes[url].r }
+		if (routes[url].u) { route._update = routes[url].u }
+		if (routes[url].d) { route._delete = routes[url].d }
+		return route
+	})
+	API.Log('routes from config', routes)
+	routes = convertedRoutes
+	API.Log('routes passed to handlers', routes)
 
 	// Map internal CRUD operations to HTTP methods and database actions
 	const methods = {
@@ -312,25 +327,27 @@ module.exports = (API, { routes }) => {
 					}
 				})
 
-				// Register route for API testing/documentation
-				let newCheck = {
-					resource: r.url,
-					description: `${m} for accessing ${router.model} items at ${r.url}`,
-					
-					method: http.toUpperCase(),
-					params: ``,
-					bearerToken: ``,
-					body: ``,
-					output: ``,
-					expectedStatusCode: 200,
-				}
+				if (checks.enabled) {
+					// Register route for API testing/documentation
+					let newCheck = {
+						resource: r.url,
+						description: `${m} for accessing ${router.model} items at ${r.url}`,
+						
+						method: http.toUpperCase(),
+						params: ``,
+						bearerToken: ``,
+						body: ``,
+						output: ``,
+						expectedStatusCode: 200,
+					}
 
-				if (m === '_create') {
-					newCheck.body = API.DB[router.model].dummy('c')
-					newCheck.body = `(${JSON.stringify(newCheck.body)})`
+					if (m === '_create') {
+						newCheck.body = API.DB[router.model].dummy('c')
+						newCheck.body = `(${JSON.stringify(newCheck.body)})`
+					}
+					API.Checks.register(newCheck)
 				}
-
-				API.Checks.register(newCheck)
+	
 			}
 		}
 	}
@@ -340,16 +357,18 @@ module.exports = (API, { routes }) => {
 		res.status(200).send({ message: 'healthy' })
 	})
 
-	API.Checks.register({ 
-		resource: '/',
-		description: 'health checks for api',
-		method: 'GET',
-		params: ``,
-		bearerToken: ``,
-		body: ``,
-		output: ``,
-		expectedStatusCode: 200,
-	})
+	if (checks.enabled) {
+		API.Checks.register({ 
+			resource: '/',
+			description: 'health checks for api',
+			method: 'GET',
+			params: ``,
+			bearerToken: ``,
+			body: ``,
+			output: ``,
+			expectedStatusCode: 200,
+		})
+	}
 
 	return API
 }

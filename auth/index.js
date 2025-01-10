@@ -13,7 +13,10 @@ const _ = require('underscore')
 
 module.exports = (API, { paths, providers, checks }) => {
 
-	API.Auth = { ...API.Auth, ...require('./utils')() }
+	API.Auth = { 
+		...API.Auth, 
+		...require('./utils')() 
+	}
 
 	API.Auth.getAfterRequireUserMiddleware = () => {
 		return API.Auth.afterRequireUser || (async (req, res, next) => {
