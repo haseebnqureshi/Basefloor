@@ -1,8 +1,3 @@
-/*
-ENV VARIABLES
--------------------
-MONGODB_DATABASE
-*/
 
 module.exports = (API, { models, paths, providers, project }) => {
 
