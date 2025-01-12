@@ -1,21 +1,13 @@
 
-/*
-ENV VARIABLES
--------------------
-AUTH_SECRET
-APP_NAME
-APP_AUTHOR //optional
-APP_AUTHOR_EMAIL //optional
-APP_URL_VERIFY //optional
-*/
-
 const _ = require('underscore')
 
-module.exports = (API, { paths, providers, checks }) => {
+module.exports = (API, { paths, providers, project }) => {
 
 	API.Auth = { 
 		...API.Auth, 
-		...require('./utils')() 
+		...require('./utils')({ 
+			secret: project.app.secret,
+		}) 
 	}
 
 	API.Auth.getAfterRequireUserMiddleware = () => {
@@ -224,14 +216,14 @@ module.exports = (API, { paths, providers, checks }) => {
 			const emailArgs = require('./emails/resetPasswordWithCode')(email, {
 				code: totp.code,
 				durationText: duration.text,
-				appName: process.env.APP_NAME,
-				appAuthor: process.env.APP_AUTHOR,
-				appAuthorEmail: process.env.APP_AUTHOR_EMAIL,
+				appName: project.app.name,
+				appAuthor: project.app.author.name,
+				appAuthorEmail: project.app.author.email,
 			})
 
 			//sending email
 			await API.Utils.try('Auth.resetPassword:email.send', 
-				API.Notifications.email.send(emailArgs))
+				API.Emails.send(emailArgs))
 
 			console.log('emailed code and return jwt token to client. payload has secret, must be provided with emailed code to verify identity.', { token, totp })
 
@@ -293,14 +285,14 @@ module.exports = (API, { paths, providers, checks }) => {
 			const user = await API.DB.user.read({ where: { _id } })
 
 			const emailArgs = require('./emails/changedPassword')(user.email, {
-				appName: process.env.APP_NAME,
-				appAuthor: process.env.APP_AUTHOR,
-				appAuthorEmail: process.env.APP_AUTHOR_EMAIL,
+				appName: project.app.name,
+				appAuthor: project.app.author.name,
+				appAuthorEmail: project.app.author.email,
 			})
 
 			//sending email
 			await API.Utils.try('Auth.resetPassword:email.send', 
-				API.Notifications.email.send(emailArgs))
+				API.Emails.send(emailArgs))
 
 			//creating login token for presumed login
 			const token = await API.Utils.try('Auth.resetPasswordChange:createToken', 
@@ -375,19 +367,19 @@ module.exports = (API, { paths, providers, checks }) => {
 		}
 
 		try {
-			const url = process.env.APP_URL_VERIFY.replace(':token', token)
+			const url = project.app.urls.verify.replace(':token', token)
 
 			//delivering email verification notification
 			if (method === 'email') {
 				const emailArgs = require('./emails/verifyEmail')(email, {
 					url,
-					appName: process.env.APP_NAME,
-					appAuthor: process.env.APP_AUTHOR,
+					appName: project.app.name,
+					appAuthor: project.app.author.name,
 				})
 
 				//sending email
 				API.Utils.try('Auth.verify:email.send', 
-					API.Notifications.email.send(emailArgs))
+					API.Emails.send(emailArgs))
 
 			//delivering sms verification notification
 			} else if (method === 'sms') {

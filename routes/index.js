@@ -9,7 +9,7 @@
 
 const _ = require('underscore')
 
-module.exports = (API, { routes, paths, providers, checks }) => {
+module.exports = (API, { routes, paths, providers, project }) => {
 
 	//convert new syntax to older (avoids whole code refactor at the moment)
 	let convertedRoutes = Object.keys(routes)
@@ -327,7 +327,7 @@ module.exports = (API, { routes, paths, providers, checks }) => {
 					}
 				})
 
-				if (checks.enabled) {
+				if (project.checks) {
 					// Register route for API testing/documentation
 					let newCheck = {
 						resource: r.url,
@@ -357,7 +357,7 @@ module.exports = (API, { routes, paths, providers, checks }) => {
 		res.status(200).send({ message: 'healthy' })
 	})
 
-	if (checks.enabled) {
+	if (project.checks) {
 		API.Checks.register({ 
 			resource: '/',
 			description: 'health checks for api',

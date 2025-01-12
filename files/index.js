@@ -1,19 +1,41 @@
 
-module.exports = (API, { files, paths, providers }) => {
+module.exports = (API, { files, paths, providers, project }) => {
 
-	const { enabled, provider } = files
+	const { enabled } = files
 
 	if (!enabled) { return API }
 
-	const providerVars = providers[provider]
+  if (files.provider) {
+	  API.Files = { 
+	    ...API.Files,
+	    Provider: ...require(`${paths.minapi}/_providers/${files.provider}`)({ 
+	    	providerVars: providers[files.provider]
+	    })
+	  }
+	  return API
+  }
 
-	API.Files = { 
-		...API.Files,
-		...require('./utils'),
-		Provider: { 
-			...require(`${paths.minapi}/_providers/${provider}`)({ providerVar })
+  /*
+  for if we decide to enable multiple providers
+  could be useful, only use with the following config in config.minapi.js:
+	
+	"files": {
+		enabled: true,
+		providers: {
+			"Remote": "@digitalocean/files",
 		},
-	}
+	},
+
+	*/
+
+  else if (files.providers) {
+  	for (let key in files.providers) {
+  		const name = files.providers[key]
+  		API.Files[key] = require(`${paths.minapi}/_providers/${name}`)({ 
+	    	providerVars: providers[name]
+	    })
+  	}
+  }
 
 	API.post('/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
 		//files are specific to authenticated user
@@ -134,11 +156,11 @@ module.exports = (API, { files, paths, providers }) => {
 
 			const { filename, extension, url, name } = file
 
-			if (!API.Files.Local.SUPPORTED_FORMATS[extension]) {
+			if (!API.Files.SUPPORTED_FORMATS[extension]) {
 				return res.status(200).send()
 			}
 
-			let pages = await API.Files.Local.processDocument({
+			let pages = await API.Files.processDocument({
 				name,
 				inputKey: filename,
 				outputBasename: filename.replace(extension, ''),

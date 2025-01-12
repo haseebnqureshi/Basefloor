@@ -21,6 +21,8 @@ module.exports = ({ providerVars }) => {
     }
   })
 
+  const run = () => API.DB.client.db(providerVars.providerVars.database)
+
   const test = async () => {
     try {
       await client.connect()
@@ -48,6 +50,7 @@ module.exports = ({ providerVars }) => {
   return {
     CONNECTION_STRING,
     client,
+    run,
     test,
     connect,
     close,

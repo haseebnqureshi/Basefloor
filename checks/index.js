@@ -3,9 +3,9 @@ const fs = require('fs')
 const path = require('path')
 const _ = require('underscore')
 
-module.exports = (API, { checks, paths, providers }) => {
+module.exports = (API, { paths, providers, project }) => {
 
-	const { enabled } = checks
+	const enabled = project.checks
 
   if (!enabled) { return API }
 
@@ -17,7 +17,7 @@ module.exports = (API, { checks, paths, providers }) => {
 
 	//middleware, checker on non-production environments
 	const notInProduction = async (req, res, next) => {
-		if (process.env.NODE_ENV === 'production') {
+		if (project.env === 'production') {
 			res.status(422).send({ message: `checker not available in production mode for security reasons!` })
 		}
 		next()	

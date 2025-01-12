@@ -1,15 +1,13 @@
 
-module.exports = (API, { db, paths, providers, checks }) => {
+module.exports = (API, { db, paths, providers, project }) => {
 
-  const { enabled, provider } = db
-
-  if (!enabled) { return API }
+  const provider = db //here, we have no optionality for db -- it must be enabled at this point
 
   const providerVars = providers[provider]
 
   API.DB = { 
     ...API.DB,
-    ...require(`${paths.minapi}/_providers/${provider}`)({ providerVars })
+    ...require(`${paths.minapi}/_providers/${provider}`)({ providerVars }),
   }
 
   return API

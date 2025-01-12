@@ -5,12 +5,12 @@ const mongodb = require('mongodb')
 const hashObject = require('object-hash')
 const chance = new require('chance')()
 
-module.exports = (API, { paths, providers, checks }) => {
+module.exports = (API, { paths, providers, project }) => {
 
 	API.Utils = { ...API.Utils }
 
 	API.Log = API.Utils.log = (...args) => {
-		// if (process.env.NODE_ENV !== 'production') {
+		// if (project.env !== 'production') {
 			console.log(...args)
 		// }    
 	}

@@ -10,9 +10,7 @@ const writeFileAsync = promisify(fs.writeFile)
 const unlinkAsync = promisify(fs.unlink)
 const totpEncoding = 'base32'
 
-module.exports = () => {
-
-	const secret = process.env.AUTH_SECRET
+module.exports = ({ secret }) => {
 
 	let utils = {}
 

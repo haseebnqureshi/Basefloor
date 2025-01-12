@@ -15,14 +15,13 @@ module.exports = ({ projectPath, envPath }) => {
 	}
 
 	const {
-		ai,
-		name,
-		providers,
-		db,
+		project,
 		middlewares,
-		checks,
+		db,
 		files,
 		emails,
+		ai,
+		providers,
 		models,
 		routes,
 	} = require(path.resolve(projectPath, 'minapi.config.js'))
@@ -38,34 +37,33 @@ module.exports = ({ projectPath, envPath }) => {
 	API.AI = {}
 
 	API.Init = () => {
-		API = require('./utils')(API, { paths, providers, checks })
-		API = require('./checks')(API, { checks, paths, providers }) //before, so other features can load checks into the checker
-		API = require('./middlewares')(API, { middlewares, paths, providers, checks }) //must be the first thing, loads json middleware
+		API = require('./utils')(API, { paths, providers, project })
+		API = require('./checks')(API, { paths, providers, project }) //before, so other features can load checks into the checker
+		API = require('./middlewares')(API, { middlewares, paths, providers, project }) //must be the first thing, loads json middleware
 		
-		API = require('./db')(API, { db, paths, providers, checks })
-		API = require('./auth')(API, { paths, providers, checks })
-		API = require('./models')(API, { models, paths, providers, checks })
-		API = require('./files')(API, { files, paths, providers, checks })
+		API = require('./db')(API, { db, paths, providers, project })
+		API = require('./auth')(API, { paths, providers, project })
+		API = require('./models')(API, { models, paths, providers, project })
+		API = require('./files')(API, { files, paths, providers, project })
 
-		API = require('./routes')(API, { routes: routes(), paths, providers, checks })
-		API = require('./emails')(API, { emails, paths, providers, checks })
-		API = require('./ai')(API, { ai, paths, providers, checks })
+		API = require('./routes')(API, { routes: routes(), paths, providers, project })
+		API = require('./emails')(API, { emails, paths, providers, project })
+		API = require('./ai')(API, { ai, paths, providers, project })
 
-		if (checks.enabled) {
+		if (project.checks) {
 			API.Checks.enable()
 		}		
 	}
 
 	API.Start = () => {
-		const port = process.env.PORT || 4000
-		API.listen(port, () => {
-			API.Log(`${name} running MinAPI/Express started HTTP:${port} in ${process.env.NODE_ENV || 'development'} node environment ...`)
+		API.listen(project.port, () => {
+			API.Log(`${project.name} running MinAPI/Express started HTTP:${project.port} in ${project.env} node environment ...`)
 		})
 	}
 
 	API.StartHTTPS = ({ key, crt }) => {
-		if (process.env.NODE_ENV !== 'production') {
-			return API.Log(`${name} running MinAPI/Express attempted to start HTTPS in not-production node environment, quitting now ...`)
+		if (project.env !== 'production') {
+			return API.Log(`${project.name} running MinAPI/Express attempted to start HTTPS in not-production node environment, quitting now ...`)
 		}
 		const httpServer = require('http').createServer(API)
 		const httpsServer = require('https').createServer({
@@ -74,7 +72,7 @@ module.exports = ({ projectPath, envPath }) => {
 		}, API)
 		httpServer.listen(80)
 		httpsServer.listen(443)
-		API.Log(`${name} running MinAPI/Express started HTTPS in production node environment ...`)
+		API.Log(`${project.name} running MinAPI/Express started HTTPS in production node environment ...`)
 	}
 
 	return API

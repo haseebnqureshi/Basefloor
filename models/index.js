@@ -4,7 +4,7 @@ ENV VARIABLES
 MONGODB_DATABASE
 */
 
-module.exports = (API, { models, paths }) => {
+module.exports = (API, { models, paths, providers, project }) => {
 
 	if (!models.Files) {
 		models.Files = {
@@ -144,7 +144,7 @@ module.exports = (API, { models, paths }) => {
 					values = API.DB[name].sanitize(values, 'c')
 				}
 				return await API.Utils.try(`try:${collection}:create`,
-					API.DB.client.db(process.env.MONGODB_DATABASE).collection(collection).insertOne(values)
+					API.DB.run.collection(collection).insertOne(values)
 				)
 			},
 
@@ -164,7 +164,7 @@ module.exports = (API, { models, paths }) => {
 					return v
 				})
 				return await API.Utils.try(`try:${collection}:createMany`,
-					API.DB.client.db(process.env.MONGODB_DATABASE).collection(collection).insertMany(values)
+					API.DB.run.collection(collection).insertMany(values)
 				)
 			},
 
@@ -180,7 +180,7 @@ module.exports = (API, { models, paths }) => {
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 				return await API.Utils.try(`try:${collection}:readAll(where:${JSON.stringify(where)})`,
-					API.DB.client.db(process.env.MONGODB_DATABASE).collection(collection).find(where).toArray()
+					API.DB.run.collection(collection).find(where).toArray()
 				)
 			},
 
@@ -197,7 +197,7 @@ module.exports = (API, { models, paths }) => {
 				}
 				if (Object.values(where).length === 0) { return undefined }
 				return await API.Utils.try(`try:${collection}:read(where:${JSON.stringify(where)})`,
-					API.DB.client.db(process.env.MONGODB_DATABASE).collection(collection).findOne(where)
+					API.DB.run.collection(collection).findOne(where)
 				)
 			},
 
@@ -250,7 +250,7 @@ module.exports = (API, { models, paths }) => {
 				}
 				
 				return await API.Utils.try(`try:${collection}:update(where:${JSON.stringify(where)})`,
-					API.DB.client.db(process.env.MONGODB_DATABASE)
+					API.DB.run
 						.collection(collection)[one ? 'updateOne' : 'update'](where, { $set: values })
 				)
 			},
@@ -295,8 +295,7 @@ module.exports = (API, { models, paths }) => {
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 				return await API.Utils.try(`try:${collection}:delete(where:${JSON.stringify(where)})`,
-					API.DB.client.db(process.env.MONGODB_DATABASE)
-						.collection(collection)[one ? 'deleteOne' : 'delete'](where)
+					API.DB.run.collection(collection)[one ? 'deleteOne' : 'delete'](where)
 				)
 			},
 
