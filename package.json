@@ -1,9 +1,12 @@
 {
   "name": "minapi",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.33.1",
+    "@aws-sdk/client-s3": "^3.726.1",
+    "@aws-sdk/s3-request-presigner": "^3.726.1",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "chance": "^1.1.11",
@@ -16,6 +19,7 @@
     "morgan": "^1.10.0",
     "object-hash": "^3.0.0",
     "phone": "^3.1.42",
+    "postmark": "^4.0.5",
     "speakeasy": "^2.0.0",
     "underscore": "^1.13.7"
   },
@@ -46,5 +50,9 @@
     "url": "https://github.com/avenuedigital/MinAPI/issues"
   },
   "homepage": "https://github.com/avenuedigital/MinAPI#readme",
-  "peerDependencies": {}
+  "peerDependencies": {
+    "@anthropic-ai/sdk": "*",
+    "@aws-sdk/client-s3": "*",
+    "@aws-sdk/s3-request-presigner": "*"
+  }
 }

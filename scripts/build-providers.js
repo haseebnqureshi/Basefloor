@@ -2,11 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// Helper to get project root (parent of node_modules)
 function getProjectRoot() {
   let currentDir = process.cwd();
   
-  // Keep going up until we're out of node_modules
   while (currentDir.includes('node_modules')) {
     currentDir = path.dirname(currentDir);
   }
@@ -14,11 +12,36 @@ function getProjectRoot() {
   return currentDir;
 }
 
+function isDevMode() {
+  try {
+    require(path.join(getProjectRoot(), 'minapi.config.js'));
+    return false;
+  } catch (err) {
+    return true;
+  }
+}
+
+function getPackageJsonPath() {
+  return isDevMode() 
+    ? path.join(__dirname, '../package.json')
+    : path.join(getProjectRoot(), 'package.json');
+}
+
+function detectPackageManager() {
+  const projectRoot = isDevMode() ? path.join(__dirname, '..') : getProjectRoot();
+  const hasYarnLock = fs.existsSync(path.join(projectRoot, 'yarn.lock'));
+  const hasNpmLock = fs.existsSync(path.join(projectRoot, 'package-lock.json'));
+  
+  if (hasYarnLock) return 'yarn';
+  if (hasNpmLock) return 'npm';
+  
+  return 'npm';
+}
+
 function getServiceTypes() {
   const providersDir = path.join(__dirname, '../providers');
   const services = {};
 
-  // Scan @provider directories
   fs.readdirSync(providersDir).forEach(item => {
     const itemPath = path.join(providersDir, item);
     if (item.startsWith('@') && fs.statSync(itemPath).isDirectory()) {
@@ -27,7 +50,6 @@ function getServiceTypes() {
           const providerName = `${item}/${file.replace('.js', '')}`;
           const serviceType = file.replace('.js', '');
           
-          // Initialize service type set if it doesn't exist
           if (!services[serviceType]) {
             services[serviceType] = new Set();
           }
@@ -45,14 +67,18 @@ function getEnabledProviders() {
   try {
     config = require(path.join(getProjectRoot(), 'minapi.config.js'));
   } catch (err) {
-    console.error('Could not load minapi.config.js - please create one in the root of your project.');
-    process.exit(1);
+    console.log('No minapi.config.js found, loading all provider dependencies');
+    const services = getServiceTypes();
+    const allProviders = new Set();
+    Object.values(services).forEach(providers => {
+      providers.forEach(provider => allProviders.add(provider));
+    });
+    return allProviders;
   }
 
   const enabled = new Set();
   const services = getServiceTypes();
 
-  // Check each discovered service type
   Object.entries(services).forEach(([serviceType, providers]) => {
     if (config[serviceType]?.enabled) {
       if (config[serviceType].provider && providers.has(config[serviceType].provider)) {
@@ -123,53 +149,56 @@ function scanProviders() {
   return { providerDeps, allDeps };
 }
 
+function updatePackageJson(dependencies) {
+  const packageJsonPath = getPackageJsonPath();
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+  
+  packageJson.peerDependencies = packageJson.peerDependencies || {};
+  
+  const coreDeps = new Set([
+    ...Object.keys(packageJson.dependencies || {}),
+    ...Object.keys(packageJson.devDependencies || {})
+  ]);
+
+  dependencies.forEach(dep => {
+    if (!coreDeps.has(dep)) {
+      packageJson.peerDependencies[dep] = '*';
+    }
+  });
+  
+  fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+  console.log('Updated package.json with provider peer dependencies');
+}
+
 function installDependencies(dependencies) {
   const packageManager = detectPackageManager();
-  const depsArray = Array.from(dependencies);
+  const packageJson = JSON.parse(fs.readFileSync(getPackageJsonPath(), 'utf8'));
   
-  if (depsArray.length === 0) return;
+  const coreDeps = new Set([
+    ...Object.keys(packageJson.dependencies || {}),
+    ...Object.keys(packageJson.devDependencies || {})
+  ]);
   
-  console.log('Installing provider dependencies:', depsArray.join(', '));
+  const depsToInstall = Array.from(dependencies).filter(dep => !coreDeps.has(dep));
+  
+  if (depsToInstall.length === 0) return;
+  
+  console.log('Installing provider dependencies:', depsToInstall.join(', '));
   
   try {
     switch (packageManager) {
       case 'yarn':
-        execSync(`yarn add ${depsArray.join(' ')} --ignore-scripts`, { stdio: 'inherit' });
+        execSync(`yarn add ${depsToInstall.join(' ')} --ignore-scripts`, { stdio: 'inherit' });
         break;
       case 'npm':
       default:
-        execSync(`npm install ${depsArray.join(' ')} --ignore-scripts`, { stdio: 'inherit' });
+        execSync(`npm install ${depsToInstall.join(' ')} --ignore-scripts`, { stdio: 'inherit' });
         break;
     }
   } catch (err) {
     console.error(`Failed to install dependencies using ${packageManager}:`, err);
     process.exit(1);
   }
-}
-
-function detectPackageManager() {
-  const projectRoot = getProjectRoot();
-  const hasYarnLock = fs.existsSync(path.join(projectRoot, 'yarn.lock'));
-  const hasNpmLock = fs.existsSync(path.join(projectRoot, 'package-lock.json'));
-  
-  if (hasYarnLock) return 'yarn';
-  if (hasNpmLock) return 'npm';
-  
-  return 'npm';
-}
-
-function updatePackageJson(dependencies) {
-  const packageJsonPath = path.join(getProjectRoot(), 'package.json');
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-  
-  packageJson.peerDependencies = packageJson.peerDependencies || {};
-  
-  dependencies.forEach(dep => {
-    packageJson.peerDependencies[dep] = '*';
-  });
-  
-  fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-  console.log('Updated package.json with provider peer dependencies');
 }
 
 // Generate the manifest and update package.json
