@@ -45,7 +45,7 @@ function getEnabledProviders() {
   try {
     config = require(path.join(getProjectRoot(), 'minapi.config.js'));
   } catch (err) {
-    console.error('Could not load minapi.config.js');
+    console.error('Could not load minapi.config.js - please create one in the root of your project.');
     process.exit(1);
   }
 
