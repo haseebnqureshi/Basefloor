@@ -156,7 +156,7 @@ module.exports = (API, { paths, providers, project }) => {
 		}
 	})
 
-	if (checks.enabled) {
+	if (project.checks) {
 
 		API.Checks.register({
 			resource: '/register',
@@ -239,7 +239,7 @@ module.exports = (API, { paths, providers, project }) => {
 
 	})
 
-	if (checks.enabled) {
+	if (project.checks) {
 		API.Checks.register({
 			resource: '/user/reset/password',
 			description: 'emailing password reset verification code',
@@ -306,7 +306,7 @@ module.exports = (API, { paths, providers, project }) => {
 		}
 	})
 
-	if (checks.enabled) {
+	if (project.checks) {
 		API.Checks.register({
 			resource: '/user/reset/password',
 			description: 'update password after clicking email link',
@@ -391,7 +391,7 @@ module.exports = (API, { paths, providers, project }) => {
 		}
 	})
 
-	if (checks.enabled) {
+	if (project.checks) {
 		API.Checks.register({
 			resource: '/user/verify/:method',
 			description: 'verifying email',
@@ -437,7 +437,7 @@ module.exports = (API, { paths, providers, project }) => {
 		}
 	})
 
-	if (checks.enabled) {
+	if (project.checks) {
 		API.Checks.register({
 			resource: '/user/verify',
 			description: 'checking email verification status',
@@ -482,7 +482,7 @@ module.exports = (API, { paths, providers, project }) => {
 		}
 	})
 
-	if (checks.enabled) {
+	if (project.checks) {
 		API.Checks.register({
 			resource: '/user/verify',
 			description: 'completing email verification',

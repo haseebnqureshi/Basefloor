@@ -27,7 +27,8 @@ module.exports = ({ projectPath, envPath }) => {
 	} = require(path.resolve(projectPath, 'minapi.config.js'))
 
 	let API = express()
-	API.Express = express
+
+	API.Express = () => express
 	API.Utils = {}
 	API.Checks = {}
 	API.DB = {}
@@ -52,7 +53,7 @@ module.exports = ({ projectPath, envPath }) => {
 
 		if (project.checks) {
 			API.Checks.enable()
-		}		
+		}	
 	}
 
 	API.Start = () => {

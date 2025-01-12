@@ -313,7 +313,7 @@ module.exports = (API, { models, paths, providers, project }) => {
 				return await this.delete({ where }, false)
 			},
 
-		},
+		}
 
 	}
 

@@ -13,7 +13,7 @@ module.exports = ({ providerVars }) => {
     + providerVars.appName
 
   // Create a MongoClient with a MongoClientOptions object to set the Stable API version
-  const client = new MongoClient(API.DB.CONNECTION_STRING, {
+  const client = new MongoClient(CONNECTION_STRING, {
     serverApi: {
       version: ServerApiVersion.v1,
       strict: true,
@@ -21,7 +21,7 @@ module.exports = ({ providerVars }) => {
     }
   })
 
-  const run = () => API.DB.client.db(providerVars.providerVars.database)
+  const run = () => client.db(providerVars.providerVars.database)
 
   const test = async () => {
     try {

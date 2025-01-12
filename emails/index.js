@@ -5,12 +5,14 @@ module.exports = (API, { emails, paths, providers, checks }) => {
 
   if (!enabled) { return API }
 
+  const Provider = require(`${paths.minapi}/providers/${emails.provider}`)({ 
+    providerVars: providers[emails.provider]
+  })
+
   if (emails.provider) {
     API.Emails = { 
       ...API.Emails,
-      Provider: ...require(`${paths.minapi}/_providers/${emails.provider}`)({ 
-        providerVars: providers[emails.provider]
-      })
+      ...Provider,
     }
     return API
   }
@@ -32,7 +34,7 @@ module.exports = (API, { emails, paths, providers, checks }) => {
   else if (emails.providers) {
     for (let key in emails.providers) {
       const name = emails.providers[key]
-      API.Emails[key] = require(`${paths.minapi}/_providers/${name}`)({ 
+      API.Emails[key] = require(`${paths.minapi}/providers/${name}`)({ 
         providerVars: providers[name]
       })
     }

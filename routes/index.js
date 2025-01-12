@@ -12,8 +12,8 @@ const _ = require('underscore')
 module.exports = (API, { routes, paths, providers, project }) => {
 
 	//convert new syntax to older (avoids whole code refactor at the moment)
-	let convertedRoutes = Object.keys(routes)
-	convertedRoutes.map(url => {
+	// API.Log('routes from config', routes)
+	routes = Object.keys(routes).map(url => {
 		let route = { url }
 		if (routes[url].c) { route._create = routes[url].c }
 		if (routes[url].rA) { route._readAll = routes[url].rA }
@@ -22,9 +22,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 		if (routes[url].d) { route._delete = routes[url].d }
 		return route
 	})
-	API.Log('routes from config', routes)
-	routes = convertedRoutes
-	API.Log('routes passed to handlers', routes)
+	// API.Log('routes converted to handlers', routes)
 
 	// Map internal CRUD operations to HTTP methods and database actions
 	const methods = {
@@ -39,7 +37,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 	let routers = routes.map(r => {
 		// Parse route pattern like '/parent/path(model)'
 		const pattern = RegExp(/\/?([^\/]*)\/([^\(]+)\(([^\(]+)\)/)
-		const [id, parentPath, path, model] = r._id.match(pattern)
+		const [id, parentPath, path, model] = r.url.match(pattern)
 
 		// For each CRUD method defined in the route
 		for (let m in methods) {
@@ -144,7 +142,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 
 				/**
 				 * Process permission rules in the format:
-				 * - Simple: '@user._id=123'
+				 * - Simple: '@user.url=123'
 				 * - Array membership: 'admin=in=@user.roles'
 				 * Returns: boolean indicating if permission is granted
 				 */
@@ -263,7 +261,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 							if (modelsInAllow.indexOf('_user') > -1) {
 								modelData['_user'] = await API.DB.user.read({
 									where: {
-										_id: req.user._id
+										_id: req.user.url
 									}
 								})
 							}

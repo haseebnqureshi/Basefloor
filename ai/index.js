@@ -8,7 +8,7 @@ module.exports = (API, { ai, paths, providers, checks }) => {
   if (ai.provider) {
 	  API.AI = { 
 	    ...API.AI,
-	    ...require(`${paths.minapi}/_providers/${ai.provider}`)({ 
+	    ...require(`${paths.minapi}/providers/${ai.provider}`)({ 
 	    	providerVars: providers[ai.provider]
 	    })
 	  }
@@ -18,10 +18,12 @@ module.exports = (API, { ai, paths, providers, checks }) => {
   else if (ai.providers) {
   	for (let key in ai.providers) {
   		const name = ai.providers[key]
-  		API.AI[key] = require(`${paths.minapi}/_providers/${name}`)({ 
+  		API.AI[key] = require(`${paths.minapi}/providers/${name}`)({ 
 	    	providerVars: providers[name]
 	    })
   	}
   }
+
+  return API
 
 }

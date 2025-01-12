@@ -6,11 +6,14 @@ module.exports = (API, { files, paths, providers, project }) => {
 	if (!enabled) { return API }
 
   if (files.provider) {
+
+  	const Provider = require(`${paths.minapi}/providers/${files.provider}`)({ 
+    	providerVars: providers[files.provider]
+    })
+
 	  API.Files = { 
 	    ...API.Files,
-	    Provider: ...require(`${paths.minapi}/_providers/${files.provider}`)({ 
-	    	providerVars: providers[files.provider]
-	    })
+	    Provider,
 	  }
 	  return API
   }
@@ -31,7 +34,7 @@ module.exports = (API, { files, paths, providers, project }) => {
   else if (files.providers) {
   	for (let key in files.providers) {
   		const name = files.providers[key]
-  		API.Files[key] = require(`${paths.minapi}/_providers/${name}`)({ 
+  		API.Files[key] = require(`${paths.minapi}/providers/${name}`)({ 
 	    	providerVars: providers[name]
 	    })
   	}
