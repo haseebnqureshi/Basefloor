@@ -3,23 +3,29 @@
 
 ```
 module.exports = {
-  "name": 'api.example.com',
-  "checks": {
-    enabled: false,
-  },
-  "middlewares": {
+  "project": {
+    name: 'api.example.com',
     env: process.env.NODE_ENV || 'development',
+    port: process.env.PORT || 4000,
+    checks: false,
+    app: {
+      name: 'Example',
+      secret: process.env.APP_SECRET,
+      author: {
+        name: 'Example LLC',
+        email: 'hello@example.com',
+      },
+      urls: {
+        verify: process.env.APP_URLS_VERIFY,
+      }
+    },
+  },
+  "db": "@mongodb/db",
+  "middlewares": {
     limit: process.env.REQUEST_SIZE_LIMIT || '10mb',
     cors: true,
     extended: false,
   },
-  "auth": {
-    secret: process.env.AUTH_SECRET,
-  },
-	"db": {
-		enabled: true,
-		provider: "@mongodb/db",
-	},
 	"files": {
 		enabled: true,
 		provider: "@digitalocean/files",

@@ -1,5 +1,7 @@
 # MinAPI
 
+### This README is outdated and will be updated soon.
+
 MinAPI is a comprehensive API framework built on Express and MongoDB that provides a minimum viable API setup with built-in authentication, permissions, CRUD operations, and resource management.
 
 ## Features
