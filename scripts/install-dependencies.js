@@ -2,7 +2,26 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
+function getProjectRoot() {
+  let currentDir = __dirname;
+  
+  while (currentDir !== '/') {
+    if (fs.existsSync(path.join(currentDir, 'package.json'))) {
+      return currentDir;
+    }
+    currentDir = path.dirname(currentDir);
+  }
+  
+  throw new Error('Could not find project root');
+}
+
+function detectPackageManager() {
+  const projectRoot = getProjectRoot();
+  return fs.existsSync(path.join(projectRoot, 'yarn.lock')) ? 'yarn' : 'npm';
+}
+
 function installCoreDependencies() {
+  const packageManager = detectPackageManager();
   const miniApiDir = path.join(__dirname, '..');
   
   // Check if we're in development mode (running from minapi project directly)
@@ -22,7 +41,7 @@ function installCoreDependencies() {
     }
 
     // Install dependencies and allow installation scripts to run
-    execSync('npm install', {
+    execSync(`${packageManager} install`, {
       stdio: 'inherit',
       cwd: miniApiDir,
       env: { ...process.env, SKIP_POSTINSTALL: 'true' } // Prevent recursive postinstall
