@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "prepare": "node -e \"if(process.env.npm_lifecycle_event !== 'publish') require('./scripts/build-providers.js')\"",
+    "prepare": "node scripts/prepare.js",
     "build": "node scripts/build-providers.js",
     "postinstall": "node scripts/install-dependencies.js"
   },
