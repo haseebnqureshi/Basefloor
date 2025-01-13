@@ -2,6 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// Add this at the beginning of build-providers.js
+if (process.env.SKIP_BUILD === 'true') {
+  console.log('Skipping build as SKIP_BUILD is set');
+  process.exit(0);
+}
+
 function getProjectRoot() {
   let currentDir = __dirname;
   

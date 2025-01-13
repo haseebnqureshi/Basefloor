@@ -2,35 +2,18 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-function getProjectRoot() {
-  let currentDir = __dirname;
-  
-  while (currentDir !== '/') {
-    if (fs.existsSync(path.join(currentDir, 'package.json'))) {
-      return currentDir;
-    }
-    currentDir = path.dirname(currentDir);
-  }
-  
-  throw new Error('Could not find project root');
-}
-
-function detectPackageManager() {
-  const projectRoot = getProjectRoot();
-  return fs.existsSync(path.join(projectRoot, 'yarn.lock')) ? 'yarn' : 'npm';
-}
-
 function installCoreDependencies() {
-  const packageManager = detectPackageManager();
   const miniApiDir = path.join(__dirname, '..');
   
   // Check if we're in development mode (running from minapi project directly)
   const isDevelopment = fs.existsSync(path.join(miniApiDir, '.git'));
-  if (isDevelopment) {
-    console.log('Development mode detected, skipping core dependency installation');
+  
+  // If SKIP_POSTINSTALL is set, we're in a recursive install - skip
+  if (process.env.SKIP_POSTINSTALL === 'true') {
+    console.log('Skipping core dependency installation (SKIP_POSTINSTALL is set)');
     return;
   }
-
+  
   console.log('Installing MinAPI core dependencies...');
   
   try {
@@ -40,17 +23,31 @@ function installCoreDependencies() {
       fs.mkdirSync(nodeModulesPath, { recursive: true });
     }
 
-    // Install dependencies and allow installation scripts to run
-    execSync(`${packageManager} install`, {
+    // Install dependencies
+    const command = isDevelopment ? 'npm install' : 'npm install --production';
+    execSync(command, {
       stdio: 'inherit',
       cwd: miniApiDir,
-      env: { ...process.env, SKIP_POSTINSTALL: 'true' } // Prevent recursive postinstall
+      env: { 
+        ...process.env, 
+        SKIP_POSTINSTALL: 'true',  // Prevent recursive postinstall
+        NODE_ENV: isDevelopment ? 'development' : 'production'
+      }
     });
+    
+    // Run build if not in development mode
+    if (!isDevelopment) {
+      execSync('npm run build', {
+        stdio: 'inherit',
+        cwd: miniApiDir,
+        env: { ...process.env, SKIP_POSTINSTALL: 'true' }
+      });
+    }
     
     console.log('Core dependencies installed successfully');
   } catch (err) {
     console.error('Failed to install core dependencies:', err);
-    throw err;
+    process.exit(1);
   }
 }
 
