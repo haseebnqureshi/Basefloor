@@ -6,7 +6,9 @@ const _ = require('underscore')
 
 module.exports = ({ projectPath, envPath }) => {
 
-	require('dotenv').config({ path: envPath })
+	if (envPath) { //may want to delegate to project or runtime var setting
+		require('dotenv').config({ path: envPath })
+	}
 
 	const paths = {
 		app: projectPath,
