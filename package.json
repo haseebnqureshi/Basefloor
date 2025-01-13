@@ -1,12 +1,9 @@
 {
   "name": "minapi",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.33.1",
-    "@aws-sdk/client-s3": "^3.726.1",
-    "@aws-sdk/s3-request-presigner": "^3.726.1",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "chance": "^1.1.11",
@@ -25,8 +22,7 @@
   },
   "scripts": {
     "build": "node scripts/build-providers.js",
-    "postinstall": "npm run build",
-    "test": "node example"
+    "postinstall": "node scripts/install-dependencies.js && node scripts/build-providers.js"
   },
   "description": "Minimum viable API w/ authentication and permissions, CRUD and resource management",
   "repository": {
@@ -49,10 +45,5 @@
   "bugs": {
     "url": "https://github.com/avenuedigital/MinAPI/issues"
   },
-  "homepage": "https://github.com/avenuedigital/MinAPI#readme",
-  "peerDependencies": {
-    "@anthropic-ai/sdk": "*",
-    "@aws-sdk/client-s3": "*",
-    "@aws-sdk/s3-request-presigner": "*"
-  }
+  "homepage": "https://github.com/avenuedigital/MinAPI#readme"
 }

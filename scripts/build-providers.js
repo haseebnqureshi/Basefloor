@@ -3,13 +3,16 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 function getProjectRoot() {
-  let currentDir = process.cwd();
+  let currentDir = __dirname;
   
-  while (currentDir.includes('node_modules')) {
+  while (currentDir !== '/') {
+    if (fs.existsSync(path.join(currentDir, 'package.json'))) {
+      return currentDir;
+    }
     currentDir = path.dirname(currentDir);
   }
   
-  return currentDir;
+  throw new Error('Could not find project root');
 }
 
 function isDevMode() {
@@ -22,20 +25,12 @@ function isDevMode() {
 }
 
 function getPackageJsonPath() {
-  return isDevMode() 
-    ? path.join(__dirname, '../package.json')
-    : path.join(getProjectRoot(), 'package.json');
+  return path.join(__dirname, '../package.json');
 }
 
 function detectPackageManager() {
-  const projectRoot = isDevMode() ? path.join(__dirname, '..') : getProjectRoot();
-  const hasYarnLock = fs.existsSync(path.join(projectRoot, 'yarn.lock'));
-  const hasNpmLock = fs.existsSync(path.join(projectRoot, 'package-lock.json'));
-  
-  if (hasYarnLock) return 'yarn';
-  if (hasNpmLock) return 'npm';
-  
-  return 'npm';
+  const projectRoot = getProjectRoot();
+  return fs.existsSync(path.join(projectRoot, 'yarn.lock')) ? 'yarn' : 'npm';
 }
 
 function getServiceTypes() {
@@ -150,28 +145,27 @@ function scanProviders() {
 }
 
 function updatePackageJson(dependencies) {
-  const packageJsonPath = getPackageJsonPath();
+  const packageJsonPath = path.join(__dirname, '../package.json');
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
   
-  packageJson.peerDependencies = packageJson.peerDependencies || {};
+  packageJson.dependencies = packageJson.dependencies || {};
   
-  const coreDeps = new Set([
+  const existingDeps = new Set([
     ...Object.keys(packageJson.dependencies || {}),
     ...Object.keys(packageJson.devDependencies || {})
   ]);
 
   dependencies.forEach(dep => {
-    if (!coreDeps.has(dep)) {
-      packageJson.peerDependencies[dep] = '*';
+    if (!existingDeps.has(dep)) {
+      packageJson.dependencies[dep] = '*';
     }
   });
   
   fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-  console.log('Updated package.json with provider peer dependencies');
+  console.log('Updated MinAPI package.json with provider dependencies');
 }
 
-function installDependencies(dependencies) {
-  const packageManager = detectPackageManager();
+function getDependenciesToInstall(dependencies) {
   const packageJson = JSON.parse(fs.readFileSync(getPackageJsonPath(), 'utf8'));
   
   const coreDeps = new Set([
@@ -181,39 +175,69 @@ function installDependencies(dependencies) {
   
   const depsToInstall = Array.from(dependencies).filter(dep => !coreDeps.has(dep));
   
-  if (depsToInstall.length === 0) return;
+  if (depsToInstall.length === 0) {
+    console.log('No new dependencies to install');
+    return [];
+  }
   
-  console.log('Installing provider dependencies:', depsToInstall.join(', '));
+  console.log('Dependencies to install:', depsToInstall.join(', '));
+  return depsToInstall;
+}
+
+function installDependencies(depsToInstall) {
+  if (!depsToInstall.length) return;
   
+  const packageManager = detectPackageManager();
+  const command = packageManager === 'yarn' 
+    ? `yarn add ${depsToInstall.join(' ')} --save`
+    : `npm install ${depsToInstall.join(' ')} --save`;
+  
+  console.log('Running command:', command);
   try {
-    switch (packageManager) {
-      case 'yarn':
-        execSync(`yarn add ${depsToInstall.join(' ')} --ignore-scripts`, { stdio: 'inherit' });
-        break;
-      case 'npm':
-      default:
-        execSync(`npm install ${depsToInstall.join(' ')} --ignore-scripts`, { stdio: 'inherit' });
-        break;
-    }
+    execSync(command, { 
+      stdio: 'inherit',
+      cwd: path.join(__dirname, '..'),
+      env: { ...process.env, SKIP_POSTINSTALL: 'true' }
+    });
+    
+    console.log('Installation complete');
   } catch (err) {
     console.error(`Failed to install dependencies using ${packageManager}:`, err);
-    process.exit(1);
+    throw err;
   }
 }
 
 // Generate the manifest and update package.json
+console.log('Scanning providers...');
 const { providerDeps, allDeps } = scanProviders();
+console.log('Scan complete. Found dependencies:', Array.from(allDeps));
 
 // Save the manifest
+console.log('Saving manifest...');
 const manifestPath = path.join(__dirname, '../providers/manifest.json');
 fs.writeFileSync(manifestPath, JSON.stringify(providerDeps, null, 2));
+console.log('Manifest saved');
 
-// Update package.json with peer dependencies
+// Capture dependencies to install BEFORE any updates
+const depsToInstall = getDependenciesToInstall(allDeps);
+
+// Update package.json with dependencies
+console.log('Updating package.json...');
 updatePackageJson(allDeps);
 
 // Install all dependencies found
-if (allDeps.size > 0) {
-  installDependencies(allDeps);
+console.log('Checking dependencies to install:', { depsToInstall });
+try {
+  if (depsToInstall.length > 0) {
+    console.log('Installing dependencies...');
+    installDependencies(depsToInstall);
+    console.log('Dependencies installed successfully');
+  } else {
+    console.log('No new dependencies to install');
+  }
+} catch (error) {
+  console.error('Error during dependency installation:', error);
+  process.exit(1);
 }
 
 console.log('Provider manifest generated and dependencies installed'); 
