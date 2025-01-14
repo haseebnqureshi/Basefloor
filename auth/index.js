@@ -12,7 +12,7 @@ module.exports = (API, { paths, providers, project }) => {
 
 	API.Auth.getAfterRequireUserMiddleware = () => {
 		return API.Auth.afterRequireUser || (async (req, res, next) => {
-			// console.log('_auth/index.js')
+			// API.Log('_auth/index.js')
 			next()
 		})
 	}
@@ -132,7 +132,7 @@ module.exports = (API, { paths, providers, project }) => {
 			if (!correctPassword) { throw { code: 422, err: `incorrect login information!` } }
 			const token = await API.Utils.try('Auth.login:createToken', 
 				API.Auth.createToken('auth', user._id, {}))
-			// console.log({ token })
+			// API.Log({ token })
 			res.status(200).send({ token, message: `logged in!` })
 		}
 		catch (err) {
@@ -225,7 +225,7 @@ module.exports = (API, { paths, providers, project }) => {
 			await API.Utils.try('Auth.resetPassword:email.send', 
 				API.Emails.send(emailArgs))
 
-			console.log('emailed code and return jwt token to client. payload has secret, must be provided with emailed code to verify identity.', { token, totp })
+			API.Log('emailed code and return jwt token to client. payload has secret, must be provided with emailed code to verify identity.', { token, totp })
 
 			res.status(200).send({ 
 				token,
@@ -297,7 +297,7 @@ module.exports = (API, { paths, providers, project }) => {
 			//creating login token for presumed login
 			const token = await API.Utils.try('Auth.resetPasswordChange:createToken', 
 				API.Auth.createToken('auth', _id, {}))
-			// console.log({ token })
+			// API.Log({ token })
 			res.status(200).send({ token, message: `password changed and logged in!` })
 
 		}
@@ -383,11 +383,11 @@ module.exports = (API, { paths, providers, project }) => {
 
 			//delivering sms verification notification
 			} else if (method === 'sms') {
-				console.log({ method, token })
+				API.Log({ method, token })
 			}
 		}
 		catch (err) {
-			console.log(err)
+			API.Log(err)
 		}
 	})
 
@@ -424,7 +424,7 @@ module.exports = (API, { paths, providers, project }) => {
 
 			//updating user verification status
 			const user = await API.DB.Users.read({ where })
-			console.log('user/verify', where, { user })
+			API.Log('user/verify', where, { user })
 
 
 			res.status(200).send({

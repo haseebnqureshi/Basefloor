@@ -10,9 +10,9 @@ module.exports = (API, { paths, providers, project }) => {
 	API.Utils = { ...API.Utils }
 
 	API.Log = API.Utils.log = (...args) => {
-		// if (project.env !== 'production') {
+		if (project.env !== 'production') {
 			console.log(...args)
-		// }    
+		}    
 	}
 
 	API.LogObj = API.Utils.logObj = (obj) => {

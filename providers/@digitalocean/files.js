@@ -1,4 +1,3 @@
-
 const fs = require('fs');
 const { PutObjectCommand, S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
@@ -32,7 +31,7 @@ module.exports = ({ providerVars }) => {
 
 	const uploadFile = async ({ key, filepath, contentType }) => {
 		await client.send(new PutObjectCommand({
-			Bucket: bucket,
+			Bucket: providerVars.bucket,
 			Key: key,
 			Body: fs.readFileSync(filepath),
 			ContentType: contentType,

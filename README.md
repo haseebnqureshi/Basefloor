@@ -120,6 +120,11 @@ module.exports = {
     }
   ],
 
+  // Important: When referencing models in foreign key relationships, always use the
+  // `_collection` name as the prefix for the foreign key field. For example, if a model
+  // has `_collection: 'users'`, other models should reference it as `users_id`, not
+  // `UserId` or `User_id`.
+
   // Routes Configuration
   routes: () => [
     {

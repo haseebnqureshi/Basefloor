@@ -85,13 +85,13 @@ module.exports = (API, { models, paths, providers, project }) => {
 			values,
 
 			sanitize: (v, dbAction /* c, rA, r, u, d */ , collection) => {
-				// console.log({ dbAction, values })
+				// API.Log({ dbAction, values })
 				let sanitized = {}
 
 				//first, ensure no `${collection}_${key}` formats in keys
 				for (let key in v) {
 					const pattern = new RegExp('^' + collection)
-					// console.log(key, collection, key.match(pattern))
+					// API.Log(key, collection, key.match(pattern))
 					if (key.match(pattern)) {
 						const newKey = key.replace(collection, '')
 						v[newKey] = v[key]
@@ -103,9 +103,9 @@ module.exports = (API, { models, paths, providers, project }) => {
 						const valueType = values[key][0]
 						const dbActions = values[key][1].split('')
 						if (dbActions.indexOf(dbAction) > -1) {
-							// console.log({ key, valueType })
+							// API.Log({ key, valueType })
 							sanitized[key] = API.Utils.valueType(v[key], valueType)
-							// console.log(API.Utils.valueType(v[key], valueType))
+							// API.Log(API.Utils.valueType(v[key], valueType))
 						}
 					}
 				}

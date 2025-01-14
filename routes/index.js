@@ -38,38 +38,43 @@ module.exports = (API, { routes, paths, providers, project }) => {
 		// Parse route pattern like '/parent/path(model)'
 		const pattern = RegExp(/\/?([^\/]*)\/([^\(]+)\(([^\(]+)\)/)
 		const [id, parentPath, path, model] = r.url.match(pattern)
+		const collection = API.DB[model].collection
 
 		// For each CRUD method defined in the route
 		for (let m in methods) {
 			if (r[m]) {
-				// If no 'where' clause, it's a collection endpoint
-				if (!r[m].where) {
-					r[m].url = `/${path}`
-				} else {
-					// If 'where' exists, it's a single resource endpoint
+				//it's a colelction endpoint
+				if (m === '_readAll') {
 					r[m].params = {}
-					let paramKey
-					let dbKey
-					
-					// Handle string and object where clauses
-					if (_.isString(r[m].where)) {
-						// Simple where clause like '_id'
-						paramKey = `${model}${r[m].where}`
-						dbKey = `${model}.${r[m].where}`
-					} 
-					else if (_.isObject(r[m].where)) {
-						// Complex where clause with multiple fields
-						const key = Object.keys(r[m].where)[0]
-						paramKey = `${model}${key}`
-						dbKey = r[m].where[key].map(v => `${model}.${v}`)
-					}
-					// Build URL with parameters (e.g., /users/:userId)
-					r[m].url = `/${path}/:${paramKey}`
-					r[m].params[paramKey] = dbKey
+					r[m].url = `/${path}`
+				}
+				//assuming individual endpoint, must have a 'where' clause
+				else if (r[m].where) {
+					let routeParam //i.e., ":post_id" or `:${collection}${key}`
+					let modelAndKey //i.e., { model: 'Post', key: '_id' }, following { model, key }
+					r[m].params = {} //creating a map for our route keys with corresponding model names and where keys
+
+					//only accepting simple where clauses referencing a string
+					routeParam = `${collection}${r[m].where}`
+					modelAndKey = { model, key: r[m].where }
+					r[m].params[routeParam] = modelAndKey
+
+					// Build URL with parameters (e.g., /users/:user_id)
+					r[m].url = `/${path}/:${routeParam}`
 				}
 			}
 		}
-		return { ...r, model, path, parentPath, parents: [] }
+
+		// console.dir({ id, parentPath, path, model, collection, r })
+
+		return { 
+			...r, 
+			model, 
+			path, 
+			collection,
+			parentPath, 
+			parents: [] 
+		}
 	})
 
 	// Build hierarchical routing structure
@@ -197,7 +202,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 
 							values[i] = value
 							if (value === null || value === undefined) {
-								console.log(`-- @${collection}.${field} didn't exist in db!`)
+								API.Log(`-- @${collection}.${field} didn't exist in db!`)
 								return null
 							}
 						}
@@ -266,7 +271,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 							for (let routeParam in allParams) {
 
 								//we're only loading models that are referenced in the url path (including the user object)
-								let [model, key] = allParams[routeParam].split('.')
+								let { model, key } = allParams[routeParam]
 								
 								//creating a where object to locate the correct data
 								let where = {}
@@ -275,14 +280,14 @@ module.exports = (API, { routes, paths, providers, project }) => {
 								//pulling data from each route w/ params
 								modelData[model] = await API.DB[model].read({ where })
 
-								// console.log({ modelData, model, where, 'modelData[model]':modelData[model] })
+								// API.Log({ modelData, model, where, 'modelData[model]':modelData[model] })
 							}
 
-							// console.log({ allParams, 'r.url':r.url })
-							// console.log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
+							// API.Log({ allParams, 'r.url':r.url })
+							// API.Log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
 
 							const isAuthorized = traverseAllowCommands(r.allow)
-							// console.log({ isAuthorized })
+							// API.Log({ isAuthorized })
 
 							if (!isAuthorized) { 
 								throw { code: 422, err: `user not authorized! permissions invalid.` }
@@ -295,17 +300,68 @@ module.exports = (API, { routes, paths, providers, project }) => {
 					}
 				}], async (req, res) => {
 					try {
-						// Extract parameters for database query
-						const paramsAllowed = [
-							...Object.keys(router.parentsParams || {}),
-							...Object.keys(r.params || {})
-						]
-						const where = _.pick(req.params, paramsAllowed)
-						const values = { ...req.body, ...where }
+
+						const values = req.body
+
+						//Collect all of our route params with models and keys
+						let allParams = { ...r.params || {} } //Start with the current route's params
+
+						API.Log('router.parentsParams', router.parentsParams)
+						
+						//Next, iterate through parent params
+						for (let param in router.parentsParams) {
+
+							//Transform into model and key relative to existing path and model!
+							//For example, { model: 'Users', key: '_id' } for Posts would become
+							//{ model: 'Posts', key: 'user_id' }, for now we can search all posts
+							//by the appropriate user_id. That creation of the mapped key comes 
+							//from the collection of a route. The collection name is also the key
+							//that is used to construct a foreign key. 
+							//
+							//Good thing is that the route param itself is that mapped foreign key!
+
+							allParams[param] = { model: router.model, key: param }
+						}
+
+						API.Log('allParams', allParams)
+
+						//Only allow whitelisted route parameters from our request
+						const whitelist = Object.keys(allParams)
+						const allParamsAllowed = _.pick(req.params, whitelist)
+
+						API.Log('whitelist', whitelist)
+						API.Log('allParamsAllowed', allParamsAllowed)
+
+						//Loading up our model where values to retrieve values
+						let modelsAndParams = {}
+						for (let param in allParamsAllowed) {
+							let value = allParamsAllowed[param]
+							let { model, key } = allParams[param]
+
+							//There should only be one model... Keeping this flexibility for
+							//future development.
+							if (!modelsAndParams[model]) { 
+								modelsAndParams[model] = { values, where: {} } 
+							}
+							modelsAndParams[model].where[key] = value		
+						}
+
+						API.Log('modelsAndParams', modelsAndParams)
+
+						//Ensuring the correct database query selections
+						let whereAndValues = {}
+						for (let model in modelsAndParams) {
+							if (model === router.model) {
+								whereAndValues = modelsAndParams[model]
+							}
+						}
+
+						API.Log('router.model', router.model)
+						API.Log('whereAndValues', whereAndValues)
 
 						// Execute database operation
 						await API.DB.connect()
-						const data = await API.DB[router.model][db]({ where, values })
+						const data = await API.DB[router.model][db](whereAndValues)
 						await API.DB.close()
 						let statusCode = 200
 						
