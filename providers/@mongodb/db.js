@@ -21,7 +21,7 @@ module.exports = ({ providerVars }) => {
     }
   })
 
-  const run = () => client.db(providerVars.providerVars.database)
+  const run = () => client.db(providerVars.database)
 
   const test = async () => {
     try {

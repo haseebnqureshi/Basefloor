@@ -126,7 +126,7 @@ module.exports = (API, { paths, providers, project }) => {
 		const { email, password } = req.body
 		try {
 			const user = await API.DB.Users.read({ where: { email } })
-			if (!user) { throw `user not found!` }
+			if (!user) { throw { code: 422, err: `user not found!` } }
 			const correctPassword = await API.Utils.try('Auth.login:comparePasswordWithHashed', 
 				API.Auth.comparePasswordWithHashed(password, user.password_hash))
 			if (!correctPassword) { throw { code: 422, err: `incorrect login information!` } }

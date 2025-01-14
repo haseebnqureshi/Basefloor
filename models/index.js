@@ -1,4 +1,3 @@
-
 module.exports = (API, { models, paths, providers, project }) => {
 
 	if (!models.Files) {
@@ -139,7 +138,7 @@ module.exports = (API, { models, paths, providers, project }) => {
 					values = API.DB[name].sanitize(values, 'c')
 				}
 				return await API.Utils.try(`try:${collection}:create`,
-					API.DB.run.collection(collection).insertOne(values)
+					API.DB.run().collection(collection).insertOne(values)
 				)
 			},
 
@@ -159,7 +158,7 @@ module.exports = (API, { models, paths, providers, project }) => {
 					return v
 				})
 				return await API.Utils.try(`try:${collection}:createMany`,
-					API.DB.run.collection(collection).insertMany(values)
+					API.DB.run().collection(collection).insertMany(values)
 				)
 			},
 
@@ -175,7 +174,7 @@ module.exports = (API, { models, paths, providers, project }) => {
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 				return await API.Utils.try(`try:${collection}:readAll(where:${JSON.stringify(where)})`,
-					API.DB.run.collection(collection).find(where).toArray()
+					API.DB.run().collection(collection).find(where).toArray()
 				)
 			},
 
@@ -192,7 +191,7 @@ module.exports = (API, { models, paths, providers, project }) => {
 				}
 				if (Object.values(where).length === 0) { return undefined }
 				return await API.Utils.try(`try:${collection}:read(where:${JSON.stringify(where)})`,
-					API.DB.run.collection(collection).findOne(where)
+					API.DB.run().collection(collection).findOne(where)
 				)
 			},
 
@@ -275,7 +274,9 @@ module.exports = (API, { models, paths, providers, project }) => {
 					values = API.DB[name].sanitize(values, 'u', name)
 				}
 				
-				return await this.update({ where, values }, false)
+				return await API.Utils.try(`try:${collection}:updateAll(where:${JSON.stringify(where)})`,
+					API.DB.run().collection(collection).updateMany(where, { $set: values })
+				)
 			},
 
 			delete: async ({ where }, one=true) => {
@@ -290,7 +291,7 @@ module.exports = (API, { models, paths, providers, project }) => {
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 				return await API.Utils.try(`try:${collection}:delete(where:${JSON.stringify(where)})`,
-					API.DB.run.collection(collection)[one ? 'deleteOne' : 'delete'](where)
+					API.DB.run().collection(collection)[one ? 'deleteOne' : 'delete'](where)
 				)
 			},
 
@@ -305,7 +306,9 @@ module.exports = (API, { models, paths, providers, project }) => {
 					where = filters.deleteAll.where(where)
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
-				return await this.delete({ where }, false)
+				return await API.Utils.try(`try:${collection}:deleteAll(where:${JSON.stringify(where)})`,
+					API.DB.run().collection(collection).deleteMany(where)
+				)
 			},
 
 		}

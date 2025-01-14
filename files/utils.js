@@ -281,7 +281,7 @@ async function processDocumentAsMany({ name, inputKey, outputBasename, outputFor
       });
     }
 
-    setInterval(() => {
+    setTimeout(() => {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }, TIME_TO_RETAIN_FILES);
     
@@ -290,7 +290,7 @@ async function processDocumentAsMany({ name, inputKey, outputBasename, outputFor
   } catch (error) {
     console.error(error);
 
-    setInterval(() => {
+    setTimeout(() => {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }, TIME_TO_RETAIN_FILES);
 

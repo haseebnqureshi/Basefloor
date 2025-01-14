@@ -1,6 +1,6 @@
 const loadProvider = require('../providers/loader');
 
-module.exports = (API, { files, paths, providers, checks }) => {
+module.exports = (API, { files, paths, providers, project }) => {
 	const { enabled } = files
 
 	if (!enabled) { return API }

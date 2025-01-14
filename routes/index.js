@@ -140,6 +140,20 @@ module.exports = (API, { routes, paths, providers, project }) => {
 					API.Auth.getAfterRequireUserMiddleware()
 				]
 
+				// Extract models referenced in permission rules
+				const allowJSON = JSON.stringify(r.allow)
+				const pattern = RegExp(/\@([a-z0-9\_]+)\./g)
+				const matches = allowJSON.match(pattern) || []
+				const modelsInAllow = _.unique(matches).map(v => v.substr(1, v.length-2))
+
+				// Collect all parameters from current and parent routes
+				let allParams = {
+					...router.parentsParams || {},
+					...r.params || {},                        
+				}
+				let keys = {}
+				let modelData = {}
+
 				/**
 				 * Process permission rules in the format:
 				 * - Simple: '@user.url=123'
@@ -238,20 +252,6 @@ module.exports = (API, { routes, paths, providers, project }) => {
 					}
 					return result
 				}
-
-				// Extract models referenced in permission rules
-				const allowJSON = JSON.stringify(r.allow)
-				const pattern = RegExp(/\@([a-z0-9\_]+)\./g)
-				const matches = allowJSON.match(pattern) || []
-				const modelsInAllow = _.unique(matches).map(v => v.substr(1, v.length-2))
-
-				// Collect all parameters from current and parent routes
-				let allParams = {
-					...router.parentsParams || {},
-					...r.params || {},                        
-				}
-				let keys = {}
-				let modelData = {}
 
 				// Add permission middleware
 				API[http](r.url, [...middlewares, async function(req, res, next) {
