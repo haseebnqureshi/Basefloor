@@ -85,28 +85,28 @@ module.exports = (API, { models, paths, providers, project }) => {
 			filters,
 			values,
 
-			sanitize: (values, dbAction /* c, rA, r, u, d */ , collection) => {
+			sanitize: (v, dbAction /* c, rA, r, u, d */ , collection) => {
 				// console.log({ dbAction, values })
 				let sanitized = {}
 
 				//first, ensure no `${collection}_${key}` formats in keys
-				for (let key in values) {
+				for (let key in v) {
 					const pattern = new RegExp('^' + collection)
 					// console.log(key, collection, key.match(pattern))
 					if (key.match(pattern)) {
 						const newKey = key.replace(collection, '')
-						values[newKey] = values[key]
+						v[newKey] = v[key]
 					}
 				}
 
-				for (let key in values) {
-					if (key in _values) {
-						const valueType = _values[key][0]
-						const dbActions = _values[key][1].split('')
+				for (let key in v) {
+					if (key in values) {
+						const valueType = values[key][0]
+						const dbActions = values[key][1].split('')
 						if (dbActions.indexOf(dbAction) > -1) {
 							// console.log({ key, valueType })
-							sanitized[key] = API.Utils.valueType(values[key], valueType)
-							// console.log(API.Utils.valueType(values[key], valueType))
+							sanitized[key] = API.Utils.valueType(v[key], valueType)
+							// console.log(API.Utils.valueType(v[key], valueType))
 						}
 					}
 				}
@@ -115,10 +115,10 @@ module.exports = (API, { models, paths, providers, project }) => {
 
 			dummy: (dbAction /* c, rA, r, u, d */) => {
 				let dummy = {}
-				for (let key in _values) {
-					const valueType = _values[key][0]
-					const dbActions = _values[key][1].split('')
-					const defaultValue = _values[key][2] || null;
+				for (let key in values) {
+					const valueType = values[key][0]
+					const dbActions = values[key][1].split('')
+					const defaultValue = values[key][2] || null;
 					if (dbActions.indexOf(dbAction) > -1) {
 						dummy[key] = API.Utils.dummyValue(valueType, defaultValue)
 					}
