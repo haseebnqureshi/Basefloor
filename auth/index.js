@@ -62,7 +62,7 @@ module.exports = (API, { paths, providers, project }) => {
 		}
 		let { _id } = req.auth
 		try {
-			req.user = await API.DB.user.read({ where: { _id } })
+			req.user = await API.DB.Users.read({ where: { _id } })
 			if (!req.user) { throw { code: 422, err: `user could not be found with credentials!` }}
 			next()
 		}
@@ -90,7 +90,7 @@ module.exports = (API, { paths, providers, project }) => {
 		const { email, password } = req.body
 		try {
 			//checking if user email already registered
-			let user = await API.DB.user.read({ where: { email } })
+			let user = await API.DB.Users.read({ where: { email } })
 			if (user) { 
 				throw { code: 400, err: `${email} is already registered!` }
 			}
@@ -99,11 +99,11 @@ module.exports = (API, { paths, providers, project }) => {
 			// const validSMS = API.Auth.normalizePhone(sms)
 
 			//checking if user sms already registered
-			// user = await API.DB.user.read({ where: { sms: validSMS.normalized } })
+			// user = await API.DB.Users.read({ where: { sms: validSMS.normalized } })
 			// if (user) { throw `${validSMS.normalized} is already registered!` }
 
 			//creating user
-			user = await API.DB.user.create({ 
+			user = await API.DB.Users.create({ 
 				values: {
 					..._.omit(req.body, ['sms', 'password']),
 					password_hash: await API.Auth.hashPassword(password),
@@ -125,7 +125,7 @@ module.exports = (API, { paths, providers, project }) => {
 	API.post('/login', [], async (req, res) => {
 		const { email, password } = req.body
 		try {
-			const user = await API.DB.user.read({ where: { email } })
+			const user = await API.DB.Users.read({ where: { email } })
 			if (!user) { throw `user not found!` }
 			const correctPassword = await API.Utils.try('Auth.login:comparePasswordWithHashed', 
 				API.Auth.comparePasswordWithHashed(password, user.password_hash))
@@ -200,7 +200,7 @@ module.exports = (API, { paths, providers, project }) => {
 		try {
 
 			//checking if user exists via email
-			user = await API.DB.user.read({ where: { email } })
+			user = await API.DB.Users.read({ where: { email } })
 
 			//creating jwt token
 			totp = await API.Auth.createTotpCode()
@@ -276,13 +276,13 @@ module.exports = (API, { paths, providers, project }) => {
 		try {
 
 			//resetting user's password
-			await API.DB.user.update({ 
+			await API.DB.Users.update({ 
 				where: { _id }, 
 				values: { password_hash: await API.Auth.hashPassword(password) },
 			})
 
 			//getting user information
-			const user = await API.DB.user.read({ where: { _id } })
+			const user = await API.DB.Users.read({ where: { _id } })
 
 			const emailArgs = require('./emails/changedPassword')(user.email, {
 				appName: project.app.name,
@@ -423,7 +423,7 @@ module.exports = (API, { paths, providers, project }) => {
 			where[`${method}_verified`] = true
 
 			//updating user verification status
-			const user = await API.DB.user.read({ where })
+			const user = await API.DB.Users.read({ where })
 			console.log('user/verify', where, { user })
 
 
@@ -473,7 +473,7 @@ module.exports = (API, { paths, providers, project }) => {
 			values[`${method}_verified`] = true
 
 			//updating user verification status
-			await API.DB.user.update({ where, values })
+			await API.DB.Users.update({ where, values })
 
 			res.status(200).send({ message: `user ${method} verified!` })
 		}
@@ -510,12 +510,12 @@ module.exports = (API, { paths, providers, project }) => {
 	API.put('/user', [API.Auth.requireToken, API.Auth.requireUser, API.Auth.getAfterRequireUserMiddleware()], async(req, res) => {
 		const { _id } = req.user
 		const values = { 
-			...API.DB.user.sanitize(req.body, 'u'), 
+			...API.DB.Users.sanitize(req.body, 'u'), 
 			updated_at: new Date().toISOString()
 		}
 		try {
 			const where = { _id }
-			await API.DB.user.update({ where, values })
+			await API.DB.Users.update({ where, values })
 			res.status(200).send({ message: `updated user!` })
 		}
 		catch (err) {
