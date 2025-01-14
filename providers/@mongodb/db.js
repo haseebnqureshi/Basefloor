@@ -1,7 +1,7 @@
 
 //@see https://www.mongodb.com/developer/languages/javascript/node-crud-tutorial/
 
-const mongodb = module.exports.mongodb = require('mongodb')
+const mongodb = require('mongodb')
 const { MongoClient, ServerApiVersion } = mongodb
 
 module.exports = ({ providerVars }) => {
@@ -49,6 +49,7 @@ module.exports = ({ providerVars }) => {
 
   return {
     CONNECTION_STRING,
+    mongodb,
     client,
     run,
     test,
