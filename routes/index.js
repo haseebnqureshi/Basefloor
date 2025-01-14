@@ -304,7 +304,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 						const values = { ...req.body, ...where }
 
 						// Execute database operation
-						await API.DB.open()
+						await API.DB.connect()
 						const data = await API.DB[router.model][db]({ where, values })
 						await API.DB.close()
 						let statusCode = 200
