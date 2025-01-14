@@ -259,11 +259,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 						if (r.allow) {
 							// Load authenticated user data if needed
 							if (modelsInAllow.indexOf('_user') > -1) {
-								modelData['_user'] = await API.DB.Users.read({
-									where: {
-										_id: req.user.url
-									}
-								})
+								modelData['_user'] = req.user
 							}
 
 							// Load data for all models referenced in permission rules
