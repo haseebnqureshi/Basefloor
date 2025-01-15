@@ -43,8 +43,9 @@ module.exports = (API, { routes, paths, providers, project }) => {
 		// For each CRUD method defined in the route
 		for (let m in methods) {
 			if (r[m]) {
-				//it's a colelction endpoint
-				if (m === '_readAll') {
+
+				//it's a collection endpoint or create on collection
+				if (m === '_readAll' || m === '_create') {
 					r[m].params = {}
 					r[m].url = `/${path}`
 				}
@@ -62,6 +63,12 @@ module.exports = (API, { routes, paths, providers, project }) => {
 					// Build URL with parameters (e.g., /users/:user_id)
 					r[m].url = `/${path}/:${routeParam}`
 				}
+
+				else {
+					r[m].params = {}
+					r[m].url = `/${path}`
+				}
+
 			}
 		}
 
