@@ -10,7 +10,7 @@ module.exports = (API, { files, paths, providers, project }) => {
 		...require('./utils'),
 	}
 
-	API.createFileHash = async ({ user_id, size, type, name }) => {
+	API.Files.createFileHash = ({ user_id, size, type, name }) => {
 	  return API.Utils.hashObject({
 	    user_id: user_id.toString(),
 	    size,

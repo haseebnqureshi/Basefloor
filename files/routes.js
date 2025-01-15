@@ -114,18 +114,21 @@ module.exports = (API, { paths, project }) => {
 		try {
 			const { name, size, type, lastModified } = file
 			const file_modified_at = new Date(lastModified).toISOString()
+			console.log({ user_id })
 			const hash = API.Files.createFileHash({ user_id, size, type, name })
+			const values = {
+				name, 
+				size,
+				type,
+				file_modified_at,
+				user_id,
+				hash,
+				...API.Files.createFileParams({ hash, name, endpoint })
+			}
+			console.log({ values })
 			const response = await API.DB.Files.readOrCreate({ 
-				where: { hash, user_id: file.user_id },
-				values: {
-					name, 
-					size,
-					type,
-					file_modified_at,
-					user_id,
-					hash,
-					...API.Files.createFileParams({ hash, name, endpoint })
-				}
+				where: { hash, user_id },
+				values,
 			})
 			if (!response) { throw response }
 

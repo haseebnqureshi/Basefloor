@@ -16,53 +16,53 @@ module.exports = (API, { models, paths, providers, project }) => {
 				parent_file: 			['ObjectId', 'cru'],
 				flattened_at: 		['Date', 'cru'],
 				flattened_pages: 	['Object(ObjectId)', 'cru'], //'static CDN url':'ObjectID to file object'
-				hash: 						['String', 'cr'],
+				hash: 						['String', 'cru'],
 				size: 						['Number', 'cr'],
 				type: 						['String', 'cr'],
-				extension:  			['String', 'r'],
-				filename: 				['String', 'r'],
+				extension:  			['String', 'cr'],
+				filename: 				['String', 'cr'],
 			},
-			filters: {
-				"read": {
-					where: (w, values) => {
-						const { user_id, size, type, name } = values
-						const hash = API.Utils.hashObject({
-							user_id: user_id.toString(),
-							size,
-							type,
-							name, //@todo: still not ideal, as same files may have different names, and so we're still storing duplicates. may need client to send hash of file contents, because it's the client's duty to pipeline the body of the file to end cdn.
-						}, {
-							algorithm: 'md5'
-						})
-						w = { hash, user_id }
-						return w
-					},
-				},
-				"create": {
-					values: values => {
-						const { user_id, endpoint, size, type, name } = values
-						const hash = API.Utils.hashObject({
-							user_id: user_id.toString(),
-							size,
-							type,
-							name, //@todo: still not ideal, as same files may have different names, and so we're still storing duplicates. may need client to send hash of file contents, because it's the client's duty to pipeline the body of the file to end cdn.
-						}, {
-							algorithm: 'md5'
-						})
+			// filters: {
+			// 	"read": {
+			// 		where: (w, values) => {
+			// 			const { user_id, size, type, name } = values
+			// 			const hash = API.Utils.hashObject({
+			// 				user_id: user_id.toString(),
+			// 				size,
+			// 				type,
+			// 				name, //@todo: still not ideal, as same files may have different names, and so we're still storing duplicates. may need client to send hash of file contents, because it's the client's duty to pipeline the body of the file to end cdn.
+			// 			}, {
+			// 				algorithm: 'md5'
+			// 			})
+			// 			w = { hash, user_id }
+			// 			return w
+			// 		},
+			// 	},
+			// 	"create": {
+			// 		values: values => {
+			// 			const { user_id, endpoint, size, type, name } = values
+			// 			const hash = API.Utils.hashObject({
+			// 				user_id: user_id.toString(),
+			// 				size,
+			// 				type,
+			// 				name, //@todo: still not ideal, as same files may have different names, and so we're still storing duplicates. may need client to send hash of file contents, because it's the client's duty to pipeline the body of the file to end cdn.
+			// 			}, {
+			// 				algorithm: 'md5'
+			// 			})
 
-						const matches = name.match(/(\.[a-z0-9]+)$/)
-						if (!matches) { throw `file extension not propertly extracted` }
-						const extension = matches[1]
-						const filename = `${hash}${extension}`
-						const url = `${endpoint}/${filename}`
+			// 			const matches = name.match(/(\.[a-z0-9]+)$/)
+			// 			if (!matches) { throw `file extension not propertly extracted` }
+			// 			const extension = matches[1]
+			// 			const filename = `${hash}${extension}`
+			// 			const url = `${endpoint}/${filename}`
 						
-						const uploaded_at = null
-						const created_at = new Date().toISOString()
+			// 			const uploaded_at = null
+			// 			const created_at = new Date().toISOString()
 
-						return { ...values, hash, extension, filename, url, uploaded_at, created_at }
-					},
-				},
-			},
+			// 			return { ...values, hash, extension, filename, url, uploaded_at, created_at }
+			// 		},
+			// 	},
+			// },
 
 			// filters: {
 			// 	where: w => { ...w }, //for any where predicate
