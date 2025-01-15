@@ -23,17 +23,6 @@ const SUPPORTED_FORMATS = {
     '.csv': 'excel',
 };
 
-async function createFileHash({ user_id, size, type, name }) {
-  return API.Utils.hashObject({
-    user_id: user_id.toString(),
-    size,
-    type,
-    name, //@todo: still not ideal, as same files may have different names, and so we're still storing duplicates. may need client to send hash of file contents, because it's the client's duty to pipeline the body of the file to end cdn.
-  }, {
-    algorithm: 'md5'
-  })
-}
-
 function createFileParams({ hash, name, endpoint }) {
   const [,extension] = name.match(/(\.[a-z0-9]+)$/)
   const filename = `${hash}${extension}`
@@ -327,7 +316,6 @@ module.exports = {
   MAX_FILE_SIZE,
   MAX_DIMENSION_FOR_RESIZE,
   SUPPORTED_FORMATS,
-  createFileHash,
   createFileParams,
   processDocument, 
   convertToPdf, 
