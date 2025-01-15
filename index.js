@@ -45,8 +45,8 @@ module.exports = ({ projectPath, envPath }) => {
 		API = require('./middlewares')(API, { middlewares, paths, providers, project }) //must be the first thing, loads json middleware
 		
 		API = require('./db')(API, { db, paths, providers, project })
-		API = require('./auth')(API, { paths, providers, project })
 		API = require('./models')(API, { models, paths, providers, project })
+		API = require('./auth')(API, { paths, providers, project })
 		API = require('./files')(API, { files, paths, providers, project })
 
 		API = require('./routes')(API, { routes: routes(), paths, providers, project })

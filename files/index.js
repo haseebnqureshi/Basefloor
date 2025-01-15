@@ -5,13 +5,18 @@ module.exports = (API, { files, paths, providers, project }) => {
 
 	if (!enabled) { return API }
 
+	API.Files = { 
+		...API.Files,
+		...require('./utils'),
+	}
+
 	if (files.provider) {
 		try {
 			API.Files = { 
 				...API.Files,
-				...loadProvider(`${paths.minapi}/providers/${files.provider}`)({ 
+				Provider: loadProvider(`${paths.minapi}/providers/${files.provider}`)({ 
 					providerVars: providers[files.provider]
-				})
+				}),
 			}
 		} catch (err) {
 			console.error(`File Service Error: ${err.message}`);
@@ -45,6 +50,8 @@ module.exports = (API, { files, paths, providers, project }) => {
 			}
 		}
 	}
+
+	API = require(`./routes`)(API, { paths, project })
 
 	return API;
 }
