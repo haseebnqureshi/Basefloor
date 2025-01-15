@@ -348,7 +348,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 							//There should only be one model... Keeping this flexibility for
 							//future development.
 							if (!modelsAndParams[model]) { 
-								modelsAndParams[model] = { values, where: {} } 
+								modelsAndParams[model] = { where: {} } 
 							}
 							modelsAndParams[model].where[key] = value		
 						}
@@ -363,8 +363,16 @@ module.exports = (API, { routes, paths, providers, project }) => {
 							}
 						}
 
+						//No matter what, ensuring values are provided since 
+						//collection endpoints (for readAll and create) do not have params,
+						//ensuring values are provided.
+						
+						if (values) { whereAndValues.values = values }
+
 						API.Log('router.model', router.model)
+						API.Log('values', values)
 						API.Log('whereAndValues', whereAndValues)
+						API.Log('db', db)
 
 						// Execute database operation
 						await API.DB.connect()

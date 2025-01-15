@@ -244,8 +244,7 @@ module.exports = (API, { models, paths, providers, project }) => {
 				}
 				
 				return await API.Utils.try(`try:${collection}:update(where:${JSON.stringify(where)})`,
-					API.DB.run
-						.collection(collection)[one ? 'updateOne' : 'update'](where, { $set: values })
+					API.DB.run().collection(collection)[one ? 'updateOne' : 'update'](where, { $set: values })
 				)
 			},
 
