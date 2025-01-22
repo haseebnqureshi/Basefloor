@@ -1,7 +1,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const sharp = require('sharp');
+// const sharp = require('sharp');
 const util = require('util');
 const execPromise = util.promisify(require('child_process').exec);
 
@@ -32,30 +32,30 @@ function createFileParams({ hash, name, endpoint }) {
   return { extension, filename, url, uploaded_at, created_at }  
 }
 
-async function convertToPdf({ inputPath, outputPath }) {
-  try {
-    await execPromise('libreoffice --version');
-  } catch (error) {
-    throw new Error('LibreOffice is not installed. Please install it to convert non-PDF documents.');
-  }
+// async function convertToPdf({ inputPath, outputPath }) {
+//   try {
+//     await execPromise('libreoffice --version');
+//   } catch (error) {
+//     throw new Error('LibreOffice is not installed. Please install it to convert non-PDF documents.');
+//   }
   
-  try {
-    const outDir = path.dirname(outputPath);
-    await execPromise(`libreoffice --headless --convert-to pdf --outdir "${outDir}" "${inputPath}"`);
-    const baseNamePdf = path.basename(inputPath, path.extname(inputPath)) + '.pdf';
-    const convertedPdfPath = path.join(outDir, baseNamePdf);
+//   try {
+//     const outDir = path.dirname(outputPath);
+//     await execPromise(`libreoffice --headless --convert-to pdf --outdir "${outDir}" "${inputPath}"`);
+//     const baseNamePdf = path.basename(inputPath, path.extname(inputPath)) + '.pdf';
+//     const convertedPdfPath = path.join(outDir, baseNamePdf);
     
-    if (convertedPdfPath !== outputPath) {
-      fs.renameSync(convertedPdfPath, outputPath);
-    }
+//     if (convertedPdfPath !== outputPath) {
+//       fs.renameSync(convertedPdfPath, outputPath);
+//     }
     
-    return outputPath;
-  } catch (error) {
-    throw new Error(`Failed to convert document to PDF: ${error.message}`);
-  }
-}
+//     return outputPath;
+//   } catch (error) {
+//     throw new Error(`Failed to convert document to PDF: ${error.message}`);
+//   }
+// }
 
-async function optimizeImage({ inputPath, outputPath, maxSize = MAX_FILE_SIZE }) {
+async function optimizeImage({ inputPath, outputPath, maxSize = MAX_FILE_SIZE, sharp }) {
   let metadata;
   try {
     metadata = await sharp(inputPath).metadata();
@@ -97,7 +97,7 @@ async function optimizeImage({ inputPath, outputPath, maxSize = MAX_FILE_SIZE })
   };
 }
 
-async function getNewDimensions({ inputPath, maxDimension = MAX_DIMENSION_FOR_RESIZE }) {
+async function getNewDimensions({ inputPath, maxDimension = MAX_DIMENSION_FOR_RESIZE, sharp }) {
   const metadata = await sharp(inputPath).metadata()
   if (!metadata) { throw new Error('Could not read metadata from inputPath') }
   let { width, height } = metadata
@@ -109,7 +109,7 @@ async function getNewDimensions({ inputPath, maxDimension = MAX_DIMENSION_FOR_RE
   }
 }
 
-async function resizeImageSimple({ inputPath, outputPath, width, height }) {
+async function resizeImageSimple({ inputPath, outputPath, width, height, sharp }) {
   return await sharp(inputPath)
     .resize(width, height, {
       fit: 'contain',
@@ -119,7 +119,7 @@ async function resizeImageSimple({ inputPath, outputPath, width, height }) {
     .toFile(outputPath)
 }
 
-async function resizeImage({ inputPath, outputPath, width, height }) {
+async function resizeImage({ inputPath, outputPath, width, height, sharp }) {
   try {
     const inputBuffer = fs.readFileSync(inputPath);
     
@@ -155,7 +155,7 @@ async function resizeImage({ inputPath, outputPath, width, height }) {
   }
 }
 
-async function convertPdfToImages({ pdfPath, outputDir }) {
+async function convertPdfToImages({ pdfPath, outputDir, sharp }) {
   try {
     await execPromise('gs --version');
   } catch (error) {
@@ -186,7 +186,8 @@ async function convertPdfToImages({ pdfPath, outputDir }) {
       const filename = path.basename(imagePath);
       const optimizedPath = path.join(outputDir, 'optimized-' + filename);
       const newDimensions = await getNewDimensions({ 
-        inputPath: imagePath
+        inputPath: imagePath,
+        sharp,
       });
 
       if (newDimensions || stats.size >= MAX_FILE_SIZE) {
@@ -197,6 +198,7 @@ async function convertPdfToImages({ pdfPath, outputDir }) {
           outputPath: optimizedPath,
           width: newDimensions.width,
           height: newDimensions.height,
+          sharp,
         });
         console.log(`Resized image...`, optimizedPath);
         fs.renameSync(optimizedPath, imagePath);
@@ -208,17 +210,18 @@ async function convertPdfToImages({ pdfPath, outputDir }) {
   }
 }
 
-async function processDocument({ name, inputKey, outputBasename, outputFormat = 'png', storage }) {
+async function processDocument({ name, inputKey, outputBasename, outputFormat = 'png', convertToPdf, sharp }) {
   return await processDocumentAsMany({ 
     name, 
     inputKey, 
     outputBasename, 
     outputFormat, 
-    storage 
+    convertToPdf,
+    sharp
   });
 }
 
-async function processDocumentAsMany({ name, inputKey, outputBasename, outputFormat, downloadFile, uploadFile }) {
+async function processDocumentAsMany({ name, inputKey, outputBasename, outputFormat, downloadFile, uploadFile, convertToPdf, sharp }) {
   if (!downloadFile) {
     throw new Error('downloadFile() by storage provider is required');
   }
@@ -254,7 +257,8 @@ async function processDocumentAsMany({ name, inputKey, outputBasename, outputFor
     
     let flattenedPages = await convertPdfToImages({
       pdfPath,
-      outputDir: tempDir
+      outputDir: tempDir,
+      sharp,
     });
     
     if (!flattenedPages.length) {
@@ -318,7 +322,7 @@ module.exports = {
   SUPPORTED_FORMATS,
   createFileParams,
   processDocument, 
-  convertToPdf, 
+  // convertToPdf, 
   convertPdfToImages,
   removeFilepath,
 };

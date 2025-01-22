@@ -156,14 +156,16 @@ module.exports = (API, { paths, project }) => {
 
 			const { filename, extension, url, name } = file
 
-			if (!API.DB.SUPPORTED_FORMATS[extension]) { //file is not a convertible format, so return out 
+			if (!API.Files.SUPPORTED_FORMATS[extension]) { //file is not a convertible format, so return out 
 				return res.status(200).send()
 			}
 
-			let pages = await API.DB.processDocument({
+			let pages = await API.Files.processDocument({
 				name,
 				inputKey: filename,
 				outputBasename: filename.replace(extension, ''),
+				convertToPdf: API.Files.Libreoffice.convertToPdf,
+				sharp: API.Files.Sharp,
 			})
 
 			const flattened_at = new Date().toISOString() 
