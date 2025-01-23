@@ -9,7 +9,8 @@ module.exports = (API, { models, paths, providers, project }) => {
 				user_id: 					['ObjectId', 'cr'],
 				name: 						['String', 'cru'],
 				description:  		['String', 'cru'],
-				endpoint: 				['String', 'cru'],
+				filename: 				['String', 'cr'],
+				key: 							['String', 'cru'],
 				url: 							['String', 'cru'],
 				uploaded_at: 			['Date', 'cru'],
 				file_modified_at: ['Date', 'cru'],
@@ -18,9 +19,8 @@ module.exports = (API, { models, paths, providers, project }) => {
 				flattened_pages: 	['Object(ObjectId)', 'cru'], //'static CDN url':'ObjectID to file object'
 				hash: 						['String', 'cru'],
 				size: 						['Number', 'cr'],
-				type: 						['String', 'cr'],
+				content_type: 		['String', 'cr'],
 				extension:  			['String', 'cr'],
-				filename: 				['String', 'cr'],
 			},
 			// filters: {
 			// 	"read": {

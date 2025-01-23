@@ -1,6 +1,47 @@
 
 module.exports = (API, { paths, project }) => {
 
+	const middlewareParseFiles = (req, res, next) => {
+		const user_id = req.user._id
+		const { file, endpoint } = req.body
+		try {
+			req.fileParsed = API.Files.createFileValues({ 
+				user_id, 
+				name: file.name,
+				size: file.size,
+				content_type: file.type,
+				lastModified: file.lastModified,
+				cdnUrl: API.Files.Remote.CDN_URL, 
+				createHash: API.Files.createFileHash,
+			})
+			next()
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}	
+	}
+
+	const checkIfFileAlreadyUploaded = async (req, res, next) => {
+		try {
+			const savedFile = await API.DB.Files.read({ 
+				where: { 
+					hash: req.fileParsed.hash, 
+					user_id: req.fileParsed.user_id, 
+				},
+			})
+			if (!savedFile) { return next() }
+			if (savedFile.uploaded_at) {
+				return res.status(200).send(savedFile)
+			}
+			req.savedFile = savedFile
+			next()
+		}
+		catch (err) {
+			console.log(err, 'not trying to upload, something was wrong with fileParsed data')
+			API.Utils.errorHandler({ res, err })
+		}
+	}
+
 	API.get('/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
@@ -106,38 +147,50 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.post('/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
-		
-		//files are specific to authenticated user
-		const user_id = req.user._id
-		const { file, endpoint } = req.body
+	API.post('/files', [
+		API.Auth.requireToken, 
+		API.Auth.requireUser,
+		(req, res, next) => {
+			req.socket.setTimeout(10 * 60 * 1000) // 10 minutes for uploading (need to implement resumable uploads)
+			next()
+		},
+		parseFileParams,
+		checkIfFileAlreadyUploaded,
+	], async (req, res) => {
 		try {
-			const { name, size, type, lastModified } = file
-			const file_modified_at = new Date(lastModified).toISOString()
-			console.log({ user_id })
-			const hash = API.Files.createFileHash({ user_id, size, type, name })
-			const values = {
-				name, 
-				size,
-				type,
-				file_modified_at,
-				user_id,
-				hash,
-				...API.Files.createFileParams({ hash, name, endpoint })
+
+			const upload = API.Files.Remote.uploadFile({
+				key: req.fileParsed.key,
+				stream: req,
+				contentType: req.fileParsed.content_type,
+			})
+			const uploadResult = await upload.done()
+
+			if (req.savedFile) {
+				await API.DB.Files.update({
+					where: { _id: req.savedFile._id },
+					values: {
+						uploaded_at: new Date().toISOString(),
+					},
+				})
+			} else {
+				req.savedFile = {}
+				const createResult = await API.DB.Files.create({
+					values: {
+						...req.fileParsed,
+						uploaded_at: new Date().toISOString(),
+					}
+				})
+				req.savedFile._id = createResult.insertedId
 			}
-			console.log({ values })
-			const response = await API.DB.Files.readOrCreate({ 
-				where: { hash, user_id },
-				values,
-			})
-			if (!response) { throw response }
 
-			//reading our (potentially new) file
-			const result = await API.DB.Files.read({ 
-				where: { _id: response.insertedId }
+			const readResult = await API.DB.Files.read({
+				where: { _id: req.savedFile._id }
 			})
 
-			res.status(200).send(result)
+			console.log('uploadResult, readResult', uploadResult, readResult)
+
+			res.status(200).send(readResult)
 		}
 		catch (err) {
 			API.Utils.errorHandler({ res, err })

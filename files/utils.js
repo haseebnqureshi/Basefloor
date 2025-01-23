@@ -23,13 +23,30 @@ const SUPPORTED_FORMATS = {
     '.csv': 'excel',
 };
 
-function createFileParams({ hash, name, endpoint }) {
+function createFileValues({ name, size, content_type, lastModified, user_id, cdnUrl, createHash }) {
+  const hash = createHash({ user_id, name, size, content_type })
+
   const [,extension] = name.match(/(\.[a-z0-9]+)$/)
   const filename = `${hash}${extension}`
-  const url = `${endpoint}/${filename}`
-  const uploaded_at = null
+  const key = `${filename}`
+  const url = `${cdnUrl}/${filename}`
+
+  const file_modified_at = new Date(lastModified).toISOString()
   const created_at = new Date().toISOString()
-  return { extension, filename, url, uploaded_at, created_at }  
+
+  return {
+    name,
+    size,
+    content_type,
+    hash,
+    filename,
+    key,
+    extension,
+    url,
+    file_modified_at,
+    created_at
+    user_id,
+  }  
 }
 
 // async function convertToPdf({ inputPath, outputPath }) {
