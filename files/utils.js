@@ -1,7 +1,6 @@
 
 const fs = require('fs');
 const path = require('path');
-// const sharp = require('sharp');
 const util = require('util');
 const execPromise = util.promisify(require('child_process').exec);
 
@@ -22,55 +21,6 @@ const SUPPORTED_FORMATS = {
     '.xlsx': 'excel',
     '.csv': 'excel',
 };
-
-function createFileValues({ name, size, content_type, lastModified, user_id, cdnUrl, createHash }) {
-  const hash = createHash({ user_id, name, size, content_type })
-
-  const [,extension] = name.match(/(\.[a-z0-9]+)$/)
-  const filename = `${hash}${extension}`
-  const key = `${filename}`
-  const url = `${cdnUrl}/${filename}`
-
-  const file_modified_at = new Date(lastModified).toISOString()
-  const created_at = new Date().toISOString()
-
-  return {
-    name,
-    size,
-    content_type,
-    hash,
-    filename,
-    key,
-    extension,
-    url,
-    file_modified_at,
-    created_at
-    user_id,
-  }  
-}
-
-// async function convertToPdf({ inputPath, outputPath }) {
-//   try {
-//     await execPromise('libreoffice --version');
-//   } catch (error) {
-//     throw new Error('LibreOffice is not installed. Please install it to convert non-PDF documents.');
-//   }
-  
-//   try {
-//     const outDir = path.dirname(outputPath);
-//     await execPromise(`libreoffice --headless --convert-to pdf --outdir "${outDir}" "${inputPath}"`);
-//     const baseNamePdf = path.basename(inputPath, path.extname(inputPath)) + '.pdf';
-//     const convertedPdfPath = path.join(outDir, baseNamePdf);
-    
-//     if (convertedPdfPath !== outputPath) {
-//       fs.renameSync(convertedPdfPath, outputPath);
-//     }
-    
-//     return outputPath;
-//   } catch (error) {
-//     throw new Error(`Failed to convert document to PDF: ${error.message}`);
-//   }
-// }
 
 async function optimizeImage({ inputPath, outputPath, maxSize = MAX_FILE_SIZE, sharp }) {
   let metadata;
@@ -337,9 +287,7 @@ module.exports = {
   MAX_FILE_SIZE,
   MAX_DIMENSION_FOR_RESIZE,
   SUPPORTED_FORMATS,
-  createFileParams,
   processDocument, 
-  // convertToPdf, 
   convertPdfToImages,
   removeFilepath,
 };

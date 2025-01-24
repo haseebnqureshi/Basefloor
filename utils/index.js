@@ -23,6 +23,27 @@ module.exports = (API, { paths, providers, project }) => {
 		}))
 	}
 
+	API.Utils.CollectMinapiHeaders = (reqHeaders) => {
+		// console.log({ reqHeaders })
+		let headers = {}
+		for (let reqHeader in reqHeaders) {
+			// console.log({ reqHeader })
+			if (reqHeader.match('x-minapi')) {
+				const [, key] = reqHeader.match(/x\-minapi\-([a-z\-]+)$/i)
+				const value = reqHeaders[reqHeader]
+				if (key.match(/size/i)) {
+					headers[key] = parseInt(value)
+				} else if (key.match(/modified/i)) {
+					headers[key] = new Date(parseInt(value)).toISOString()
+				} else {
+					headers[key] = value
+				}
+			}
+		}
+		API.Log('- minapi headers collected', { headers })
+		return headers
+	}
+
 	API.ParseProviderString = (str) => {
 		/*
 		Expecting '@{providerName}/{service}'

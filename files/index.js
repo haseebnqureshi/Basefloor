@@ -10,18 +10,9 @@ module.exports = (API, { files, paths, providers, project }) => {
 		...require('./utils'),
 	}
 
-	API.Files.createFileHash = ({ user_id, size, type, name }) => {
-	  return API.Utils.hashObject({
-	    user_id: user_id.toString(),
-	    size,
-	    type,
-	    name, //@todo: still not ideal, as same files may have different names, and so we're still storing duplicates. may need client to send hash of file contents, because it's the client's duty to pipeline the body of the file to end cdn.
-	  }, {
-	    algorithm: 'md5'
-	  })
+	addRoutes = () => {
+		API = require(`./routes`)(API, { paths, project })
 	}
-
-	API = require(`./routes`)(API, { paths, project })
 
 	if (files.provider) {
 		try {
@@ -33,8 +24,10 @@ module.exports = (API, { files, paths, providers, project }) => {
 			}
 		} catch (err) {
 			console.error(`File Service Error: ${err.message}`);
+			addRoutes()
 			return API;
 		}
+		addRoutes()
 		return API;
 	}
 		
@@ -64,5 +57,6 @@ module.exports = (API, { files, paths, providers, project }) => {
 		}
 	}
 
+	addRoutes()
 	return API;
 }
