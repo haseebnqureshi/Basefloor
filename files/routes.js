@@ -131,6 +131,11 @@ module.exports = (API, { paths, project }) => {
 	API.post('/files', [
 		API.Auth.requireToken,
 		API.Auth.requireUser,
+
+		/*
+		STEP 1: Parse our incoming file information using headers
+		*/
+
 		(req, res, next) => {
 			try {
 				const info = API.Utils.CollectMinapiHeaders(req.headers)
@@ -170,6 +175,11 @@ module.exports = (API, { paths, project }) => {
 				API.Utils.errorHandler({ res, err })
 			}
 		},
+
+		/*
+		STEP 2: Attempt to load file from db if already saved to avoid duplications
+		*/
+
 		async (req, res, next) => {
 			try {
 				req.file.saved = await API.DB.Files.read({ 
@@ -178,21 +188,47 @@ module.exports = (API, { paths, project }) => {
 						user_id: req.file.pending.user_id, 
 					},
 				})
-				if (!req.file.saved) { return next() }
+				if (!req.file.saved) { 
+					API.Log('- file not found in db, going to upload...')
+					return next() 
+				}
 				if (req.file.saved.uploaded_at) {
+					API.Log('- file found found in db and with "uploaded_at", returning saved file now...')
 					return res.status(200).send(req.file.saved)
 				}
-				API.Log('req.file.saved', req.file.saved)
+				API.Log('- file found, req.file.saved', req.file.saved)
 				next()
 			}
 			catch (err) {
-				console.log(err, 'not trying to upload, something was wrong with fileParsed data')
+				console.log(err, '- not trying to upload, something was wrong with fileParsed data')
 				API.Utils.errorHandler({ res, err })
 			}
 		},
+
+		/*
+		STEP 3: Increase timeout for request to ensure upload has time to occur
+		- need to implement resumable uploads
+		- if we make it to this point, we've reduced the risk of duplicates and now we attempt to upload
+		*/
+
+		(req, res, next) => {
+			const minutes = 10
+			API.Log('- setting request timeout to this many minutes: ', minutes)
+			req.socket.setTimeout(minutes * 60 * 1000) // 10 minutes for uploading (need to implement resumable uploads)
+			next()
+		},
+
+	/*
+	STEP 4: Attempt to upload our file, using busboy to handle the incoming file stream
+	- load our "Remote" provider's "uploadFile" that should accept a stream
+	- by default, this is using aws-sdk/s3-client and its lib-storage to manage uploads
+	*/
+
 	], async (req, res) => {
-		API.Log('req.file', req.file)
+		
+		API.Log('- attempting to upload req.file.pending:', req.file.pending)
 		const busboy = Busboy({ headers: req.headers })
+		
 		busboy.on('file', async (fieldName, fileStream, file) => {
 			try {
 				const status = API.Files.Remote.uploadFile({
@@ -201,17 +237,62 @@ module.exports = (API, { paths, project }) => {
 					ContentType: req.file.pending.content_type, 
 				})
 
-				status.on('httpUploadProgress', progress => console.log(progress))
+				status.on('httpUploadProgress', async progress => {
+					const percent = Math.round(10000 * progress.loaded / req.file.pending.size) / 100
+					API.Log(`  - uploaded ${percent}%`, progress)
+
+					if (percent == 100) {
+						API.Log(`- finished uploading!`)
+						API.Log('- now attempting to save req.file.pending into db:', req.file.pending)
+						
+						if (req.file.saved) {
+							await API.DB.Files.update({
+								where: { _id: req.file.saved._id },
+								values: {
+									uploaded_at: new Date().toISOString(),
+								},
+							})
+						} else {
+							req.file.saved = {}
+							const createResult = await API.DB.Files.create({
+								values: {
+									...req.file.pending,
+									uploaded_at: new Date().toISOString(),
+								}
+							})
+							req.file.saved._id = createResult.insertedId
+						}
+
+						req.file.saved = await API.DB.Files.read({
+							where: { _id: req.file.saved._id }
+						})
+
+						API.Log('- saved!', { 'req.file.saved': req.file.saved })
+						res.send(req.file.saved)
+					}
+
+				})
+
 				await status.done()
+
 			} catch(err) {
-				console.log(err)
+				console.error('- failed to upload req.file.pending...')
+				console.error(err)
 			}
 
 		})
-		busboy.on('finish', () => {
-			console.log({ success: true })
-			res.send({ success: true })
+		
+		/*
+		STEP 5: Save our uploaded file
+		- we may want to save our file information into db on start of upload for resumable
+		*/
+
+		busboy.on('finish', async () => {
+
 		})
+
+		busboy.on('error', err => console.error(err))
+
 		req.pipe(busboy)
 	})
 
