@@ -61,6 +61,21 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
+	API.get('/files/:parent_file/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+		//files are specific to authenticated user
+		const user_id = req.user._id
+		const { parent_file } = req.params
+		try {
+			const where = { _id, user_id }
+			const result = await API.DB.Files.readAll({ where })
+			if (!result) { throw `error occured when reading files for parent` }
+			res.status(200).send(result)
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
 	API.put('/files/:_id', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
@@ -77,15 +92,34 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.put('/files/:_id/uploaded', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	API.put('/files/:parent_file/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+		//files are specific to authenticated user
+		const user_id = req.user._id
+		const { parent_file } = req.params
+		const values = req.body
+		try {
+			const where = { parent_file, user_id }
+			const result = await API.DB.Files.updateAll({ where, values })
+			if (!result) { throw `error occured when updating files for parent` }
+			res.status(200).send(result)
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
+	//this links existing files with one parent file, and is done so by passing
+	//req.body = { _ids: [ ObjectId, ObjectId, ... ] } and that's it
+	API.put('/files/:_id/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		const { _id } = req.params
-		const values = { uploaded_at: new Date().toISOString() }
+		const { _ids } = req.body
 		try {
-			const where = { _id, user_id }
-			const result = await API.DB.Files.update({ where, values })
-			if (!result) { throw 'error occured when updating file' }
+			const where = { user_id, _id: {$in:_ids}}
+			const values = { parent_file: _id }
+			const result = await API.DB.Files.updateAll({ where, values })
+			if (!result) { throw `error occured when linking files with parent` }
 			res.status(200).send(result)
 		}
 		catch (err) {
@@ -100,7 +134,22 @@ module.exports = (API, { paths, project }) => {
 		try {
 			const where = { _id, user_id }
 			const result = await API.DB.Files.delete({ where })
-			if (!result) { throw 'error occured when reading file' }
+			if (!result) { throw 'error occured when deleting file' }
+			res.status(200).send(result)
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
+	API.delete('/files/:parent_file/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+		//files are specific to authenticated user
+		const user_id = req.user._id
+		const { parent_file } = req.params
+		try {
+			const where = { parent_file, user_id }
+			const result = await API.DB.Files.deleteAll({ where })
+			if (!result) { throw 'error occured when deleting files for parent' }
 			res.status(200).send(result)
 		}
 		catch (err) {
@@ -295,66 +344,6 @@ module.exports = (API, { paths, project }) => {
 
 		req.pipe(busboy)
 	})
-
-
-	// API.post('/files', [
-	// 	API.Auth.requireToken, 
-	// 	API.Auth.requireUser,
-	// 	(req, res, next) => {
-	// 		req.socket.setTimeout(10 * 60 * 1000) // 10 minutes for uploading (need to implement resumable uploads)
-	// 		next()
-	// 	},
-	// 	parseFileParams,
-	// 	checkIfFileAlreadyUploaded,
-	// 	(req, res, next) => {
-	// 		const mw = API.Files.Remote.getUploadMiddleware({ 
-	// 			name: req.fileParsed.name,
-	// 			key: req.fileParsed.key,
-	// 		})
-	// 		return mw(req, res, next)
-	// 	},
-	// ], async (req, res) => {
-	// 	try {
-
-	// 		// console.log('req.file', req.file)
-
-	// 		// const upload = API.Files.Remote.uploadFile({
-	// 		// 	key: req.fileParsed.key,
-	// 		// 	stream: req,
-	// 		// 	contentType: req.fileParsed.content_type,
-	// 		// })
-	// 		// const uploadResult = await upload.done()
-
-	// 		// if (req.savedFile) {
-	// 		// 	await API.DB.Files.update({
-	// 		// 		where: { _id: req.savedFile._id },
-	// 		// 		values: {
-	// 		// 			uploaded_at: new Date().toISOString(),
-	// 		// 		},
-	// 		// 	})
-	// 		// } else {
-	// 		// 	req.savedFile = {}
-	// 		// 	const createResult = await API.DB.Files.create({
-	// 		// 		values: {
-	// 		// 			...req.fileParsed,
-	// 		// 			uploaded_at: new Date().toISOString(),
-	// 		// 		}
-	// 		// 	})
-	// 		// 	req.savedFile._id = createResult.insertedId
-	// 		// }
-
-	// 		// const readResult = await API.DB.Files.read({
-	// 		// 	where: { _id: req.savedFile._id }
-	// 		// })
-
-	// 		// console.log('uploadResult, readResult', uploadResult, readResult)
-
-	// 		// res.status(200).send(readResult)
-	// 	}
-	// 	catch (err) {
-	// 		API.Utils.errorHandler({ res, err })
-	// 	}
-	// })
 
 	API.put('/files/:_id/flatten', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
 		const user_id = req.user._id

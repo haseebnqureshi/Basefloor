@@ -14,13 +14,13 @@ module.exports = (API, { models, paths, providers, project }) => {
 				url: 							['String', 'cru'],
 				uploaded_at: 			['Date', 'cru'],
 				file_modified_at: ['Date', 'cru'],
-				parent_file: 			['ObjectId', 'cru'],
-				flattened_at: 		['Date', 'cru'],
-				flattened_pages: 	['Object(ObjectId)', 'cru'], //'static CDN url':'ObjectID to file object'
 				hash: 						['String', 'cru'],
 				size: 						['Number', 'cr'],
 				content_type: 		['String', 'cr'],
 				extension:  			['String', 'cr'],
+				parent_file: 			['ObjectId', 'cru'],
+				// flattened_at: 		['Date', 'cru'],
+				// flattened_pages: 	['Object(ObjectId)', 'cru'], //'static CDN url':'ObjectID to file object'
 			},
 			// filters: {
 			// 	"read": {
@@ -162,22 +162,6 @@ module.exports = (API, { models, paths, providers, project }) => {
 				)
 			},
 
-			readAll: async ({ where }) => {
-				where = where || {}
-				where = API.DB[name].sanitize(where, 'r', name)
-				if (filters.where) { 
-					where = filters.where(where)
-					where = API.DB[name].sanitize(where, 'r', name)
-				}
-				if (filters.readAll?.where) {
-					where = filters.readAll.where(where)
-					where = API.DB[name].sanitize(where, 'r', name)
-				}
-				return await API.Utils.try(`try:${collection}:readAll(where:${JSON.stringify(where)})`,
-					API.DB.run().collection(collection).find(where).toArray()
-				)
-			},
-
 			read: async ({ where }) => {
 				if (!where) { return undefined }
 				where = API.DB[name].sanitize(where, 'r', name)
@@ -216,6 +200,22 @@ module.exports = (API, { models, paths, providers, project }) => {
 
 				// If not found, create with potentially different filters
 				return await API.DB[name].create({ values })
+			},
+
+			readAll: async ({ where }) => {
+				where = where || {}
+				where = API.DB[name].sanitize(where, 'r', name)
+				if (filters.where) { 
+					where = filters.where(where)
+					where = API.DB[name].sanitize(where, 'r', name)
+				}
+				if (filters.readAll?.where) {
+					where = filters.readAll.where(where)
+					where = API.DB[name].sanitize(where, 'r', name)
+				}
+				return await API.Utils.try(`try:${collection}:readAll(where:${JSON.stringify(where)})`,
+					API.DB.run().collection(collection).find(where).toArray()
+				)
 			},
 
 			update: async ({ where, values }, one=true) => {
