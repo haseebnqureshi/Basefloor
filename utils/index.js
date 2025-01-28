@@ -4,6 +4,21 @@ const _ = require('underscore')
 const mongodb = require('mongodb')
 const hashObject = require('object-hash')
 const chance = new require('chance')()
+const jwt = require('jsonwebtoken')
+const speakeasy = require('speakeasy')
+const { phone } = require('phone')
+
+const TOTP_ENCODING = 'base32'
+const JWT_ALGORITHM = 'HS256'
+const EXPIRATIONS = {
+	AUTH: '7d',
+	AUTH_LABEL: '7 days',
+	RESET: '5m',
+	RESET_LABEL: '5 minutes',
+	VERIFY: '10m',
+	VERIFY_LABEL: '10 minutes',
+}
+
 
 module.exports = (API, { paths, providers, project }) => {
 
@@ -22,6 +37,10 @@ module.exports = (API, { paths, providers, project }) => {
 			colors: true,
 		}))
 	}
+
+	API.Utils.EXPIRATIONS = EXPIRATIONS
+	API.Utils.TOTP_ENCODING = TOTP_ENCODING
+	API.Utils.JWT_ALGORITHM = JWT_ALGORITHM
 
 	API.Utils.CollectMinapiHeaders = (reqHeaders) => {
 		// console.log({ reqHeaders })
@@ -230,6 +249,75 @@ module.exports = (API, { paths, providers, project }) => {
 				break
 		}
 	}
+
+	API.Utils.normalizePhone = (value, countryAbbr) => {
+		switch (countryAbbr) {
+			default:
+				countryAbbr = 'USA'
+		}
+		const n = phone(value, { country: countryAbbr })
+		if (!n.isValid) { return false }
+		return {
+			normalized: n.phoneNumber,
+			countryCode: n.countryCode,
+			number: n.phoneNumber.replace(n.countryCode, '')
+		}
+	}
+
+	API.Utils.createToken = async (sub, payload) => {
+		const expiresIn = EXPIRATIONS[sub.toUpperCase()]
+		if (!expiresIn) { return undefined }
+		payload = { ...payload, sub }
+		const options = { expiresIn, algorithm: JWT_ALGORITHM }
+		return await jwt.sign(payload, secret, options)
+	}
+
+	API.Utils.validateToken = async (token) => {
+		try {
+			return await jwt.verify(token, secret)
+		}
+		catch(err) {
+			return false
+		}
+	}
+
+	API.Utils.createUserAuthToken = async ({ user }) => {
+		return await API.Utils.try('Utils.createUserAuthToken', 
+			API.Utils.createToken('auth', _.omit(user, 'password_hash'))
+		)
+	}
+
+	API.Utils.validateUserToken = async ({ token }) => {
+		const decoded = await API.Utils.try('Utils.validateUserToken:decode', 
+			API.Utils.validateToken(token)
+		)
+		if (!decoded) { return undefined }
+		if (!decoded.sub) { return undefined }
+		switch (decoded.sub) {
+			case 'auth':
+			case 'verify':
+			case 'reset':
+				return decoded
+			default:
+				return undefined
+		}
+	}
+
+	API.Utils.createTotpCode = async () => {
+		const secret = speakeasy.generateSecret({ length: 20 })[TOTP_ENCODING]
+		const code = speakeasy.totp({ secret, encoding: TOTP_ENCODING })
+		return { code, secret }
+	}
+
+	API.Utils.validateTotpCode = async ({ code, secret }) => {
+		return speakeasy.totp.verify({
+			token: code,
+			secret,
+			encoding: TOTP_ENCODING,
+			window: 6,
+		})
+	}
+
 
 	return API
 

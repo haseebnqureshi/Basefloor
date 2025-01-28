@@ -10,79 +10,21 @@ module.exports = (API, { paths, providers, project }) => {
 		}) 
 	}
 
-	API.Auth.getAfterRequireUserMiddleware = () => {
-		return API.Auth.afterRequireUser || (async (req, res, next) => {
-			// API.Log('_auth/index.js')
-			next()
-		})
-	}
+	// API.Auth.getAfterRequireUserMiddleware = () => {
+	// 	return API.Auth.afterRequireUser || (async (req, res, next) => {
+	// 		// API.Log('_auth/index.js')
+	// 		next()
+	// 	})
+	// }
 
-	//middleware requiring jwt tokens (verify, auth, and reset jwt tokens)
-	API.Auth.requireToken = async (req, res, next) => {
-		const { authorization } = req.headers
-		let { token } = req.body
-		try {
-	
-			//only if we even have authorization headers (which we may not for reset and verifications)
-			if (authorization) {
-				const authToken = authorization.split('Bearer ')[1]
-				if (!token && !authToken) {
-					throw { code: 422, err: `missing token or malformed headers!` }
-				} else if (!token && authToken) {
-					token = authToken
-				}
-			}
-
-			//checking token validity
-			const decoded = await API.Utils.try('Auth.requireToken', 
-				API.Auth.validateToken(token))
-			if (!decoded) { throw { code: 422, err: `malformed, expired, or invalid token!` } }
-
-			//persisting decoded token if whitelisted
-			switch (decoded.sub) {
-				case 'verify':
-				case 'auth':
-				case 'reset':
-					req[decoded.sub] = decoded
-					break
-				default:
-					throw { code: 422, err: `invalid token subject!` }
-			}
-			next()
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	}
-
-	//middleware loading user from db
+	//deprecated: middleware loading user from db
 	API.Auth.requireUser = async (req, res, next) => {
-		if (!req.auth) {
-			throw { code: 422, err: `invalid authentication provided!` }
-		}
-		let { _id } = req.auth
-		try {
-			req.user = await API.DB.Users.read({ where: { _id } })
-			if (!req.user) { throw { code: 422, err: `user could not be found with credentials!` }}
-			next()
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
+		next()
 	}
 
-	//middleware requiring verified user
+	//deprecated: middleware requiring verified user
 	API.Auth.requireVerifiedUser = async (req, res, next) => {
-		const { user } = req
-		try {
-			if (user.email_verified !== true && user.sms_verified !== true) { 
-				throw { code: 422, err: `user not yet verified!` }
-			}
-			next()
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
+		next()
 	}
 
 	//registration route
@@ -128,10 +70,10 @@ module.exports = (API, { paths, providers, project }) => {
 			const user = await API.DB.Users.read({ where: { email } })
 			if (!user) { throw { code: 422, err: `user not found!` } }
 			const correctPassword = await API.Utils.try('Auth.login:comparePasswordWithHashed', 
-				API.Auth.comparePasswordWithHashed(password, user.password_hash))
+				API.Auth.comparePasswordWithHashed(password, user.password_hash)
+			)
 			if (!correctPassword) { throw { code: 422, err: `incorrect login information!` } }
-			const token = await API.Utils.try('Auth.login:createToken', 
-				API.Auth.createToken('auth', user._id, {}))
+			const token = await API.Utils.createUserAuthToken({ user })
 			// API.Log({ token })
 			res.status(200).send({ token, message: `logged in!` })
 		}
@@ -142,9 +84,8 @@ module.exports = (API, { paths, providers, project }) => {
 
 	//user information
 	API.get('/user', [
-		API.Auth.requireToken, 
-		API.Auth.requireUser, 
-		API.Auth.getAfterRequireUserMiddleware()
+		API.requireAuthentication,
+		API.postAuthentication, 
 	], async (req, res) => {
 		try {
 			res.status(200).send(
@@ -203,19 +144,20 @@ module.exports = (API, { paths, providers, project }) => {
 			user = await API.DB.Users.read({ where: { email } })
 
 			//creating jwt token
-			totp = await API.Auth.createTotpCode()
+			totp = await API.Utils.createTotpCode()
 
 			token = await API.Utils.try('Auth.resetPassword:createToken',
-				API.Auth.createToken('reset', user._id, { 
+				API.Utils.createToken('reset', {
+					_id: user._id, 
 					code: totp.code, 
 					secret: totp.secret 
 				})
 			)
 
-			const duration = API.Auth.expirations('reset')
+			const durationLabel = API.Utils.EXPIRATIONS['RESET_LABEL']
 			const emailArgs = require('./emails/resetPasswordWithCode')(email, {
 				code: totp.code,
-				durationText: duration.text,
+				durationText: durationLabel,
 				appName: project.app.name,
 				appAuthor: project.app.author.name,
 				appAuthorEmail: project.app.author.email,
@@ -252,15 +194,18 @@ module.exports = (API, { paths, providers, project }) => {
 		})
 	}
 
-	API.get('/user/reset/password/:code', [API.Auth.requireToken], async(req, res) => {
+	API.get('/user/reset/password/:code', [
+		API.requireAuthentication,
+		API.postAuthentication,
+	], async(req, res) => {
 		const { _id, secret } = req.reset
 		try {
 			const { code } = req.params
 			if (!code) { throw 'no code provided' }
-			const validated = await API.Auth.validateTotpCode({ code, secret })
+			const validated = await API.Utils.validateTotpCode({ code, secret })
 			if (!validated) { throw 'invalid code' }
 			const token = validated ? await API.Utils.try('Auth.resetPasswordValidCode:createToken',
-				API.Auth.createToken('reset', _id, {})
+				API.Utils.createToken('reset', { _id })
 			) : null
 			res.status(200).send({ token, validated })
 		}
@@ -270,7 +215,10 @@ module.exports = (API, { paths, providers, project }) => {
 	})
 
 	//change user's password
-	API.put('/user/reset/password', [API.Auth.requireToken], async(req, res) => {
+	API.put('/user/reset/password', [
+		API.requireAuthentication,
+		API.postAuthentication,
+	], async(req, res) => {
 		const { _id } = req.reset
 		const { password } = req.body
 		try {
@@ -295,8 +243,7 @@ module.exports = (API, { paths, providers, project }) => {
 				API.Emails.send(emailArgs))
 
 			//creating login token for presumed login
-			const token = await API.Utils.try('Auth.resetPasswordChange:createToken', 
-				API.Auth.createToken('auth', _id, {}))
+			const token = await API.Utils.createUserAuthToken({ user })
 			// API.Log({ token })
 			res.status(200).send({ token, message: `password changed and logged in!` })
 
@@ -341,10 +288,13 @@ module.exports = (API, { paths, providers, project }) => {
 		})
 	}
 
-	API.post('/user/verify/:method', [API.Auth.requireToken, API.Auth.requireUser, API.Auth.getAfterRequireUserMiddleware()], async(req, res) => {
+	API.post('/user/verify/:method', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async(req, res) => {
 		const { email, sms, _id } = req.user
 		const { method } = req.params
-		let payload = { method, value: '' }
+		let payload = { _id, method, value: '' }
 		let token
 
 		try {
@@ -357,8 +307,8 @@ module.exports = (API, { paths, providers, project }) => {
 			}
 
 			//creating necessary token and link for verifying method
-			token = await API.Utils.try('Auth.verify:createToken',
-				API.Auth.createToken('verify', _id, payload))
+			token = await API.Utils.try('Utisl.createToken:verify',
+				API.Utils.createToken('verify', payload))
 
 			res.status(200).send({ message: `sending verification!`, token })
 		}
@@ -378,7 +328,7 @@ module.exports = (API, { paths, providers, project }) => {
 				})
 
 				//sending email
-				API.Utils.try('Auth.verify:email.send', 
+				API.Utils.try('Emails.send:verifyEmail', 
 					API.Emails.send(emailArgs))
 
 			//delivering sms verification notification
@@ -404,7 +354,9 @@ module.exports = (API, { paths, providers, project }) => {
 		})		
 	}
 
-	API.get('/user/verify', [API.Auth.requireToken], async (req, res) => {
+	API.get('/user/verify', [
+		API.requireAuthentication
+	], async (req, res) => {
 
 		//verify token carries all necessary info (w/ verify method)
 		const { _id, method, value } = req.verify
@@ -451,7 +403,10 @@ module.exports = (API, { paths, providers, project }) => {
 	}
 
 	//complete verification of method
-	API.put('/user/verify', [API.Auth.requireToken], async (req, res) => {
+	API.put('/user/verify', [
+		API.requireAuthentication,
+		API.postAuthentication,
+	], async (req, res) => {
 
 		//verify token carries all necessary info (w/ verify method)
 		const { _id, method, value } = req.verify
@@ -507,7 +462,10 @@ module.exports = (API, { paths, providers, project }) => {
 	}
 
 	//update user
-	API.put('/user', [API.Auth.requireToken, API.Auth.requireUser, API.Auth.getAfterRequireUserMiddleware()], async(req, res) => {
+	API.put('/user', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async(req, res) => {
 		const { _id } = req.user
 		const values = { 
 			...API.DB.Users.sanitize(req.body, 'u'), 

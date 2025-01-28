@@ -147,9 +147,8 @@ module.exports = (API, { routes, paths, providers, project }) => {
 
 				// Default middleware stack
 				let middlewares = [
-					API.Auth.requireToken,
-					API.Auth.requireUser,
-					API.Auth.getAfterRequireUserMiddleware()
+					API.requireAuthentication,
+					API.postAuthentication,
 				]
 
 				// Extract models referenced in permission rules

@@ -30,6 +30,38 @@ module.exports = (API, { middlewares, paths, providers, project }) => {
 		}
 	}
 
+	API.postAuthentication = async (req, res, next) => {
+		next()	
+	}
+
+	//middleware requiring jwt tokens (verify, auth, and reset jwt tokens)
+	API.requireAuthentication = async (req, res, next) => {
+		const { authorization } = req.headers
+		let { token } = req.body
+		try {
+	
+			//only if we even have authorization headers (which we may not for reset and verifications)
+			if (authorization) {
+				const authToken = authorization.split('Bearer ')[1]
+				if (!token && !authToken) {
+					throw { code: 422, err: `missing token or malformed headers!` }
+				} else if (!token && authToken) {
+					token = authToken
+				}
+			}
+
+			//checking token validity
+			const decoded = await API.Utils.validateUserToken({ token })
+			if (!decoded) { throw { code: 422, err: `malformed, expired, or invalid token!` } }
+			req.user = req[decoded.sub] = decoded
+			next()
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	}
+
+
 	return API
 
 }

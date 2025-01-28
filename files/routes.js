@@ -3,7 +3,10 @@ const Busboy = require('busboy')
 
 module.exports = (API, { paths, project }) => {
 
-	API.get('/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	API.get('/files', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		try {
@@ -17,7 +20,10 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.put('/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	API.put('/files', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		const values = req.body
@@ -32,7 +38,10 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.delete('/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	API.delete('/files', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		try {
@@ -46,7 +55,10 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.get('/files/:_id', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	API.get('/files/:_id', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		const { _id } = req.params
@@ -61,7 +73,10 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.get('/files/:parent_file/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	API.get('/files/:parent_file/files', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		const { parent_file } = req.params
@@ -76,7 +91,10 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.put('/files/:_id', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	API.put('/files/:_id', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		const { _id } = req.params
@@ -92,7 +110,10 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.put('/files/:parent_file/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	API.put('/files/:parent_file/files', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		const { parent_file } = req.params
@@ -110,7 +131,10 @@ module.exports = (API, { paths, project }) => {
 
 	//this links existing files with one parent file, and is done so by passing
 	//req.body = { _ids: [ ObjectId, ObjectId, ... ] } and that's it
-	API.put('/files/:_id/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	API.put('/files/:_id/files', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		const { _id } = req.params
@@ -127,7 +151,10 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.delete('/files/:_id', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	API.delete('/files/:_id', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		const { _id } = req.params
@@ -142,7 +169,10 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.delete('/files/:parent_file/files', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	API.delete('/files/:parent_file/files', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
 		const { parent_file } = req.params
@@ -178,8 +208,8 @@ module.exports = (API, { paths, project }) => {
 	}
 
 	API.post('/files', [
-		API.Auth.requireToken,
-		API.Auth.requireUser,
+		API.requireAuthentication, 
+		API.postAuthentication,
 
 		/*
 		STEP 1: Parse our incoming file information using headers
@@ -345,7 +375,21 @@ module.exports = (API, { paths, project }) => {
 		req.pipe(busboy)
 	})
 
-	API.put('/files/:_id/flatten', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+
+	API.post('/files/:_id/pdf', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
+
+
+
+	})
+
+
+	API.put('/files/:_id/flatten', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
 		const user_id = req.user._id
 		const { _id } = req.params
 		try {
@@ -401,7 +445,10 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	// API.post('/presign', [API.Auth.requireToken, API.Auth.requireUser], async (req, res) => {
+	// API.post('/presign', [
+// 	API.requireAuthentication, 
+// 	API.postAuthentication,
+// ], async (req, res) => {
 	// 	const { _id } = req.user
 	// 	const { key, contentType } = req.body
 	// 	try {
