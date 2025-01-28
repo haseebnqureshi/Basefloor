@@ -329,6 +329,16 @@ module.exports = (API, { routes, paths, providers, project }) => {
 							allParams[param] = { model: router.model, key: param }
 						}
 
+						//Then iterate through and see if there are any auth'd user strings
+						//that we would use the req.user object...
+						if (req.user) {
+							for (let key in allParams) {
+								const value = allParams[key]
+								const [,userKey] = value.match(/^req\.user\.([a-z0-9\_]+)$/i)
+								if (userKey) { allParams[key] = req.user[userKey] }
+							}
+						}
+
 						API.Log('allParams', allParams)
 
 						//Only allow whitelisted route parameters from our request
