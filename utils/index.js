@@ -269,12 +269,12 @@ module.exports = (API, { paths, providers, project }) => {
 		if (!expiresIn) { return undefined }
 		payload = { ...payload, sub }
 		const options = { expiresIn, algorithm: JWT_ALGORITHM }
-		return await jwt.sign(payload, secret, options)
+		return await jwt.sign(payload, project.app.secret, options)
 	}
 
 	API.Utils.validateToken = async (token) => {
 		try {
-			return await jwt.verify(token, secret)
+			return await jwt.verify(token, project.app.secret)
 		}
 		catch(err) {
 			return false

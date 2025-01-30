@@ -152,7 +152,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 				]
 
 				// Extract models referenced in permission rules
-				const allowJSON = JSON.stringify(r.allow)
+				const allowJSON = JSON.stringify(r.allow || '')
 				const pattern = RegExp(/\@([a-z0-9\_]+)\./g)
 				const matches = allowJSON.match(pattern) || []
 				const modelsInAllow = _.unique(matches).map(v => v.substr(1, v.length-2))
@@ -269,8 +269,8 @@ module.exports = (API, { routes, paths, providers, project }) => {
 					try {
 						if (r.allow) {
 							// Load authenticated user data if needed
-							if (modelsInAllow.indexOf('_user') > -1) {
-								modelData['_user'] = req.user
+							if (modelsInAllow.indexOf('req.user') > -1) {
+								modelData['req.user'] = req.user
 							}
 
 							// Load data for all models referenced in permission rules
