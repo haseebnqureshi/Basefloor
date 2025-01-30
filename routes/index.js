@@ -145,12 +145,6 @@ module.exports = (API, { routes, paths, providers, project }) => {
 				const { http, db } = methods[m]
 				const r = router[m]
 
-				// Default middleware stack
-				let middlewares = [
-					API.requireAuthentication,
-					API.postAuthentication,
-				]
-
 				// Extract models referenced in permission rules
 				const allowJSON = JSON.stringify(r.allow || '')
 				const pattern = RegExp(/\@([a-z0-9\_]+)\./g)
@@ -265,49 +259,74 @@ module.exports = (API, { routes, paths, providers, project }) => {
 				}
 
 				// Add permission middleware
-				API[http](r.url, [...middlewares, async function(req, res, next) {
-					try {
-						if (!r.allow) { return next() }
+				API[http](r.url, [
+					API.requireAuthentication,
+					API.postAuthentication,
+					async function(req, res, next) {
+						try {
+							if (!r.allow) { return next() }
 
-						// Load authenticated user data if needed
-						if (modelsInAllow.indexOf('req.user') > -1) {
-							modelData['req.user'] = req.user
+							// Load authenticated user data if needed
+							if (modelsInAllow.indexOf('req.user') > -1) {
+								modelData['req.user'] = req.user
+							}
+
+							// Load data for all models referenced in permission rules
+							for (let routeParam in allParams) {
+
+								//we're only loading models that are referenced in the url path (including the user object)
+								let { model, key } = allParams[routeParam]
+								
+								//creating a where object to locate the correct data
+								let where = {}
+								where[key] = req.params[routeParam] || null
+
+								//pulling data from each route w/ params
+								modelData[model] = await API.DB[model].read({ where })
+
+								// API.Log({ modelData, model, where, 'modelData[model]':modelData[model] })
+							}
+
+							// API.Log({ allParams, 'r.url':r.url })
+							// API.Log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
+
+							const isAuthorized = traverseAllowCommands(r.allow)
+							API.Log({ isAuthorized })
+
+							if (!isAuthorized) { 
+								throw { code: 403, err: `user not authorized! permissions invalid.` }
+							}
+							next() 
 						}
-
-						// Load data for all models referenced in permission rules
-						for (let routeParam in allParams) {
-
-							//we're only loading models that are referenced in the url path (including the user object)
-							let { model, key } = allParams[routeParam]
-							
-							//creating a where object to locate the correct data
-							let where = {}
-							where[key] = req.params[routeParam] || null
-
-							//pulling data from each route w/ params
-							modelData[model] = await API.DB[model].read({ where })
-
-							// API.Log({ modelData, model, where, 'modelData[model]':modelData[model] })
+						catch (err) {
+							API.Utils.errorHandler({ res, err })
 						}
-
-						// API.Log({ allParams, 'r.url':r.url })
-						// API.Log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
-
-						const isAuthorized = traverseAllowCommands(r.allow)
-						// API.Log({ isAuthorized })
-
-						if (!isAuthorized) { 
-							throw { code: 403, err: `user not authorized! permissions invalid.` }
-						}
-						next() 
 					}
-					catch (err) {
-						API.Utils.errorHandler({ res, err })
-					}
-				}], async (req, res) => {
+				], async (req, res) => {
 					try {
 
 						const values = req.body
+						API.Log('values (req.body)', values)
+
+						const injectReqUser = (obj, reqUser) => {
+							//Then iterate through and see if there are any auth'd user strings
+							//that we would use the req.user object...
+							for (let key in obj) {
+								const value = obj[key]
+								if (value) {
+									if (value.match) {
+										const matches = value.match(/^req\.user\.([a-z0-9\_]+)$/i)
+										if (matches) {
+											if (matches[1]) {
+												const userKey = matches[1]
+												obj[key] = reqUser[userKey]
+											}
+										}
+									}
+								}
+							}
+							return obj
+						}
 
 						//Collect all of our route params with models and keys
 						let allParams = { ...r.params || {} } //Start with the current route's params
@@ -329,14 +348,11 @@ module.exports = (API, { routes, paths, providers, project }) => {
 							allParams[param] = { model: router.model, key: param }
 						}
 
+
 						//Then iterate through and see if there are any auth'd user strings
 						//that we would use the req.user object...
 						if (req.user) {
-							for (let key in allParams) {
-								const value = allParams[key]
-								const [,userKey] = value.match(/^req\.user\.([a-z0-9\_]+)$/i)
-								if (userKey) { allParams[key] = req.user[userKey] }
-							}
+							allParams = injectReqUser(allParams, req.user)
 						}
 
 						API.Log('allParams', allParams)
@@ -372,11 +388,16 @@ module.exports = (API, { routes, paths, providers, project }) => {
 							}
 						}
 
+						if (values && req.user) {
+							whereAndValues.values = injectReqUser(values, req.user)
+						} 
+
 						//No matter what, ensuring values are provided since 
 						//collection endpoints (for readAll and create) do not have params,
 						//ensuring values are provided.
-						
-						if (values) { whereAndValues.values = values }
+						else if (values) {
+							whereAndValues.values = values 
+						}
 
 						API.Log('router.model', router.model)
 						API.Log('values', values)
