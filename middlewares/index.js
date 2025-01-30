@@ -44,7 +44,7 @@ module.exports = (API, { middlewares, paths, providers, project }) => {
 			if (authorization) {
 				const authToken = authorization.split('Bearer ')[1]
 				if (!token && !authToken) {
-					throw { code: 422, err: `missing token or malformed headers!` }
+					throw { code: 401, err: `missing token or malformed headers!` }
 				} else if (!token && authToken) {
 					token = authToken
 				}
@@ -52,7 +52,7 @@ module.exports = (API, { middlewares, paths, providers, project }) => {
 
 			//checking token validity
 			const decoded = await API.Utils.validateUserToken({ token })
-			if (!decoded) { throw { code: 422, err: `malformed, expired, or invalid token!` } }
+			if (!decoded) { throw { code: 401, err: `malformed, expired, or invalid token!` } }
 			req.user = req[decoded.sub] = decoded
 			next()
 		}

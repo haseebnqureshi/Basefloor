@@ -296,7 +296,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 							// API.Log({ isAuthorized })
 
 							if (!isAuthorized) { 
-								throw { code: 422, err: `user not authorized! permissions invalid.` }
+								throw { code: 403, err: `user not authorized! permissions invalid.` }
 							}
 							next() 
 						}
