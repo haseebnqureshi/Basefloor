@@ -176,15 +176,19 @@ module.exports = (API, { routes, paths, providers, project }) => {
 					// Process each part of the comparison
 					for (let i in parts) {
 						let part = parts[i]
-						let partPattern = RegExp(/^\@([^\.]+)\.(.*)$/)
+						let partPattern = RegExp(/\@(req)*[\.]*([a-z0-9\_]+)\.([a-z0-9\_]+)$/)
 						let partMatches = part.match(partPattern)
 						if (!partMatches) {
 							values[i] = part
 						} else {
+
 							// Extract collection and field from @collection.field format
-							let collection = partMatches[1]
-							let field = partMatches[2]
+							// (or @req.user.role, for i.e. format)
+							let field = partMatches[3] || partMatches[2]
+							let collection = partMatches[3] ? `${partMatches[1]}.${partMatches[2]}` : partMatches[1]
+							// let value = partMatches[3] ? `${collection}.${field}` : modelData[collection][field]
 							let value = modelData[collection][field]
+							API.Log({ value, collection, field })
 
 							// Handle ObjectId comparisons
 							if (API.DB.mongodb.ObjectId.isValid(value)) {
@@ -266,11 +270,6 @@ module.exports = (API, { routes, paths, providers, project }) => {
 						try {
 							if (!r.allow) { return next() }
 
-							// Load authenticated user data if needed
-							if (modelsInAllow.indexOf('req.user') > -1) {
-								modelData['req.user'] = req.user
-							}
-
 							// Load data for all models referenced in permission rules
 							for (let routeParam in allParams) {
 
@@ -289,6 +288,13 @@ module.exports = (API, { routes, paths, providers, project }) => {
 
 							// API.Log({ allParams, 'r.url':r.url })
 							// API.Log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
+							
+							// Load authenticated user data if needed
+							// if (modelsInAllow.indexOf('req.user') > -1) {
+								// API.Log('req.user found in modelsInAllow', modelsInAllow)
+							modelData['req.user'] = req.user
+							API.Log(`modelData['req.user']`, modelData['req.user'])
+							// }
 
 							const isAuthorized = traverseAllowCommands(r.allow)
 							API.Log({ isAuthorized })
