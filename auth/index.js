@@ -74,7 +74,7 @@ module.exports = (API, { paths, providers, project }) => {
 			)
 			if (!correctPassword) { throw { code: 401, err: `incorrect login information!` } }
 			const token = await API.Utils.createUserAuthToken({ user })
-			// API.Log({ token })
+			API.Log({ token })
 			res.status(200).send({ token, message: `logged in!` })
 		}
 		catch (err) {

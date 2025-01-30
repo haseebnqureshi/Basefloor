@@ -282,8 +282,10 @@ module.exports = (API, { paths, providers, project }) => {
 	}
 
 	API.Utils.createUserAuthToken = async ({ user }) => {
+		const sub = 'auth'
+		const payload = { user: _.omit(user, 'password_hash') }
 		return await API.Utils.try('Utils.createUserAuthToken', 
-			API.Utils.createToken('auth', _.omit(user, 'password_hash'))
+			API.Utils.createToken(sub, payload)
 		)
 	}
 
