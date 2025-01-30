@@ -53,7 +53,10 @@ module.exports = (API, { middlewares, paths, providers, project }) => {
 			//checking token validity
 			const decoded = await API.Utils.validateUserToken({ token })
 			if (!decoded) { throw { code: 401, err: `malformed, expired, or invalid token!` } }
-			req.user = req[decoded.sub] = decoded
+			req[decoded.sub] = decoded
+			if (decoded.sub === 'auth') {
+				req.user = decoded.user
+			}
 			next()
 		}
 		catch (err) {
