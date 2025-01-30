@@ -50,7 +50,10 @@ module.exports = (API, { routes, paths, providers, project }) => {
 					r[m].url = `/${path}`
 				}
 				//assuming individual endpoint, must have a 'where' clause
-				else if (r[m].where) {
+				else {
+					
+					r[m].where = r[m].where || '_id' //set a fallback of '_id'
+
 					let routeParam //i.e., ":post_id" or `:${collection}${key}`
 					let modelAndKey //i.e., { model: 'Post', key: '_id' }, following { model, key }
 					r[m].params = {} //creating a map for our route keys with corresponding model names and where keys
@@ -267,39 +270,39 @@ module.exports = (API, { routes, paths, providers, project }) => {
 				// Add permission middleware
 				API[http](r.url, [...middlewares, async function(req, res, next) {
 					try {
-						if (r.allow) {
-							// Load authenticated user data if needed
-							if (modelsInAllow.indexOf('req.user') > -1) {
-								modelData['req.user'] = req.user
-							}
+						if (!r.allow) { return next() }
 
-							// Load data for all models referenced in permission rules
-							for (let routeParam in allParams) {
-
-								//we're only loading models that are referenced in the url path (including the user object)
-								let { model, key } = allParams[routeParam]
-								
-								//creating a where object to locate the correct data
-								let where = {}
-								where[key] = req.params[routeParam] || null
-
-								//pulling data from each route w/ params
-								modelData[model] = await API.DB[model].read({ where })
-
-								// API.Log({ modelData, model, where, 'modelData[model]':modelData[model] })
-							}
-
-							// API.Log({ allParams, 'r.url':r.url })
-							// API.Log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
-
-							const isAuthorized = traverseAllowCommands(r.allow)
-							// API.Log({ isAuthorized })
-
-							if (!isAuthorized) { 
-								throw { code: 403, err: `user not authorized! permissions invalid.` }
-							}
-							next() 
+						// Load authenticated user data if needed
+						if (modelsInAllow.indexOf('req.user') > -1) {
+							modelData['req.user'] = req.user
 						}
+
+						// Load data for all models referenced in permission rules
+						for (let routeParam in allParams) {
+
+							//we're only loading models that are referenced in the url path (including the user object)
+							let { model, key } = allParams[routeParam]
+							
+							//creating a where object to locate the correct data
+							let where = {}
+							where[key] = req.params[routeParam] || null
+
+							//pulling data from each route w/ params
+							modelData[model] = await API.DB[model].read({ where })
+
+							// API.Log({ modelData, model, where, 'modelData[model]':modelData[model] })
+						}
+
+						// API.Log({ allParams, 'r.url':r.url })
+						// API.Log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
+
+						const isAuthorized = traverseAllowCommands(r.allow)
+						// API.Log({ isAuthorized })
+
+						if (!isAuthorized) { 
+							throw { code: 403, err: `user not authorized! permissions invalid.` }
+						}
+						next() 
 					}
 					catch (err) {
 						API.Utils.errorHandler({ res, err })
