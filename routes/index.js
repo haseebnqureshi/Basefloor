@@ -50,10 +50,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 					r[m].url = `/${path}`
 				}
 				//assuming individual endpoint, must have a 'where' clause
-				else {
-					
-					r[m].where = r[m].where || '_id' //set a fallback of '_id'
-
+				else if (r[m].where) {
 					let routeParam //i.e., ":post_id" or `:${collection}${key}`
 					let modelAndKey //i.e., { model: 'Post', key: '_id' }, following { model, key }
 					r[m].params = {} //creating a map for our route keys with corresponding model names and where keys
