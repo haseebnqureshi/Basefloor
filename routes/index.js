@@ -44,13 +44,12 @@ module.exports = (API, { routes, paths, providers, project }) => {
 		for (let m in methods) {
 			if (r[m]) {
 
-				//it's a collection endpoint or create on collection
-				if (m === '_readAll' || m === '_create') {
-					r[m].params = {}
-					r[m].url = `/${path}`
-				}
-				//assuming individual endpoint, must have a 'where' clause
-				else if (r[m].where) {
+				//it's a collection endpoint or collection
+				r[m].params = {}
+				r[m].url = `/${path}`
+
+				//has a 'where' clause
+				if (r[m].where) {
 					let routeParam //i.e., ":post_id" or `:${collection}${key}`
 					let modelAndKey //i.e., { model: 'Post', key: '_id' }, following { model, key }
 					r[m].params = {} //creating a map for our route keys with corresponding model names and where keys
@@ -63,12 +62,6 @@ module.exports = (API, { routes, paths, providers, project }) => {
 					// Build URL with parameters (e.g., /users/:user_id)
 					r[m].url = `/${path}/:${routeParam}`
 				}
-
-				else {
-					r[m].params = {}
-					r[m].url = `/${path}`
-				}
-
 			}
 		}
 
