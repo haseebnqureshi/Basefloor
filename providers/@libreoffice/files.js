@@ -50,27 +50,18 @@ module.exports = ({ providerVars }) => {
 		'.csv': 'excel',
 	};
 
-	async function convertToPdf({ inputPath, outputPath }) {
+	async function convertToPdf({ inputPath }) {
 		// Check LibreOffice availability before conversion
 		await checkLibreOffice();
 
 		try {
-			const outDir = path.dirname(outputPath);
-			await execPromise(`libreoffice --headless --convert-to pdf --outdir "${outDir}" "${inputPath}"`);
+			const outDir = path.dirname(inputPath);
 			const baseNamePdf = path.basename(inputPath, path.extname(inputPath)) + '.pdf';
-			const convertedPdfPath = path.join(outDir, baseNamePdf);
-			
-			if (convertedPdfPath !== outputPath) {
-				fs.renameSync(convertedPdfPath, outputPath);
-			}
-
-			// Schedule cleanup of input file
-			setTimeout(() => {
-				fs.rmSync(inputPath, { force: true });
-			}, TIME_TO_RETAIN_FILES);
-			
+			const outputPath = path.join(outDir, baseNamePdf);
+			await execPromise(`libreoffice --headless --convert-to pdf --outdir "${outDir}" "${inputPath}"`);
 			return outputPath;
-		} catch (error) {
+		} 
+		catch (error) {
 			throw new Error(`Failed to convert document to PDF: ${error.message}`);
 		}
 	}

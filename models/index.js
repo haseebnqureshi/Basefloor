@@ -84,6 +84,8 @@ module.exports = (API, { models, paths, providers, project }) => {
 			filters,
 			values,
 
+			run: async () => await API.DB.run().collection(collection),
+
 			sanitize: (v, dbAction /* c, rA, r, u, d */ , collection) => {
 				// API.Log({ dbAction, values })
 				let sanitized = {}

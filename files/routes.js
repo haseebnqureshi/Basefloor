@@ -1,7 +1,103 @@
 
 const Busboy = require('busboy')
+const path = require('path')
+const os = require('os')
+const fs = require('fs')
 
 module.exports = (API, { paths, project }) => {
+
+	const createFileValues = ({ prefix, user_id, name, size, content_type, file_modified_at }) => {
+	  //ensure user_id is a string and not a mongo ObjectId (can use user_id.toString())
+
+	  /*
+		still not ideal, as same files may have different names, and so we're still 
+		storing duplicates. may need client to send hash of file contents, because 
+		it's the client's duty to pipeline the body of the file to end cdn.
+	  */
+		const hash = API.Utils.hashObject({ user_id, name, size, content_type }, { algorithm: 'md5' })
+	  const [,extension] = info.name.match(/(\.[a-z0-9]+)$/)
+	  const filename = `${hash}${extension}`
+	  const url = API.Files.Remote.CDN_URL + `/${filename}`
+	  const key = prefix ? `${prefix}/${filename}` : filename
+
+	  return {
+	  	hash,
+	  	filename,
+	  	extension,
+	  	user_id,
+	  	name,
+	  	size,
+	  	content_type,
+	  	file_modified_at,
+	  	key,
+	  	url,
+	  }
+	}
+
+	const loadFileById = async (req, res, next) => {
+		try {
+			//pulling our file from db
+			const user_id = req.user._id
+			const { _id } = req.params
+			const where = { _id, user_id }
+			const file = await API.DB.Files.read({ where })
+			if (!file) { throw 404 }
+			req.file = file
+			next()
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	}
+
+	const loadPdfById = async (req, res, next) => {
+		try {
+			const user_id = req.user._id
+			const { _id } = req.params
+			const where = { 
+				$and: [
+					$or: [
+						{ '_id': new API.DB.mongodb.ObjectId(_id) },
+						{ 'parent_file': new API.DB.mongodb.ObjectId(_id) },
+					],
+					'content_type': 'application/pdf'
+				]
+			}
+			const pdf = await API.DB.Files.run().findOne(where)
+			API.Log('loadPdfById:pdf', pdf)
+			if (!pdf) { throw 404 }
+			req.pdf = pdf
+			next()
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	}
+
+	const checkFileByPending = async (req, res, next) => {
+		try {
+			req.file = await API.DB.Files.read({ 
+				where: { 
+					hash: req.pending.hash, 
+					user_id: req.pending.user_id, 
+				},
+			}) || null
+			next()
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	}
+
+
+
+
+
+
+
+
+
+
 
 	API.get('/files', [
 		API.requireAuthentication, 
@@ -187,25 +283,18 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	const parseFileParams = (req, res, next) => {
-		const user_id = req.user._id
-		try {
-			console.log(req.file)
-			req.fileParsed = API.Files.createFileValues({ 
-				user_id, 
-				name: file.name,
-				size: file.size,
-				content_type: file.type,
-				lastModified: file.lastModified,
-				cdnUrl: API.Files.Remote.CDN_URL, 
-				createHash: API.Files.createFileHash,
-			})
-			next()
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}	
-	}
+
+
+
+
+
+
+
+
+
+
+
+
 
 	API.post('/files', [
 		API.requireAuthentication, 
@@ -218,37 +307,14 @@ module.exports = (API, { paths, project }) => {
 		(req, res, next) => {
 			try {
 				const info = API.Utils.CollectMinapiHeaders(req.headers)
-			  const [,extension] = info.name.match(/(\.[a-z0-9]+)$/)
-
-				//@todo: still not ideal, as same files may have different names, and so we're still storing duplicates. may need client to send hash of file contents, because it's the client's duty to pipeline the body of the file to end cdn.
-				const hash = API.Utils.hashObject({ 
+				req.pending = createFileValues({
 					user_id: req.user._id.toString(),
 					name: info.name,
 					size: info.size,
 					content_type: info.type,
-				}, { algorithm: 'md5' })
-
-			  const filename = `${hash}${extension}`
-			  req.file = {
-			  	pending: {},
-			  	saved: {},
-			  }
-
-				req.file.pending = {
-					hash,
-					filename,
-					extension,
-					user_id: req.user._id,
-					name: info.name,
-					size: info.size,
-					content_type: info.type,
 					file_modified_at: info.modified,
-					key: `${filename}`,
-					url: `${API.Files.Remote.CDN_URL}/${filename}`,
-					created_at: new Date().toISOString(),
-				}
-				API.Log('req.file.pending', req.file.pending)
-
+				})
+				API.Log('req.pending', req.pending)
 				next()
 			} catch (err) {
 				API.Utils.errorHandler({ res, err })
@@ -261,21 +327,21 @@ module.exports = (API, { paths, project }) => {
 
 		async (req, res, next) => {
 			try {
-				req.file.saved = await API.DB.Files.read({ 
+				req.file = await API.DB.Files.read({ 
 					where: { 
-						hash: req.file.pending.hash, 
-						user_id: req.file.pending.user_id, 
+						hash: req.pending.hash, 
+						user_id: req.pending.user_id, 
 					},
 				})
-				if (!req.file.saved) { 
+				if (!req.file) { 
 					API.Log('- file not found in db, going to upload...')
 					return next() 
 				}
-				if (req.file.saved.uploaded_at) {
+				if (req.file.uploaded_at) {
 					API.Log('- file found found in db and with "uploaded_at", returning saved file now...')
-					return res.status(200).send(req.file.saved)
+					return res.status(200).send(req.file)
 				}
-				API.Log('- file found, req.file.saved', req.file.saved)
+				API.Log('- file found, req.file', req.file)
 				next()
 			}
 			catch (err) {
@@ -305,49 +371,49 @@ module.exports = (API, { paths, project }) => {
 
 	], async (req, res) => {
 		
-		API.Log('- attempting to upload req.file.pending:', req.file.pending)
+		API.Log('- attempting to upload req.pending:', req.pending)
 		const busboy = Busboy({ headers: req.headers })
 		
 		busboy.on('file', async (fieldName, fileStream, file) => {
 			try {
 				const status = API.Files.Remote.uploadFile({
-					Key: req.file.pending.key,
+					Key: req.pending.key,
 					Body: fileStream,
-					ContentType: req.file.pending.content_type, 
+					ContentType: req.pending.content_type, 
 				})
 
 				status.on('httpUploadProgress', async progress => {
-					const percent = Math.round(10000 * progress.loaded / req.file.pending.size) / 100
+					const percent = Math.round(10000 * progress.loaded / req.pending.size) / 100
 					API.Log(`  - uploaded ${percent}%`, progress)
 
 					if (percent == 100) {
 						API.Log(`- finished uploading!`)
-						API.Log('- now attempting to save req.file.pending into db:', req.file.pending)
+						API.Log('- now attempting to save req.pending into db:', req.pending)
 						
-						if (req.file.saved) {
+						if (req.file) {
 							await API.DB.Files.update({
-								where: { _id: req.file.saved._id },
+								where: { _id: req.file._id },
 								values: {
 									uploaded_at: new Date().toISOString(),
 								},
 							})
 						} else {
-							req.file.saved = {}
+							req.file = {}
 							const createResult = await API.DB.Files.create({
 								values: {
-									...req.file.pending,
+									...req.pending,
 									uploaded_at: new Date().toISOString(),
 								}
 							})
-							req.file.saved._id = createResult.insertedId
+							req.file._id = createResult.insertedId
 						}
 
-						req.file.saved = await API.DB.Files.read({
-							where: { _id: req.file.saved._id }
+						req.file = await API.DB.Files.read({
+							where: { _id: req.file._id }
 						})
 
-						API.Log('- saved!', { 'req.file.saved': req.file.saved })
-						res.send(req.file.saved)
+						API.Log('- saved!', { 'req.file': req.file })
+						res.send(req.file)
 					}
 
 				})
@@ -355,7 +421,7 @@ module.exports = (API, { paths, project }) => {
 				await status.done()
 
 			} catch(err) {
-				console.error('- failed to upload req.file.pending...')
+				console.error('- failed to upload req.pending...')
 				console.error(err)
 			}
 
@@ -379,76 +445,206 @@ module.exports = (API, { paths, project }) => {
 	API.post('/files/:_id/pdf', [
 		API.requireAuthentication, 
 		API.postAuthentication,
+		loadFileById,
+		async (req, res, next) => {
+			try {
+
+				//file is already a pdf, conversion not required...
+				const { filename, extension, url, name } = req.file
+				if (extension == '.pdf') {
+					return res.status(200).send(req.file)
+				}
+
+				//file type not supported...
+				if (!API.Files.SUPPORTED_FORMATS[extension]) { throw 422 }
+
+				//creating our pdf (has to be locally as a file, can't be buffed with libreoffice)
+				const inputPath = path.join(os.tmpdir(), `${Date.now()}-${filename}`)
+				const pdfPath = await API.Files.Libreoffice.convertToPdf({ inputPath })
+				req.filepath = pdfPath
+
+				//pulling relevant information to create new file object for pdf
+				const pdfStats = fs.statSync(pdfPath)
+				const size = pdfStats.size
+				const file_modified_at = Date.now()
+				req.pending = createFileValues({
+					user_id: req.user._id.toString(),
+					name,
+					size,
+					content_type: 'application/pdf',
+					file_modified_at,
+				})
+				req.pending.parent_file = file._id
+
+				//remove the file object, no longer needed
+				delete req.file
+
+				next()
+			}
+			catch (err) {
+				API.Utils.errorHandler({ res, err })
+			}
+		},
+
+		//now attempting to load our potential pdf file, if in db...
+		checkFileByPending,
+
 	], async (req, res) => {
+		try {
 
+			//presuming there was no pdf file in our db
+			let _id = null
 
+			if (req.file) {
+				if (req.file._id) {
+					//we found a pdf file in our db, keep our _id
+					_id = req.file._id
+				}
+			}
+
+			//upload our file no matter what
+			await API.Files.Remote.uploadFile({
+				Key: req.pending.key,
+				Body: fs.createReadStream(req.filepath),
+				ContentType: req.pending.content_type,
+			})
+			req.pending.uploaded_at = Date.now()
+
+			//then conditionally create or update our pdf file in db
+			if (!_id) {
+				const { insertedId } = await API.DB.Files.create({
+					values: req.pending
+				})
+				_id = insertedId
+			}
+			else {
+				await API.DB.Files.update({
+					where: { _id },
+					values: req.pending,
+				})
+			}
+
+			//read the file back
+			req.file = await API.DB.Files.read({
+				where: { _id },
+			})
+
+			res.status(200).send(req.file)
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
 
 	})
 
 
-	API.put('/files/:_id/flatten', [
+	API.post('/pdfs/:_id/pages', [
 		API.requireAuthentication, 
 		API.postAuthentication,
-	], async (req, res) => {
-		const user_id = req.user._id
-		const { _id } = req.params
-		try {
-			const where = { _id, user_id }
-			let file = await API.DB.Files.read({ where })
-			if (!file) { throw 'error occured when getting file' }
+		loadPdfById,
+		async (req, res, next) => {
+			try {
 
-			// console.log({ file })
-
-			const { filename, extension, url, name } = file
-
-			if (!API.Files.SUPPORTED_FORMATS[extension]) { //file is not a convertible format, so return out 
-				return res.status(200).send()
-			}
-
-			let pages = await API.Files.processDocument({
-				name,
-				inputKey: filename,
-				outputBasename: filename.replace(extension, ''),
-				convertToPdf: API.Files.Libreoffice.convertToPdf,
-				sharp: API.Files.Sharp,
-			})
-
-			const flattened_at = new Date().toISOString() 
-			let flattened_pages = {}
-
-			for (let page of pages) {
-				page = {
-					...page,
-					user_id: file.user_id,
-					parent_file: file._id,
-				}
-				const hash = API.Files.createFileHash(page) 
-				let result = await API.DB.Files.readOrCreate({
-					where: { hash, user_id: file.user_id },
-					values: page,
+				//first downloading our pdf to local storage
+				const pdfPath = path.join(os.tmpdir(), `${Date.now()}-${req.pdf.filename}`)
+				await API.Files.Remote.downloadFile({
+					Key: req.pdf.key,
+					localPath: pdfPath,
 				})
-				flattened_pages[page.url] = result.insertedId
+
+				//then feeding into sharp to split pages into images
+				const outputDir = path.join(os.tmpdir(), `${Date.now()}-${req.pdf.hash}-images`)
+				let images = await API.Files.Sharp.convertPdfToImages({
+					pdfPath,
+					outputDir,
+				})
+
+				//if no images, error out
+		    if (!images.length) {
+		      throw new Error('No images were generated from the PDF');
+		    }
+
+		    //iterate through images and load up values into req.pages
+		    const basename = req.pdf.name.replace(req.pdf.extension, '')
+		    req.pages = []
+
+		    for (let i in images) {
+		    	const imagepath = images[i]
+		    	const stats = fs.statSync(imagepath)
+		    	const size = stats.size
+		    	const page = String(parseInt(p)+1)
+		    	const name = `${req.pdf.basename} (Page ${page} of ${images.length})`
+		    	const values = createFileValues({ 
+		    		user_id: req.user._id.toString(),
+		    		name,
+		    		size,
+		    		content_type: 'image/png',
+		    		file_modified_at: Date.now(),
+		    	})
+		    	req.pages[i] = {
+	    			...values,
+	    			localPath: imagepath,
+	    			parent_file: req.pdf._id,
+		    	}
+		    }
+
+		    next()
+			}
+			catch (err) {
+				API.Utils.errorHandler({ res, err })
+			}
+		},
+	], async (req, res) => {
+		try {
+
+			//upload each image unconditionally
+			for (let i in req.pages) {
+				const page = req.pages[i]
+				await API.Files.Remote.uploadFile({
+					Key: page.key,
+					ContentType: page.content_type,
+					Body: fs.createReadStream(page.localPath),
+				})
+				req.pages[i].uploaded_at = Date.now()
+				delete req.pages[i].localPath
 			}
 
-			// console.log({ flattened_pages, flattened_at })
+			//bulk insert pages into db
+			const { insertedIds } = API.DB.Files.createMany(req.pages)
 
-			result = await API.DB.Files.update({ where, values: {
-				flattened_at,
-				flattened_pages,
-			}})
+			//check the count, make sure all were created
+			if (req.pages.length !== insertedIds.length) { throw 'not all pages appear to have been processed or saved to db!' }
 
-			if (!result) { throw 'error occured when updating file' }
-			res.status(200).send()
+			req.pages = req.pages.map((p,i) => {
+				p._id = insertedIds[i]
+				return p
+			})
+			res.status(200).send(req.pages)
 		}
 		catch (err) {
 			API.Utils.errorHandler({ res, err })
 		}
 	})
 
+
+
+
+
+
+	// API.get('/files/:_id/download', [
+	// 	API.requireAuthentication, 
+	// 	API.postAuthentication,
+	// 	loadFileById,
+	// ], async(req, res) => {
+	// 	const { _id } = req.params
+	// 	const fileStream = fs.createReadStream(outputPath)
+	// 	fileStream.pipe(res)
+	// })
+
 	// API.post('/presign', [
-// 	API.requireAuthentication, 
-// 	API.postAuthentication,
-// ], async (req, res) => {
+	// 	API.requireAuthentication, 
+	// 	API.postAuthentication,
+	// ], async (req, res) => {
 	// 	const { _id } = req.user
 	// 	const { key, contentType } = req.body
 	// 	try {

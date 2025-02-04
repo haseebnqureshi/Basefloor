@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const TIME_TO_RETAIN_FILES = 60 * 1000 //in milliseconds
 
@@ -39,7 +40,7 @@ async function processDocumentAsMany({
   }
 
   const timestamp = Date.now();
-  const tempDir = path.join(process.cwd(), 'temp-' + timestamp);
+  const tempDir = path.join(os.tmpdir(), `${Date.now()}-${inputKey}`);
   fs.mkdirSync(tempDir, { recursive: true });
 
   const sourceExt = path.extname(inputKey).toLowerCase();
@@ -107,17 +108,17 @@ async function processDocumentAsMany({
       });
     }
 
-    setTimeout(() => {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    }, TIME_TO_RETAIN_FILES);
+    // setTimeout(() => {
+    //   fs.rmSync(tempDir, { recursive: true, force: true });
+    // }, TIME_TO_RETAIN_FILES);
     
     return pages;
 
   } catch (error) {
     console.error(error);
-    setTimeout(() => {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    }, TIME_TO_RETAIN_FILES);
+    // setTimeout(() => {
+    //   fs.rmSync(tempDir, { recursive: true, force: true });
+    // }, TIME_TO_RETAIN_FILES);
     return [];
   }
 }
