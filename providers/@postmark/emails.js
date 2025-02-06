@@ -2,8 +2,10 @@
 const _ = require('underscore') 
 const postmark = require('postmark')
 
-module.exports = ({ providerVars }) => {
+module.exports = ({ providerVars, providerName }) => {
 
+	const NAME = providerName
+	const ENV = providerVars
 	const client = new postmark.ServerClient(providerVars.token)
 	const emailFields = [
 		'From',
@@ -24,6 +26,9 @@ module.exports = ({ providerVars }) => {
 	]
 
 	return {
+
+		NAME,
+		ENV,
 
 		send: async (values) => {
 			values = { ...values, From: providerVars.from }

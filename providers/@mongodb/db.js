@@ -4,7 +4,10 @@
 const mongodb = require('mongodb')
 const { MongoClient, ServerApiVersion } = mongodb
 
-module.exports = ({ providerVars }) => {
+module.exports = ({ providerVars, providerName }) => {
+
+  const NAME = providerName
+  const ENV = providerVars
 
   const CONNECTION_STRING = 'mongodb+srv://'
     + providerVars.username + ':'
@@ -48,6 +51,8 @@ module.exports = ({ providerVars }) => {
   }
 
   return {
+    NAME,
+    ENV,
     CONNECTION_STRING,
     mongodb,
     client,

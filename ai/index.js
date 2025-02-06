@@ -11,7 +11,8 @@ module.exports = (API, { ai, paths, providers, checks }) => {
       API.AI = { 
         ...API.AI,
         ...loadProvider(`${paths.minapi}/providers/${ai.provider}`)({ 
-          providerVars: providers[ai.provider]
+          providerVars: providers[ai.provider],
+          providerName: ai.provider,
         })
       }
     } catch (err) {
@@ -28,7 +29,8 @@ module.exports = (API, { ai, paths, providers, checks }) => {
       const name = ai.providers[key];
       try {
         API.AI[key] = loadProvider(`${paths.minapi}/providers/${name}`)({ 
-          providerVars: providers[name]
+          providerVars: providers[name],
+          providerName: name,
         });
       } catch (err) {
         console.error(`AI Service Error (${key}): ${err.message}`);

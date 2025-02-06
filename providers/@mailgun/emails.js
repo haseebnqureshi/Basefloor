@@ -4,7 +4,10 @@ const formData = require('form-data')
 const Mailgun = require('mailgun.js')
 const mailgun = new Mailgun(formData)
 
-module.exports = ({ providerVars }) => {
+module.exports = ({ providerVars, providerName }) => {
+
+	const NAME = providerName
+	const ENV = providerVars
 
 	const client = mailgun.client({ 
 		username: providerVars.username,
@@ -13,6 +16,9 @@ module.exports = ({ providerVars }) => {
 
 	return {
 
+		NAME,
+		ENV,
+		
 		send: async ({ To /* ['email', 'email', ...] */, Subject, Text, Html }) => {
 			try {
 				let params = {

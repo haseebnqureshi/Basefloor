@@ -34,7 +34,10 @@ async function checkLibreOffice() {
 	}
 }
 
-module.exports = ({ providerVars }) => {
+module.exports = ({ providerVars, providerName }) => {
+
+	const NAME = providerName;
+	const ENV = providerVars;
 	const TIME_TO_RETAIN_FILES = 60 * 1000; // in milliseconds
 	const SUPPORTED_FORMATS = {
 		'.doc': 'word',
@@ -67,8 +70,10 @@ module.exports = ({ providerVars }) => {
 	}
 
 	return {
-		convertToPdf,
+		NAME,
+		ENV,
 		SUPPORTED_FORMATS,
 		TIME_TO_RETAIN_FILES,
+		convertToPdf,
 	};
 };

@@ -10,7 +10,8 @@ module.exports = (API, { emails, paths, providers, checks }) => {
 			API.Emails = { 
 				...API.Emails,
 				...loadProvider(`${paths.minapi}/providers/${emails.provider}`)({ 
-					providerVars: providers[emails.provider]
+					providerVars: providers[emails.provider],
+					providerName: emails.provider,
 				})
 			}
 		} catch (err) {
@@ -39,7 +40,8 @@ module.exports = (API, { emails, paths, providers, checks }) => {
 			const name = emails.providers[key];
 			try {
 				API.Emails[key] = loadProvider(`${paths.minapi}/providers/${name}`)({ 
-					providerVars: providers[name]
+					providerVars: providers[name],
+					providerName: name,
 				});
 			} catch (err) {
 				console.error(`Email Service Error (${key}): ${err.message}`);

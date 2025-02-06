@@ -5,9 +5,11 @@ module.exports = (API, { db, paths, providers, project }) => {
 
   const providerVars = providers[provider]
 
+  const providerName = provider
+
   API.DB = { 
     ...API.DB,
-    ...require(`${paths.minapi}/providers/${provider}`)({ providerVars }),
+    ...require(`${paths.minapi}/providers/${provider}`)({ providerVars, providerName }),
   }
 
   return API

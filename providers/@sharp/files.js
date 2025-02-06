@@ -186,16 +186,20 @@ async function convertPdfToImages({ pdfPath, outputDir }) {
 	}
 }
 
-module.exports = ({ providerVars }) => {
+module.exports = ({ providerVars, providerName }) => {
+	const NAME = providerName
+	const ENV = providerVars
 	return {
+		NAME,
+		ENV,
+		MAX_FILE_SIZE,
+		MAX_DIMENSION_FOR_RESIZE,
+		SUPPORTED_FORMATS,
+		TIME_TO_RETAIN_FILES,
 		sharp,
 		optimizeImage,
 		getNewDimensions,
 		resizeImage,
 		convertPdfToImages,
-		MAX_FILE_SIZE,
-		MAX_DIMENSION_FOR_RESIZE,
-		SUPPORTED_FORMATS,
-		TIME_TO_RETAIN_FILES,
 	};
 };

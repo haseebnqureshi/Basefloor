@@ -1,7 +1,10 @@
 
 const Anthropic = require('@anthropic-ai/sdk')
 
-module.exports = ({ providerVars }) => {
+module.exports = ({ providerVars, providerName }) => {
+
+	const NAME = providerName
+	const ENV = providerVars
 
 	const client = new Anthropic({
 		apiKey: providerVars.apiKey
@@ -11,6 +14,9 @@ module.exports = ({ providerVars }) => {
 
 	return {
 
+		NAME,
+		ENV,
+		
 		message: async ({ model, max_tokens, temperature, messages, textPrompt }) => {
 			model = model || models.default
 			max_tokens = max_tokens || 1000

@@ -6,7 +6,10 @@ const fs = require('fs')
 
 module.exports = (API, { paths, project }) => {
 
-	const createFileValues = ({ prefix, user_id, name, size, content_type, file_modified_at }) => {
+	const PAGE_CONTENT_TYPE = 'image/png'
+	const PDF_CONTENT_TYPE = 'application/pdf'
+
+	const createFileValues = ({ prefix, user_id, name, size, content_type, file_modified_at, provider, bucket }) => {
 	  //ensure user_id is a string and not a mongo ObjectId (can use user_id.toString())
 
 	  /*
@@ -19,6 +22,8 @@ module.exports = (API, { paths, project }) => {
 	  const filename = `${hash}${extension}`
 	  const url = API.Files.Remote.CDN_URL + `/${filename}`
 	  const key = prefix ? `${prefix}/${filename}` : filename
+	  const provider = provider || null
+	  const bucket = bucket || null
 
 	  return {
 	  	hash,
@@ -31,6 +36,8 @@ module.exports = (API, { paths, project }) => {
 	  	file_modified_at,
 	  	key,
 	  	url,
+	  	provider,
+	  	bucket,
 	  }
 	}
 
@@ -56,17 +63,39 @@ module.exports = (API, { paths, project }) => {
 			const { _id } = req.params
 			const where = { 
 				$and: [
+					user_id,
 					$or: [
 						{ '_id': new API.DB.mongodb.ObjectId(_id) },
 						{ 'parent_file': new API.DB.mongodb.ObjectId(_id) },
 					],
-					'content_type': 'application/pdf'
+					'content_type': PDF_CONTENT_TYPE
 				]
 			}
 			const pdf = await API.DB.Files.run().findOne(where)
 			API.Log('loadPdfById:pdf', pdf)
 			if (!pdf) { throw 404 }
 			req.pdf = pdf
+			next()
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	}
+
+	const loadPdfWithPages = async (req, res, next) => {
+		try {
+			if (!req.pdf) { throw 404 }
+			const user_id = req.user._id
+			const parent_file = req.pdf._id
+			const pages = await api.DB.Files.readAll({
+				where: {
+					user_id,
+					parent_file,
+					content_type: PAGE_CONTENT_TYPE,
+				}
+			})
+			if (!pages) { throw 404 }
+			req.pdf.pages = pages
 			next()
 		}
 		catch (err) {
@@ -169,24 +198,6 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.get('/files/:parent_file/files', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-	], async (req, res) => {
-		//files are specific to authenticated user
-		const user_id = req.user._id
-		const { parent_file } = req.params
-		try {
-			const where = { _id, user_id }
-			const result = await API.DB.Files.readAll({ where })
-			if (!result) { throw `error occured when reading files for parent` }
-			res.status(200).send(result)
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
-
 	API.put('/files/:_id', [
 		API.requireAuthentication, 
 		API.postAuthentication,
@@ -199,6 +210,42 @@ module.exports = (API, { paths, project }) => {
 			const where = { _id, user_id }
 			const result = await API.DB.Files.update({ where, values })
 			if (!result) { throw 'error occured when updating file' }
+			res.status(200).send(result)
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
+	API.delete('/files/:_id', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
+		//files are specific to authenticated user
+		const user_id = req.user._id
+		const { _id } = req.params
+		try {
+			const where = { _id, user_id }
+			const result = await API.DB.Files.delete({ where })
+			if (!result) { throw 'error occured when deleting file' }
+			res.status(200).send(result)
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
+	API.get('/files/:parent_file/files', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async (req, res) => {
+		//files are specific to authenticated user
+		const user_id = req.user._id
+		const { parent_file } = req.params
+		try {
+			const where = { _id, user_id }
+			const result = await API.DB.Files.readAll({ where })
+			if (!result) { throw `error occured when reading files for parent` }
 			res.status(200).send(result)
 		}
 		catch (err) {
@@ -227,37 +274,19 @@ module.exports = (API, { paths, project }) => {
 
 	//this links existing files with one parent file, and is done so by passing
 	//req.body = { _ids: [ ObjectId, ObjectId, ... ] } and that's it
-	API.put('/files/:_id/files', [
+	API.post('/files/:parent_file/files', [
 		API.requireAuthentication, 
 		API.postAuthentication,
 	], async (req, res) => {
 		//files are specific to authenticated user
 		const user_id = req.user._id
-		const { _id } = req.params
+		const { parent_file } = req.params
 		const { _ids } = req.body
 		try {
 			const where = { user_id, _id: {$in:_ids}}
-			const values = { parent_file: _id }
+			const values = { parent_file }
 			const result = await API.DB.Files.updateAll({ where, values })
 			if (!result) { throw `error occured when linking files with parent` }
-			res.status(200).send(result)
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
-
-	API.delete('/files/:_id', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-	], async (req, res) => {
-		//files are specific to authenticated user
-		const user_id = req.user._id
-		const { _id } = req.params
-		try {
-			const where = { _id, user_id }
-			const result = await API.DB.Files.delete({ where })
-			if (!result) { throw 'error occured when deleting file' }
 			res.status(200).send(result)
 		}
 		catch (err) {
@@ -282,18 +311,6 @@ module.exports = (API, { paths, project }) => {
 			API.Utils.errorHandler({ res, err })
 		}
 	})
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 	API.post('/files', [
@@ -395,6 +412,8 @@ module.exports = (API, { paths, project }) => {
 								where: { _id: req.file._id },
 								values: {
 									uploaded_at: new Date().toISOString(),
+									provider: API.Files.Remote.NAME,
+									bucket: API.Files.Remote.ENV.bucket,
 								},
 							})
 						} else {
@@ -403,6 +422,8 @@ module.exports = (API, { paths, project }) => {
 								values: {
 									...req.pending,
 									uploaded_at: new Date().toISOString(),
+									provider: API.Files.Remote.NAME,
+									bucket: API.Files.Remote.ENV.bucket,
 								}
 							})
 							req.file._id = createResult.insertedId
@@ -459,19 +480,19 @@ module.exports = (API, { paths, project }) => {
 				if (!API.Files.SUPPORTED_FORMATS[extension]) { throw 422 }
 
 				//creating our pdf (has to be locally as a file, can't be buffed with libreoffice)
-				const inputPath = path.join(os.tmpdir(), `${Date.now()}-${filename}`)
+				const inputPath = path.join(os.tmpdir(), `${new Date().toISOString()}-${filename}`)
 				const pdfPath = await API.Files.Libreoffice.convertToPdf({ inputPath })
 				req.filepath = pdfPath
 
 				//pulling relevant information to create new file object for pdf
 				const pdfStats = fs.statSync(pdfPath)
 				const size = pdfStats.size
-				const file_modified_at = Date.now()
+				const file_modified_at = new Date().toISOString()
 				req.pending = createFileValues({
 					user_id: req.user._id.toString(),
 					name,
 					size,
-					content_type: 'application/pdf',
+					content_type: PDF_CONTENT_TYPE,
 					file_modified_at,
 				})
 				req.pending.parent_file = file._id
@@ -508,19 +529,29 @@ module.exports = (API, { paths, project }) => {
 				Body: fs.createReadStream(req.filepath),
 				ContentType: req.pending.content_type,
 			})
-			req.pending.uploaded_at = Date.now()
+			req.pending.uploaded_at = new Date().toISOString()
 
 			//then conditionally create or update our pdf file in db
 			if (!_id) {
 				const { insertedId } = await API.DB.Files.create({
-					values: req.pending
+					values: {
+						...req.pending,
+						uploaded_at: new Date().toISOString(),
+						provider: API.Files.Remote.NAME,
+						bucket: API.Files.Remote.ENV.bucket,
+					}
 				})
 				_id = insertedId
 			}
 			else {
 				await API.DB.Files.update({
 					where: { _id },
-					values: req.pending,
+					values: {
+						...req.pending,
+						uploaded_at: new Date().toISOString(),
+						provider: API.Files.Remote.NAME,
+						bucket: API.Files.Remote.ENV.bucket,
+					},
 				})
 			}
 
@@ -546,14 +577,14 @@ module.exports = (API, { paths, project }) => {
 			try {
 
 				//first downloading our pdf to local storage
-				const pdfPath = path.join(os.tmpdir(), `${Date.now()}-${req.pdf.filename}`)
+				const pdfPath = path.join(os.tmpdir(), `${new Date().toISOString()}-${req.pdf.filename}`)
 				await API.Files.Remote.downloadFile({
 					Key: req.pdf.key,
 					localPath: pdfPath,
 				})
 
 				//then feeding into sharp to split pages into images
-				const outputDir = path.join(os.tmpdir(), `${Date.now()}-${req.pdf.hash}-images`)
+				const outputDir = path.join(os.tmpdir(), `${new Date().toISOString()}-${req.pdf.hash}-images`)
 				let images = await API.Files.Sharp.convertPdfToImages({
 					pdfPath,
 					outputDir,
@@ -578,8 +609,8 @@ module.exports = (API, { paths, project }) => {
 		    		user_id: req.user._id.toString(),
 		    		name,
 		    		size,
-		    		content_type: 'image/png',
-		    		file_modified_at: Date.now(),
+		    		content_type: PAGE_CONTENT_TYPE,
+		    		file_modified_at: new Date().toISOString(),
 		    	})
 		    	req.pages[i] = {
 	    			...values,
@@ -605,7 +636,10 @@ module.exports = (API, { paths, project }) => {
 					ContentType: page.content_type,
 					Body: fs.createReadStream(page.localPath),
 				})
-				req.pages[i].uploaded_at = Date.now()
+				req.pages[i].uploaded_at = new Date().toISOString()
+				req.pages[i].provider = API.Files.Remote.NAME
+				req.pages[i].bucket = API.Files.Remote.ENV.bucket
+
 				delete req.pages[i].localPath
 			}
 
@@ -626,40 +660,45 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
+	API.get('/pdfs/:_id', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+		loadPdfById,
+		loadPdfWithPages,
+	], async (req, res) => {
+		res.status(200).send(req.pdf)
+	})
 
+	API.get('/pdfs/:_id/pages', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+		loadPdfById,
+		loadPdfWithPages,
+	], async (req, res) => {
+		res.status(200).send(req.pdf.pages)
+	})
 
+	//can add a query 'force=true' to force download of file from api endpoint 
+	API.get('/files/:_id/download', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+		loadFileById,
+	], async(req, res) => {
+		try {
+			const fileStream = await API.Files.Remote.getFileStream({	Key: req.file.key })
 
+			if (req.query.force) {
+				res.setHeader('Content-Disposition', `attachment; filename="${req.file.filename}"`)
+			}
 
+			res.setHeader('Content-Type', req.file.content_type)
+			fileStream.Body.pipe(res)
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
 
-	// API.get('/files/:_id/download', [
-	// 	API.requireAuthentication, 
-	// 	API.postAuthentication,
-	// 	loadFileById,
-	// ], async(req, res) => {
-	// 	const { _id } = req.params
-	// 	const fileStream = fs.createReadStream(outputPath)
-	// 	fileStream.pipe(res)
-	// })
-
-	// API.post('/presign', [
-	// 	API.requireAuthentication, 
-	// 	API.postAuthentication,
-	// ], async (req, res) => {
-	// 	const { _id } = req.user
-	// 	const { key, contentType } = req.body
-	// 	try {
-	// 		const url = await API.Files.Provider.presign(
-	// 			API.Files.storage.putObjectCommand({
-	// 				Key: key,
-	// 				ContentType: contentType,
-	// 			})
-	// 		)
-	// 		res.status(200).send({ url })
-	// 	}
-	// 	catch (err) {
-	// 		API.Utils.errorHandler({ res, err })
-	// 	}
-	// })
 
 	return API
 

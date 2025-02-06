@@ -19,7 +19,8 @@ module.exports = (API, { files, paths, providers, project }) => {
 			API.Files = { 
 				...API.Files,
 				Provider: loadProvider(`${paths.minapi}/providers/${files.provider}`)({ 
-					providerVars: providers[files.provider]
+					providerVars: providers[files.provider],
+					providerName: files.provider,
 				}),
 			}
 		} catch (err) {
@@ -49,7 +50,8 @@ module.exports = (API, { files, paths, providers, project }) => {
 			const name = files.providers[key];
 			try {
 				API.Files[key] = loadProvider(`${paths.minapi}/providers/${name}`)({ 
-					providerVars: providers[name]
+					providerVars: providers[name],
+					providerName: name,
 				});
 			} catch (err) {
 				console.error(`File Service Error (${key}): ${err.message}`);

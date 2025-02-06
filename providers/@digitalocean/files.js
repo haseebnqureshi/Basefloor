@@ -3,9 +3,11 @@ const { PutObjectCommand, S3Client, GetObjectCommand } = require('@aws-sdk/clien
 const { Upload } = require('@aws-sdk/lib-storage');
 // const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
-module.exports = ({ providerVars }) => {
+module.exports = ({ providerVars, providerName }) => {
 
   const CDN_URL = providerVars.cdn
+  const NAME = providerName
+  const ENV = providerVars
 
 	const client = new S3Client({
     endpoint: `https://${providerVars.region}.digitaloceanspaces.com`, // DigitalOcean Spaces endpoint
@@ -33,6 +35,13 @@ module.exports = ({ providerVars }) => {
 		fs.writeFileSync(localPath, buffer);
 	};
 
+	const getFileStream = async ({ Bucket, Key }) => {
+		return await client.send(new GetObjectCommand({
+			Key,
+			Bucket: Bucket || providerVars.bucket,
+		}));	
+	}
+
 	const uploadFile = ({ Bucket, Key, Body /* can be stream */, ContentType, ACL }) => {
 	  return new Upload({
 	  	client,
@@ -46,20 +55,13 @@ module.exports = ({ providerVars }) => {
 	  })
 	};
 
-	// const presign = async (command) => {
-	// 	try {
-	// 		return await getSignedUrl(client, command, { expiresIn: 3600 });
-	// 	} catch (err) {
-	// 		console.error(err);
-	// 		return err;
-	// 	}
-	// };
-
 	return {
+		NAME,
+		ENV,
 		CDN_URL,
 		client,
-		// presign,
 		downloadFile,
+		getFileStream,
 		uploadFile,
 	}
 };

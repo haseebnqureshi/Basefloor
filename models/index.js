@@ -10,6 +10,8 @@ module.exports = (API, { models, paths, providers, project }) => {
 				name: 						['String', 'cru'],
 				description:  		['String', 'cru'],
 				filename: 				['String', 'cr'],
+				provider: 				['String', 'cru'],
+				bucket: 					['String', 'cru'],
 				key: 							['String', 'cru'],
 				url: 							['String', 'cru'],
 				uploaded_at: 			['Date', 'cru'],
