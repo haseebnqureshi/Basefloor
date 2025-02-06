@@ -8,8 +8,11 @@ module.exports = (API, { paths, project }) => {
 
 	const PAGE_CONTENT_TYPE = 'image/png'
 	const PDF_CONTENT_TYPE = 'application/pdf'
+	const PAGE_EXTENSION = '.png'
 
-	const createFileValues = ({ prefix, user_id, name, size, content_type, file_modified_at, provider, bucket }) => {
+	const createFileValues = ({ prefix, user_id, name, extension, size, content_type, file_modified_at, provider, bucket }) => {
+	 	API.Log('createFileValues:', { prefix, user_id, name, extension, size, content_type, file_modified_at, provider, bucket })
+
 	  //ensure user_id is a string and not a mongo ObjectId (can use user_id.toString())
 
 	  /*
@@ -18,7 +21,13 @@ module.exports = (API, { paths, project }) => {
 		it's the client's duty to pipeline the body of the file to end cdn.
 	  */
 		const hash = API.Utils.hashObject({ user_id, name, size, content_type }, { algorithm: 'md5' })
-	  const [,extension] = name.match(/(\.[a-z0-9]+)$/)
+
+		const matches = name.match(/(\.[a-z0-9]+)$/)
+		if (matches) {
+			if (matches[1]) {
+				extension = matches[1]
+			}
+		}
 	  const filename = `${hash}${extension}`
 	  const url = API.Files.Remote.CDN_URL + `/${filename}`
 	  const key = prefix ? `${prefix}/${filename}` : filename
@@ -87,7 +96,7 @@ module.exports = (API, { paths, project }) => {
 			if (!req.pdf) { throw 404 }
 			const user_id = req.user._id
 			const parent_file = req.pdf._id
-			const pages = await api.DB.Files.readAll({
+			const pages = await API.DB.Files.readAll({
 				where: {
 					user_id,
 					parent_file,
@@ -477,7 +486,7 @@ module.exports = (API, { paths, project }) => {
 				}
 
 				//file type not supported...
-				if (!API.Files.SUPPORTED_FORMATS[extension]) { throw 422 }
+				if (!API.Files.Libreoffice.SUPPORTED_FORMATS[extension]) { throw 422 }
 
 				//creating our pdf (has to be locally as a file, can't be buffed with libreoffice)
 				const inputPath = path.join(os.tmpdir(), `${new Date().toISOString()}-${filename}`)
@@ -605,12 +614,13 @@ module.exports = (API, { paths, project }) => {
 		    	const imagepath = images[i]
 		    	const stats = fs.statSync(imagepath)
 		    	const size = stats.size
-		    	const page = String(parseInt(p)+1)
-		    	const name = `${req.pdf.basename} (Page ${page} of ${images.length})`
+		    	const page = String(parseInt(i)+1)
+		    	const name = `${basename} (Page ${page} of ${images.length})`
 		    	const values = createFileValues({ 
 		    		user_id: req.user._id.toString(),
 		    		name,
 		    		size,
+		    		extension: PAGE_EXTENSION,
 		    		content_type: PAGE_CONTENT_TYPE,
 		    		file_modified_at: new Date().toISOString(),
 		    	})
@@ -647,9 +657,14 @@ module.exports = (API, { paths, project }) => {
 			}
 
 			//bulk insert pages into db
-			const { insertedIds } = API.DB.Files.createMany(req.pages)
+			const createManyResult = await API.DB.Files.createMany({ values: req.pages })
+			API.Log('[POST]/pdfs/:_id/pages createManyResult', createManyResult)
+			const insertedIds = Object.values(createManyResult.insertedIds)
 
 			//check the count, make sure all were created
+			API.Log('[POST]/pdfs/:_id/pages req.pages.length', req.pages.length)
+			API.Log('[POST]/pdfs/:_id/pages insertedIds.length', insertedIds.length)
+
 			if (req.pages.length !== insertedIds.length) { throw 'not all pages appear to have been processed or saved to db!' }
 
 			req.pages = req.pages.map((p,i) => {
