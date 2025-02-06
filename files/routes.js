@@ -60,13 +60,13 @@ module.exports = (API, { paths, project }) => {
 			const user_id = req.user._id
 			const { _id } = req.params
 			const where = { 
-				'$and': [
-					'user_id': user_id,
-					'$or': [
+				$and: [
+					{ 'user_id': user_id },
+					$or: [
 						{ '_id': new API.DB.mongodb.ObjectId(_id) },
 						{ 'parent_file': new API.DB.mongodb.ObjectId(_id) },
 					],
-					'content_type': PDF_CONTENT_TYPE
+					{ 'content_type': PDF_CONTENT_TYPE }
 				]
 			}
 			const pdf = await API.DB.Files.run().findOne(where)
