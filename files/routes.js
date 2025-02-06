@@ -22,8 +22,6 @@ module.exports = (API, { paths, project }) => {
 	  const filename = `${hash}${extension}`
 	  const url = API.Files.Remote.CDN_URL + `/${filename}`
 	  const key = prefix ? `${prefix}/${filename}` : filename
-	  const provider = provider || null
-	  const bucket = bucket || null
 
 	  return {
 	  	hash,
@@ -36,8 +34,8 @@ module.exports = (API, { paths, project }) => {
 	  	file_modified_at,
 	  	key,
 	  	url,
-	  	provider,
-	  	bucket,
+	  	provider: provider || null,
+	  	bucket: bucket || null,
 	  }
 	}
 
