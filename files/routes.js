@@ -62,10 +62,10 @@ module.exports = (API, { paths, project }) => {
 			const where = { 
 				$and: [
 					{ 'user_id': user_id },
-					$or: [
+					{ $or: [
 						{ '_id': new API.DB.mongodb.ObjectId(_id) },
 						{ 'parent_file': new API.DB.mongodb.ObjectId(_id) },
-					],
+					] },
 					{ 'content_type': PDF_CONTENT_TYPE }
 				]
 			}
