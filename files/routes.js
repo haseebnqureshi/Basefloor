@@ -60,9 +60,9 @@ module.exports = (API, { paths, project }) => {
 			const user_id = req.user._id
 			const { _id } = req.params
 			const where = { 
-				$and: [
-					user_id,
-					$or: [
+				'$and': [
+					'user_id': user_id,
+					'$or': [
 						{ '_id': new API.DB.mongodb.ObjectId(_id) },
 						{ 'parent_file': new API.DB.mongodb.ObjectId(_id) },
 					],
