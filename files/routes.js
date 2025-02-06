@@ -18,7 +18,7 @@ module.exports = (API, { paths, project }) => {
 		it's the client's duty to pipeline the body of the file to end cdn.
 	  */
 		const hash = API.Utils.hashObject({ user_id, name, size, content_type }, { algorithm: 'md5' })
-	  const [,extension] = info.name.match(/(\.[a-z0-9]+)$/)
+	  const [,extension] = name.match(/(\.[a-z0-9]+)$/)
 	  const filename = `${hash}${extension}`
 	  const url = API.Files.Remote.CDN_URL + `/${filename}`
 	  const key = prefix ? `${prefix}/${filename}` : filename
@@ -60,16 +60,18 @@ module.exports = (API, { paths, project }) => {
 			const user_id = req.user._id
 			const { _id } = req.params
 			const where = { 
-				$and: [
-					{ 'user_id': user_id },
-					{ $or: [
+				'$and': [
+					{ 'user_id': new API.DB.mongodb.ObjectId(user_id) },
+					{ '$or': [
 						{ '_id': new API.DB.mongodb.ObjectId(_id) },
 						{ 'parent_file': new API.DB.mongodb.ObjectId(_id) },
 					] },
 					{ 'content_type': PDF_CONTENT_TYPE }
 				]
 			}
-			const pdf = await API.DB.Files.run().findOne(where)
+			const pdfs = await API.DB.run().collection(API.DB.Files.collection).find(where).limit(1).toArray()
+			if (!pdfs) { throw 404 }
+			const pdf = pdfs[0]
 			API.Log('loadPdfById:pdf', pdf)
 			if (!pdf) { throw 404 }
 			req.pdf = pdf
@@ -576,6 +578,8 @@ module.exports = (API, { paths, project }) => {
 
 				//first downloading our pdf to local storage
 				const pdfPath = path.join(os.tmpdir(), `${new Date().toISOString()}-${req.pdf.filename}`)
+				API.Log('[POST]/pdfs/:_id/pages req.pdf', req.pdf)
+				API.Log('[POST]/pdfs/:_id/pages pdfPath', pdfPath)
 				await API.Files.Remote.downloadFile({
 					Key: req.pdf.key,
 					localPath: pdfPath,
@@ -629,6 +633,7 @@ module.exports = (API, { paths, project }) => {
 			//upload each image unconditionally
 			for (let i in req.pages) {
 				const page = req.pages[i]
+				API.Log('[POST]/pdfs/:_id/pages page', page)
 				await API.Files.Remote.uploadFile({
 					Key: page.key,
 					ContentType: page.content_type,
