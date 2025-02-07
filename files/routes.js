@@ -128,12 +128,24 @@ module.exports = (API, { paths, project }) => {
 	}
 
 
+	const onUploadStatus = async ({ status, onProgress, onComplete }) => {
+		status.on('httpUploadProgress', async progress => {
+			const percent = Math.round(10000 * progress.loaded / req.pending.size) / 100
 
+			if (onProgress) { 
+				API.Log(`  - uploaded ${percent}%`, progress)
+				onProgress({ percent }) 
+			}
 
-
-
-
-
+			if (percent == 100) {
+				API.Log(`- finished uploading!`)
+				if (onComplete) { 
+					await onComplete({ percent }) 
+				}
+			}
+		})
+		await status.done()
+	}
 
 
 
@@ -408,12 +420,9 @@ module.exports = (API, { paths, project }) => {
 					ContentType: req.pending.content_type, 
 				})
 
-				status.on('httpUploadProgress', async progress => {
-					const percent = Math.round(10000 * progress.loaded / req.pending.size) / 100
-					API.Log(`  - uploaded ${percent}%`, progress)
-
-					if (percent == 100) {
-						API.Log(`- finished uploading!`)
+				await onUploadStatus({ 
+					status,
+					onComplete: async () => {
 						API.Log('- now attempting to save req.pending into db:', req.pending)
 						
 						if (req.file) {
@@ -445,10 +454,7 @@ module.exports = (API, { paths, project }) => {
 						API.Log('- saved!', { 'req.file': req.file })
 						res.send(req.file)
 					}
-
 				})
-
-				await status.done()
 
 			} catch(err) {
 				console.error('- failed to upload req.pending...')
@@ -490,6 +496,10 @@ module.exports = (API, { paths, project }) => {
 
 				//creating our pdf (has to be locally as a file, can't be buffed with libreoffice)
 				const inputPath = path.join(os.tmpdir(), `${new Date().toISOString()}-${filename}`)
+				await API.Files.Remote.downloadFile({
+					Key: req.file.key,
+					localPath: inputPath,
+				})				
 				const pdfPath = await API.Files.Libreoffice.convertToPdf({ inputPath })
 				req.filepath = pdfPath
 
@@ -504,7 +514,7 @@ module.exports = (API, { paths, project }) => {
 					content_type: PDF_CONTENT_TYPE,
 					file_modified_at,
 				})
-				req.pending.parent_file = file._id
+				req.pending.parent_file = req.file._id
 
 				//remove the file object, no longer needed
 				delete req.file
@@ -533,43 +543,52 @@ module.exports = (API, { paths, project }) => {
 			}
 
 			//upload our file no matter what
-			await API.Files.Remote.uploadFile({
+			const status = await API.Files.Remote.uploadFile({
 				Key: req.pending.key,
 				Body: fs.createReadStream(req.filepath),
 				ContentType: req.pending.content_type,
 			})
-			req.pending.uploaded_at = new Date().toISOString()
 
-			//then conditionally create or update our pdf file in db
-			if (!_id) {
-				const { insertedId } = await API.DB.Files.create({
-					values: {
-						...req.pending,
-						uploaded_at: new Date().toISOString(),
-						provider: API.Files.Remote.NAME,
-						bucket: API.Files.Remote.ENV.bucket,
+			await onUploadStatus({
+				status,
+				onComplete: async () => {
+
+					req.pending.uploaded_at = new Date().toISOString()
+
+					//then conditionally create or update our pdf file in db
+					if (!_id) {
+						const { insertedId } = await API.DB.Files.create({
+							values: {
+								...req.pending,
+								uploaded_at: new Date().toISOString(),
+								provider: API.Files.Remote.NAME,
+								bucket: API.Files.Remote.ENV.bucket,
+							}
+						})
+						_id = insertedId
 					}
-				})
-				_id = insertedId
-			}
-			else {
-				await API.DB.Files.update({
-					where: { _id },
-					values: {
-						...req.pending,
-						uploaded_at: new Date().toISOString(),
-						provider: API.Files.Remote.NAME,
-						bucket: API.Files.Remote.ENV.bucket,
-					},
-				})
-			}
+					else {
+						await API.DB.Files.update({
+							where: { _id },
+							values: {
+								...req.pending,
+								uploaded_at: new Date().toISOString(),
+								provider: API.Files.Remote.NAME,
+								bucket: API.Files.Remote.ENV.bucket,
+							},
+						})
+					}
 
-			//read the file back
-			req.file = await API.DB.Files.read({
-				where: { _id },
+					//read the file back
+					req.file = await API.DB.Files.read({
+						where: { _id },
+					})
+
+					res.status(200).send(req.file)
+
+				}
 			})
 
-			res.status(200).send(req.file)
 		}
 		catch (err) {
 			API.Utils.errorHandler({ res, err })
@@ -644,16 +663,22 @@ module.exports = (API, { paths, project }) => {
 			for (let i in req.pages) {
 				const page = req.pages[i]
 				API.Log('[POST]/pdfs/:_id/pages page', page)
-				await API.Files.Remote.uploadFile({
+				const status = await API.Files.Remote.uploadFile({
 					Key: page.key,
 					ContentType: page.content_type,
 					Body: fs.createReadStream(page.localPath),
 				})
-				req.pages[i].uploaded_at = new Date().toISOString()
-				req.pages[i].provider = API.Files.Remote.NAME
-				req.pages[i].bucket = API.Files.Remote.ENV.bucket
 
-				delete req.pages[i].localPath
+				await onUploadStatus({
+					status,
+					onComplete: async () => {
+						req.pages[i].uploaded_at = new Date().toISOString()
+						req.pages[i].provider = API.Files.Remote.NAME
+						req.pages[i].bucket = API.Files.Remote.ENV.bucket
+
+						delete req.pages[i].localPath
+					}
+				})
 			}
 
 			//bulk insert pages into db
