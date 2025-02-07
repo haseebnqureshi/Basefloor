@@ -128,9 +128,9 @@ module.exports = (API, { paths, project }) => {
 	}
 
 
-	const onUploadStatus = async ({ status, onProgress, onComplete }) => {
+	const onUploadStatus = async ({ status, size, onProgress, onComplete }) => {
 		status.on('httpUploadProgress', async progress => {
-			const percent = Math.round(10000 * progress.loaded / req.pending.size) / 100
+			const percent = Math.round(10000 * progress.loaded / size) / 100
 
 			if (onProgress) { 
 				API.Log(`  - uploaded ${percent}%`, progress)
@@ -345,6 +345,7 @@ module.exports = (API, { paths, project }) => {
 		(req, res, next) => {
 			try {
 				const info = API.Utils.CollectMinapiHeaders(req.headers)
+				API.Log('POST /files minapi headers', info)
 				req.pending = createFileValues({
 					user_id: req.user._id.toString(),
 					name: info.name,
@@ -422,6 +423,7 @@ module.exports = (API, { paths, project }) => {
 
 				await onUploadStatus({ 
 					status,
+					size: req.pending.size,
 					onComplete: async () => {
 						API.Log('- now attempting to save req.pending into db:', req.pending)
 						
@@ -551,6 +553,7 @@ module.exports = (API, { paths, project }) => {
 
 			await onUploadStatus({
 				status,
+				size: req.pending.size,
 				onComplete: async () => {
 
 					req.pending.uploaded_at = new Date().toISOString()
@@ -671,6 +674,7 @@ module.exports = (API, { paths, project }) => {
 
 				await onUploadStatus({
 					status,
+					size: page.size,
 					onComplete: async () => {
 						req.pages[i].uploaded_at = new Date().toISOString()
 						req.pages[i].provider = API.Files.Remote.NAME

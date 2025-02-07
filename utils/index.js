@@ -55,7 +55,7 @@ module.exports = (API, { paths, providers, project }) => {
 				} else if (key.match(/modified/i)) {
 					headers[key] = new Date(parseInt(value)).toISOString()
 				} else {
-					headers[key] = value
+					headers[key] = decodeURIComponent(value)
 				}
 			}
 		}
