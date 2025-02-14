@@ -1,64 +1,44 @@
-const loadProvider = require('../providers/loader');
+
+const loadProvider = require('../providers/loader')
 
 module.exports = (API, { files, paths, providers, project }) => {
-	const { enabled } = files
 
+	const { enabled } = files
 	if (!enabled) { return API }
 
-	API.Files = { 
-		...API.Files,
-		...require('./utils'),
-	}
-
-	addRoutes = () => {
+	const finishAndReturnAPI = () => {
+		API.Files = {
+			...API.Files,
+			require(`./helpers`)({ API, paths, project }),
+		}
+		API = require(`./middlewares`)(API, { paths, project })
 		API = require(`./routes`)(API, { paths, project })
+		return API
 	}
 
-	if (files.provider) {
-		try {
+	const initLoad = (name) => {
+		return loadProvider(`${paths.minapi}/providers/${name}`)({ 
+			providerVars: providers[name],
+			providerName: name,
+		})		
+	}
+
+	try {
+		if (files.provider) {
 			API.Files = { 
-				...API.Files,
-				Provider: loadProvider(`${paths.minapi}/providers/${files.provider}`)({ 
-					providerVars: providers[files.provider],
-					providerName: files.provider,
-				}),
+				...API.Files, 
+				Provider: initLoad(files.provider) 
 			}
-		} catch (err) {
-			console.error(`File Service Error: ${err.message}`);
-			addRoutes()
-			return API;
-		}
-		addRoutes()
-		return API;
-	}
-		
-	/*
-	for if we decide to enable multiple providers
-	could be useful, only use with the following config in config.minapi.js:
-		
-    "files": {
-        enabled: true,
-        providers: {
-            "Remote": "@digitalocean/files",
-        },
-    },
-
-    */
-
-	else if (files.providers) {
-		for (let key in files.providers) {
-			const name = files.providers[key];
-			try {
-				API.Files[key] = loadProvider(`${paths.minapi}/providers/${name}`)({ 
-					providerVars: providers[name],
-					providerName: name,
-				});
-			} catch (err) {
-				console.error(`File Service Error (${key}): ${err.message}`);
+		} else if (files.providers) {
+			for (let key in files.providers) {
+				API.Files[key] = initLoad(files.providers[key])
 			}
 		}
 	}
+	catch (err) {
+		console.error(`File Service Error: ${err.message}`)
+	}
 
-	addRoutes()
-	return API;
+	return finishAndReturnAPI()
+
 }

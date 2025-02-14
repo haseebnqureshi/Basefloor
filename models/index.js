@@ -224,7 +224,7 @@ module.exports = (API, { models, paths, providers, project }) => {
 				)
 			},
 
-			update: async ({ where, values }, one=true) => {
+			update: async ({ where, values, options }, one=true) => {
 				if (!where) { return undefined }
 				if (!values) { return undefined }
 				where = API.DB[name].sanitize(where, 'r', name)
@@ -250,11 +250,11 @@ module.exports = (API, { models, paths, providers, project }) => {
 				
 				values = { ...values, updated_at: new Date().toISOString() }
 				return await API.Utils.try(`try:${collection}:update(where:${JSON.stringify(where)})`,
-					API.DB.run().collection(collection)[one ? 'updateOne' : 'update'](where, { $set: values })
+					API.DB.run().collection(collection)[one ? 'updateOne' : 'update'](where, { $set: values }, options || {})
 				)
 			},
 
-			updateAll: async ({ where, values }) => {
+			updateAll: async ({ where, values, options }) => {
 				if (!where) { return undefined }
 				if (!values) { return undefined }
 				where = API.DB[name].sanitize(where, 'r', name)
@@ -280,7 +280,7 @@ module.exports = (API, { models, paths, providers, project }) => {
 				
 				values = { ...values, updated_at: new Date().toISOString() }
 				return await API.Utils.try(`try:${collection}:updateAll(where:${JSON.stringify(where)})`,
-					API.DB.run().collection(collection).updateMany(where, { $set: values })
+					API.DB.run().collection(collection).updateMany(where, { $set: values }, options || {})
 				)
 			},
 

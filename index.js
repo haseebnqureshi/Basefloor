@@ -30,7 +30,7 @@ module.exports = ({ projectPath, envPath }) => {
 
 	let API = express()
 
-	API.Express = () => express
+	API.express = express
 	API.Utils = {}
 	API.Checks = {}
 	API.DB = {}

@@ -1,736 +1,28 @@
 
-const Busboy = require('busboy')
-const path = require('path')
-const os = require('os')
-const fs = require('fs')
-
 module.exports = (API, { paths, project }) => {
 
-	const PAGE_CONTENT_TYPE = 'image/png'
-	const PDF_CONTENT_TYPE = 'application/pdf'
-	const PAGE_EXTENSION = '.png'
-
-	const createFileValues = ({ prefix, user_id, name, extension, size, content_type, file_modified_at, provider, bucket }) => {
-	 	API.Log('createFileValues:', { prefix, user_id, name, extension, size, content_type, file_modified_at, provider, bucket })
-
-	  //ensure user_id is a string and not a mongo ObjectId (can use user_id.toString())
-
-	  /*
-		still not ideal, as same files may have different names, and so we're still 
-		storing duplicates. may need client to send hash of file contents, because 
-		it's the client's duty to pipeline the body of the file to end cdn.
-	  */
-		const hash = API.Utils.hashObject({ user_id, name, size, content_type }, { algorithm: 'md5' })
-
-		const matches = name.match(/(\.[a-z0-9]+)$/)
-		if (matches) {
-			if (matches[1]) {
-				extension = matches[1]
-			}
-		}
-	  const filename = `${hash}${extension}`
-	  const url = API.Files.Remote.CDN_URL + `/${filename}`
-	  const key = prefix ? `${prefix}/${filename}` : filename
-
-	  return {
-	  	hash,
-	  	filename,
-	  	extension,
-	  	user_id,
-	  	name,
-	  	size,
-	  	content_type,
-	  	file_modified_at,
-	  	key,
-	  	url,
-	  	provider: provider || null,
-	  	bucket: bucket || null,
-	  }
-	}
-
-	const loadFileById = async (req, res, next) => {
-		try {
-			//pulling our file from db
-			const user_id = req.user._id
-			const { _id } = req.params
-			const where = { _id, user_id }
-			const file = await API.DB.Files.read({ where })
-			if (!file) { throw 404 }
-			req.file = file
-			next()
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	}
-
-	const loadPdfById = async (req, res, next) => {
-		try {
-			const user_id = req.user._id
-			const { _id } = req.params
-			const where = { 
-				'$and': [
-					{ 'user_id': new API.DB.mongodb.ObjectId(user_id) },
-					{ '$or': [
-						{ '_id': new API.DB.mongodb.ObjectId(_id) },
-						{ 'parent_file': new API.DB.mongodb.ObjectId(_id) },
-					] },
-					{ 'content_type': PDF_CONTENT_TYPE }
-				]
-			}
-			const pdfs = await API.DB.run().collection(API.DB.Files.collection).find(where).limit(1).toArray()
-			if (!pdfs) { throw 404 }
-			const pdf = pdfs[0]
-			API.Log('loadPdfById:pdf', pdf)
-			if (!pdf) { throw 404 }
-			req.pdf = pdf
-			next()
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	}
-
-	const loadPdfWithPages = async (req, res, next) => {
-		try {
-			if (!req.pdf) { throw 404 }
-			const user_id = req.user._id
-			const parent_file = req.pdf._id
-			const pages = await API.DB.Files.readAll({
-				where: {
-					user_id,
-					parent_file,
-					content_type: PAGE_CONTENT_TYPE,
-				}
-			})
-			if (!pages) { throw 404 }
-			req.pdf.pages = pages
-			next()
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	}
-
-	const checkFileByPending = async (req, res, next) => {
-		try {
-			req.file = await API.DB.Files.read({ 
-				where: { 
-					hash: req.pending.hash, 
-					user_id: req.pending.user_id, 
-				},
-			}) || null
-			next()
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	}
-
-
-	const onUploadStatus = async ({ status, size, onProgress, onComplete }) => {
-		status.on('httpUploadProgress', async progress => {
-			const percent = Math.round(10000 * progress.loaded / size) / 100
-
-			if (onProgress) { 
-				API.Log(`  - uploaded ${percent}%`, progress)
-				onProgress({ percent }) 
-			}
-
-			if (percent == 100) {
-				API.Log(`- finished uploading!`)
-				if (onComplete) { 
-					await onComplete({ percent }) 
-				}
-			}
-		})
-		await status.done()
-	}
-
-
-
-	API.get('/files', [
-		API.requireAuthentication, 
+	API.get('/:_id?', [
+		API.requireAuthentication,
 		API.postAuthentication,
 	], async (req, res) => {
-		//files are specific to authenticated user
-		const user_id = req.user._id
 		try {
-			const where = { user_id }
+			let where = { user_id: req.user._id }
+			if (req.params._id) { where._id = req.params._id }
 			const result = await API.DB.Files.readAll({ where })
-			if (!result) { throw 'error occured when reading files' }
+			if (!result) { throw 'error occured when reading file(s)' }
 			res.status(200).send(result)
 		}
 		catch (err) {
 			API.Utils.errorHandler({ res, err })
 		}
-	})
-
-	API.put('/files', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-	], async (req, res) => {
-		//files are specific to authenticated user
-		const user_id = req.user._id
-		const values = req.body
-		try {
-			const where = { user_id }
-			const result = await API.DB.Files.updateAll({ where, values })
-			if (!result) { throw 'error occured when updating files' }
-			res.status(200).send(result)
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
-
-	API.delete('/files', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-	], async (req, res) => {
-		//files are specific to authenticated user
-		const user_id = req.user._id
-		try {
-			const where = { user_id }
-			const result = await API.DB.Files.deleteAll({ where })
-			if (!result) { throw 'error occured when deleting files' }
-			res.status(200).send(result)
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
-
-	API.get('/files/:_id', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-	], async (req, res) => {
-		//files are specific to authenticated user
-		const user_id = req.user._id
-		const { _id } = req.params
-		try {
-			const where = { _id, user_id }
-			const result = await API.DB.Files.read({ where })
-			if (!result) { throw 'error occured when reading file' }
-			res.status(200).send(result)
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
-
-	API.put('/files/:_id', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-	], async (req, res) => {
-		//files are specific to authenticated user
-		const user_id = req.user._id
-		const { _id } = req.params
-		const values = req.body
-		try {
-			const where = { _id, user_id }
-			const result = await API.DB.Files.update({ where, values })
-			if (!result) { throw 'error occured when updating file' }
-			res.status(200).send(result)
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
-
-	API.delete('/files/:_id', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-	], async (req, res) => {
-		//files are specific to authenticated user
-		const user_id = req.user._id
-		const { _id } = req.params
-		try {
-			const where = { _id, user_id }
-			const result = await API.DB.Files.delete({ where })
-			if (!result) { throw 'error occured when deleting file' }
-			res.status(200).send(result)
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
-
-	API.get('/files/:parent_file/files', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-	], async (req, res) => {
-		//files are specific to authenticated user
-		const user_id = req.user._id
-		const { parent_file } = req.params
-		try {
-			const where = { _id, user_id }
-			const result = await API.DB.Files.readAll({ where })
-			if (!result) { throw `error occured when reading files for parent` }
-			res.status(200).send(result)
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
-
-	API.put('/files/:parent_file/files', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-	], async (req, res) => {
-		//files are specific to authenticated user
-		const user_id = req.user._id
-		const { parent_file } = req.params
-		const values = req.body
-		try {
-			const where = { parent_file, user_id }
-			const result = await API.DB.Files.updateAll({ where, values })
-			if (!result) { throw `error occured when updating files for parent` }
-			res.status(200).send(result)
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
-
-	//this links existing files with one parent file, and is done so by passing
-	//req.body = { _ids: [ ObjectId, ObjectId, ... ] } and that's it
-	API.post('/files/:parent_file/files', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-	], async (req, res) => {
-		//files are specific to authenticated user
-		const user_id = req.user._id
-		const { parent_file } = req.params
-		const { _ids } = req.body
-		try {
-			const where = { user_id, _id: {$in:_ids}}
-			const values = { parent_file }
-			const result = await API.DB.Files.updateAll({ where, values })
-			if (!result) { throw `error occured when linking files with parent` }
-			res.status(200).send(result)
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
-
-	API.delete('/files/:parent_file/files', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-	], async (req, res) => {
-		//files are specific to authenticated user
-		const user_id = req.user._id
-		const { parent_file } = req.params
-		try {
-			const where = { parent_file, user_id }
-			const result = await API.DB.Files.deleteAll({ where })
-			if (!result) { throw 'error occured when deleting files for parent' }
-			res.status(200).send(result)
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
-
-
-	API.post('/files', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-
-		/*
-		STEP 1: Parse our incoming file information using headers
-		*/
-
-		(req, res, next) => {
-			try {
-				const info = API.Utils.CollectMinapiHeaders(req.headers)
-				API.Log('POST /files minapi headers', info)
-				req.pending = createFileValues({
-					user_id: req.user._id.toString(),
-					name: info.name,
-					size: info.size,
-					content_type: info.type,
-					file_modified_at: info.modified,
-				})
-				API.Log('req.pending', req.pending)
-				next()
-			} catch (err) {
-				API.Utils.errorHandler({ res, err })
-			}
-		},
-
-		/*
-		STEP 2: Attempt to load file from db if already saved to avoid duplications
-		*/
-
-		async (req, res, next) => {
-			try {
-				req.file = await API.DB.Files.read({ 
-					where: { 
-						hash: req.pending.hash, 
-						user_id: req.pending.user_id, 
-					},
-				})
-				if (!req.file) { 
-					API.Log('- file not found in db, going to upload...')
-					return next() 
-				}
-				if (req.file.uploaded_at) {
-					API.Log('- file found found in db and with "uploaded_at", returning saved file now...')
-					return res.status(200).send(req.file)
-				}
-				API.Log('- file found, req.file', req.file)
-				next()
-			}
-			catch (err) {
-				console.log(err, '- not trying to upload, something was wrong with fileParsed data')
-				API.Utils.errorHandler({ res, err })
-			}
-		},
-
-		/*
-		STEP 3: Increase timeout for request to ensure upload has time to occur
-		- need to implement resumable uploads
-		- if we make it to this point, we've reduced the risk of duplicates and now we attempt to upload
-		*/
-
-		(req, res, next) => {
-			const minutes = 10
-			API.Log('- setting request timeout to this many minutes: ', minutes)
-			req.socket.setTimeout(minutes * 60 * 1000) // 10 minutes for uploading (need to implement resumable uploads)
-			next()
-		},
-
-	/*
-	STEP 4: Attempt to upload our file, using busboy to handle the incoming file stream
-	- load our "Remote" provider's "uploadFile" that should accept a stream
-	- by default, this is using aws-sdk/s3-client and its lib-storage to manage uploads
-	*/
-
-	], async (req, res) => {
-		
-		API.Log('- attempting to upload req.pending:', req.pending)
-		const busboy = Busboy({ headers: req.headers })
-		
-		busboy.on('file', async (fieldName, fileStream, file) => {
-			try {
-				const status = API.Files.Remote.uploadFile({
-					Key: req.pending.key,
-					Body: fileStream,
-					ContentType: req.pending.content_type, 
-				})
-
-				await onUploadStatus({ 
-					status,
-					size: req.pending.size,
-					onComplete: async () => {
-						API.Log('- now attempting to save req.pending into db:', req.pending)
-						
-						if (req.file) {
-							await API.DB.Files.update({
-								where: { _id: req.file._id },
-								values: {
-									uploaded_at: new Date().toISOString(),
-									provider: API.Files.Remote.NAME,
-									bucket: API.Files.Remote.ENV.bucket,
-								},
-							})
-						} else {
-							req.file = {}
-							const createResult = await API.DB.Files.create({
-								values: {
-									...req.pending,
-									uploaded_at: new Date().toISOString(),
-									provider: API.Files.Remote.NAME,
-									bucket: API.Files.Remote.ENV.bucket,
-								}
-							})
-							req.file._id = createResult.insertedId
-						}
-
-						req.file = await API.DB.Files.read({
-							where: { _id: req.file._id }
-						})
-
-						API.Log('- saved!', { 'req.file': req.file })
-						res.send(req.file)
-					}
-				})
-
-			} catch(err) {
-				console.error('- failed to upload req.pending...')
-				console.error(err)
-			}
-
-		})
-		
-		/*
-		STEP 5: Save our uploaded file
-		- we may want to save our file information into db on start of upload for resumable
-		*/
-
-		busboy.on('finish', async () => {
-
-		})
-
-		busboy.on('error', err => console.error(err))
-
-		req.pipe(busboy)
-	})
-
-
-	API.post('/files/:_id/pdf', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-		loadFileById,
-		async (req, res, next) => {
-			try {
-
-				//file is already a pdf, conversion not required...
-				const { filename, extension, url, name } = req.file
-				if (extension == '.pdf') {
-					return res.status(200).send(req.file)
-				}
-
-				//file type not supported...
-				if (!API.Files.Libreoffice.SUPPORTED_FORMATS[extension]) { throw 422 }
-
-				//creating our pdf (has to be locally as a file, can't be buffed with libreoffice)
-				const inputPath = path.join(os.tmpdir(), `${new Date().toISOString()}-${filename}`)
-				await API.Files.Remote.downloadFile({
-					Key: req.file.key,
-					localPath: inputPath,
-				})				
-				const pdfPath = await API.Files.Libreoffice.convertToPdf({ inputPath })
-				req.filepath = pdfPath
-
-				//pulling relevant information to create new file object for pdf
-				const pdfStats = fs.statSync(pdfPath)
-				const size = pdfStats.size
-				const file_modified_at = new Date().toISOString()
-				req.pending = createFileValues({
-					user_id: req.user._id.toString(),
-					name,
-					size,
-					content_type: PDF_CONTENT_TYPE,
-					file_modified_at,
-				})
-				req.pending.parent_file = req.file._id
-
-				//remove the file object, no longer needed
-				delete req.file
-
-				next()
-			}
-			catch (err) {
-				API.Utils.errorHandler({ res, err })
-			}
-		},
-
-		//now attempting to load our potential pdf file, if in db...
-		checkFileByPending,
-
-	], async (req, res) => {
-		try {
-
-			//presuming there was no pdf file in our db
-			let _id = null
-
-			if (req.file) {
-				if (req.file._id) {
-					//we found a pdf file in our db, keep our _id
-					_id = req.file._id
-				}
-			}
-
-			//upload our file no matter what
-			const status = await API.Files.Remote.uploadFile({
-				Key: req.pending.key,
-				Body: fs.createReadStream(req.filepath),
-				ContentType: req.pending.content_type,
-			})
-
-			await onUploadStatus({
-				status,
-				size: req.pending.size,
-				onComplete: async () => {
-
-					req.pending.uploaded_at = new Date().toISOString()
-
-					//then conditionally create or update our pdf file in db
-					if (!_id) {
-						const { insertedId } = await API.DB.Files.create({
-							values: {
-								...req.pending,
-								uploaded_at: new Date().toISOString(),
-								provider: API.Files.Remote.NAME,
-								bucket: API.Files.Remote.ENV.bucket,
-							}
-						})
-						_id = insertedId
-					}
-					else {
-						await API.DB.Files.update({
-							where: { _id },
-							values: {
-								...req.pending,
-								uploaded_at: new Date().toISOString(),
-								provider: API.Files.Remote.NAME,
-								bucket: API.Files.Remote.ENV.bucket,
-							},
-						})
-					}
-
-					//read the file back
-					req.file = await API.DB.Files.read({
-						where: { _id },
-					})
-
-					res.status(200).send(req.file)
-
-				}
-			})
-
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-
-	})
-
-
-	API.post('/pdfs/:_id/pages', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-		loadPdfById,
-		async (req, res, next) => {
-			try {
-
-				//first downloading our pdf to local storage
-				const pdfPath = path.join(os.tmpdir(), `${new Date().toISOString()}-${req.pdf.filename}`)
-				API.Log('[POST]/pdfs/:_id/pages req.pdf', req.pdf)
-				API.Log('[POST]/pdfs/:_id/pages pdfPath', pdfPath)
-				await API.Files.Remote.downloadFile({
-					Key: req.pdf.key,
-					localPath: pdfPath,
-				})
-
-				//then feeding into sharp to split pages into images
-				const outputDir = path.join(os.tmpdir(), `${new Date().toISOString()}-${req.pdf.hash}-images`)
-				let images = await API.Files.Sharp.convertPdfToImages({
-					pdfPath,
-					outputDir,
-				})
-
-				//if no images, error out
-		    if (!images.length) {
-		      throw new Error('No images were generated from the PDF');
-		    }
-
-		    //iterate through images and load up values into req.pages
-		    const basename = req.pdf.name.replace(req.pdf.extension, '')
-		    req.pages = []
-
-		    for (let i in images) {
-		    	const imagepath = images[i]
-		    	const stats = fs.statSync(imagepath)
-		    	const size = stats.size
-		    	const page = String(parseInt(i)+1)
-		    	const name = `${basename} (Page ${page} of ${images.length})`
-		    	const values = createFileValues({ 
-		    		user_id: req.user._id.toString(),
-		    		name,
-		    		size,
-		    		extension: PAGE_EXTENSION,
-		    		content_type: PAGE_CONTENT_TYPE,
-		    		file_modified_at: new Date().toISOString(),
-		    	})
-		    	req.pages[i] = {
-	    			...values,
-	    			localPath: imagepath,
-	    			parent_file: req.pdf._id,
-		    	}
-		    }
-
-		    next()
-			}
-			catch (err) {
-				API.Utils.errorHandler({ res, err })
-			}
-		},
-	], async (req, res) => {
-		try {
-
-			//upload each image unconditionally
-			for (let i in req.pages) {
-				const page = req.pages[i]
-				API.Log('[POST]/pdfs/:_id/pages page', page)
-				const status = await API.Files.Remote.uploadFile({
-					Key: page.key,
-					ContentType: page.content_type,
-					Body: fs.createReadStream(page.localPath),
-				})
-
-				await onUploadStatus({
-					status,
-					size: page.size,
-					onComplete: async () => {
-						req.pages[i].uploaded_at = new Date().toISOString()
-						req.pages[i].provider = API.Files.Remote.NAME
-						req.pages[i].bucket = API.Files.Remote.ENV.bucket
-
-						delete req.pages[i].localPath
-					}
-				})
-			}
-
-			//bulk insert pages into db
-			const createManyResult = await API.DB.Files.createMany({ values: req.pages })
-			API.Log('[POST]/pdfs/:_id/pages createManyResult', createManyResult)
-			const insertedIds = Object.values(createManyResult.insertedIds)
-
-			//check the count, make sure all were created
-			API.Log('[POST]/pdfs/:_id/pages req.pages.length', req.pages.length)
-			API.Log('[POST]/pdfs/:_id/pages insertedIds.length', insertedIds.length)
-
-			if (req.pages.length !== insertedIds.length) { throw 'not all pages appear to have been processed or saved to db!' }
-
-			req.pages = req.pages.map((p,i) => {
-				p._id = insertedIds[i]
-				return p
-			})
-			res.status(200).send(req.pages)
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
-
-	API.get('/pdfs/:_id', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-		loadPdfById,
-		loadPdfWithPages,
-	], async (req, res) => {
-		res.status(200).send(req.pdf)
-	})
-
-	API.get('/pdfs/:_id/pages', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-		loadPdfById,
-		loadPdfWithPages,
-	], async (req, res) => {
-		res.status(200).send(req.pdf.pages)
 	})
 
 	//can add a query 'force=true' to force download of file from api endpoint 
-	API.get('/files/:_id/download', [
+	API.get('/:_id/download', [
 		API.requireAuthentication, 
 		API.postAuthentication,
-		loadFileById,
-	], async(req, res) => {
+		API.Files.loadFileById,
+	], async (req, res) => {
 		try {
 			const fileStream = await API.Files.Remote.getFileStream({	Key: req.file.key })
 
@@ -746,6 +38,207 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
+	API.get('/:_id/files', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+		API.Files.loadFileById,
+		API.Files.loadFilesByParentId,
+	], async (req, res) => {
+		try {
+			res.status(200).send(req.files)
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
+	API.post('/:_id/convert/:to', [
+		API.requireAuthentication,
+		API.postAuthentication,
+		API.Files.loadFileById,
+	], async (req, res) => {
+		try {
+
+			//get important baseline information
+			const { extension, key } = req.file
+			const { to } = req.params
+			const inPath = await API.Files.downloadFile({ key })
+			const outPath = API.Files.getTempFilepath(`${key}-converted`)
+
+			//then we convert our file. the resulting output may be multiple files
+			const response = await API.Files.convertFile({ 
+				inType: extension,
+				outType: to,
+				inPath,
+				outPath,
+			})
+
+			//because response has an array of filepaths, we assume bulk from here on
+			let bulk = API.Files.createManyFileValues({
+				filepaths: response.outPaths,
+				parentName: req.file.name,
+				parentId: req.file._id,
+				user_id: req.user._id,
+			})	
+
+			//now we upload our file(s)
+			bulk = await API.Files.uploadFiles(bulk)
+
+			//then we save our file(s)
+			const created = await API.DB.Files.createMany({ values: bulk })
+			const insertedIds = Object.values(created.insertedIds)
+
+			//update our values with newly created _ids, and return those values
+			res.status(200).send(
+				bulk.map((v,i) => ({ 
+					...v,
+					_id: insertedIds[i]
+				}))
+			)
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
+	API.put('/:_id?', [
+		API.requireAuthentication,
+		API.postAuthentication,
+	], async (req, res) => {
+		try {
+			let where = { user_id: req.user._id }
+			if (req.params._id) { where._id = req.params._id }
+			const values = req.body
+			const result = await API.DB.Files.updateAll({ where, values })
+			if (!result) { throw 'error occured when updating file(s)' }
+			res.status(200).send(result)
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
+	API.delete('/:_id?', [
+		API.requireAuthentication,
+		API.postAuthentication,
+	], async (req, res) => {
+		try {
+			let where = { user_id: req.user._id }
+			if (req.params._id) { where._id = req.params._id }
+			const result = await API.DB.Files.deleteAll({ where })
+			if (!result) { throw 'error occured when deleting file(s)' }
+			res.status(200).send(result)
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
+
+	API.post('/', [
+		API.requireAuthentication,
+		API.postAuthentication,
+
+		/*
+		STEP 1: Does this file exist and has it been uploaded?
+		*/
+
+		(req, res, next) => {
+			try {
+
+				//parse our incoming file information using headers
+				const info = API.Utils.CollectMinapiHeaders(req.headers)
+				const values = API.Files.createFileValues({
+					user_id: req.user._id,
+					name: info.name,
+					size: info.size,
+					content_type: info.type,
+					file_modified_at: info.modified,
+				})
+
+				//checking by hash whether file exists (and user_id)
+				req.file = await API.Files.read({
+					where: {
+						hash: values.hash,
+						user_id: req.user._id,
+					}
+				})
+
+				//if the file is in our db and presumed to be uploaded, sending that info back now
+				if (req.file) {
+					if (req.file.uploaded_at) {
+						API.Log('- file found in db and with "uploaded_at", returning saved file now...')
+						return res.status(200).send(req.file)
+					}
+				}
+
+				//otherwise, presuming file needs to be uploaded or created...
+				API.Log('- file not found in db or is without "uploaded_at", uploading and upserting...')
+				next()
+
+			} catch (err) {
+				API.Utils.errorHandler({ res, err })
+			}
+		},
+
+		/*
+		STEP 2: Increase timeout for request to ensure upload has time to occur
+		- need to implement resumable uploads
+		- if we make it to this point, we've reduced the risk of duplicates and now we attempt to upload
+		*/
+
+		API.Files.increaseRequestTimeout,
+
+	], async (req, res) => {
+		
+		/*
+		STEP 3: Attempt to upload our file, using busboy to handle the incoming file stream
+		- load our "Remote" provider's "uploadFile" that should accept a stream
+		- by default, this is using aws-sdk/s3-client and its lib-storage to manage uploads
+		*/
+
+		const busboy = Busboy({ headers: req.headers })
+		busboy.on('file', async (fieldName, fileStream, file) => {
+			try {
+
+				//upload our file
+				req.file = await API.Files.uploadFile(req.file, fileStream)
+
+				//and then update/upsert values into db
+				const _id = req.file._id || null
+				const updateResponse = await API.DB.Files.update({
+					where: { _id },
+					values: req.file,
+					options: { upsert: true },
+				})
+
+				//if we had an upsert, persist the new _id
+				if (updateResponse.upsertedId) {
+					req.file._id = updateResponse.upsertedId
+				}
+
+				//read the full file
+				req.file = await API.DB.Files.read({
+					where: { _id: req.file._id }
+				})
+
+				//and send back the file 
+				API.Log('- saved!', { 'req.file': req.file })
+				res.send(req.file)
+
+			}
+			catch (err) {
+				console.error('- failed to upload req.file...')
+				API.Utils.errorHandler({ res, err })
+			}
+		})
+
+		busboy.on('finish', async () => {})
+
+		busboy.on('error', err => API.Utils.errorHandler({ res, err }))
+
+		req.pipe(busboy)
+
+	})
 
 	return API
 

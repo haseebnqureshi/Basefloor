@@ -10,7 +10,11 @@ module.exports = (API, { middlewares, paths, providers, project }) => {
 	API.use(morgan(morganMode))
 
 	if (middlewares.cors) {
-		API.use(cors())
+		API.use(cors({
+			origin: true,
+			credentials: true,
+			allowedHeaders: '*',
+		}))
 	}
 
 	API.use(bodyParser.urlencoded({ 

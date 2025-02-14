@@ -5,9 +5,8 @@ const execPromise = util.promisify(require('child_process').exec);
 const path = require('path');
 const os = require('os');
 
-const MAX_FILE_SIZE = Math.round(5 * 1024 * 1024 * 2/3); // 5MB in bytes
+const MAX_FILE_SIZE = Math.round(3 * 1024 * 1024); // 3MB in bytes
 const MAX_DIMENSION_FOR_RESIZE = 1500; //in pixels
-const TIME_TO_RETAIN_FILES = 60 * 1000; // in milliseconds
 
 const SUPPORTED_FORMATS = {
 	'.pdf': 'pdf',
@@ -50,62 +49,51 @@ async function checkGhostscript() {
 	}
 }
 
-async function optimizeImage({ inputPath, outputPath, maxSize = MAX_FILE_SIZE }) {
-	let metadata;
-	try {
-		metadata = await sharp(inputPath).metadata();
-	} catch (error) {
-		return {
-			success: false,
-			error: `Failed to read image metadata: ${error.message}`
-		};
+const getFileSize = (filepath) => {
+  const stats = fs.statSync(filepath)
+  const int = stats.size
+	const str = Math.round(int / 1024 / 1024)
+  return { int, str }
+}
+
+const switchExtension = (filepath, extension) => {
+	return path.basename(filepath, path.extname(filepath)) + extension
+}
+
+async function getDimensions({ inputPath }) {
+	const metadata = await sharp(inputPath).metadata()
+	if (!metadata) { 
+		throw new Error('Could not read metadata from inputPath')
 	}
-	
-	const { width, height } = metadata;
-	let currentWidth = width;
-	let currentHeight = height;
-	
-	while (currentWidth > 100 && currentHeight > 100) {
-		currentWidth = Math.floor(currentWidth * 0.8);
-		currentHeight = Math.floor(currentHeight * 0.8);
-		try {
-			await sharp(inputPath)
-				.resize(currentWidth, currentHeight, {
-					fit: 'contain',
-					background: { r: 255, g: 255, b: 255, alpha: 1 },
-				})
-				.toFormat('png')
-				.toFile(outputPath);
-			const stats = fs.statSync(outputPath);
-			if (stats.size <= maxSize) {
-				console.log(`Optimized image at ${currentWidth}x${currentHeight}`);
-				return { success: true };
-			}
-		} catch (error) {
-			console.error(`Failed attempt at ${currentWidth}x${currentHeight}:`, error);
-		}
-	}
-	
 	return {
-		success: false,
-		error: 'Unable to optimize image to target size with acceptable quality'
-	};
+		width: metadata.width,
+		height: metadata.height,
+	}
 }
 
 async function getNewDimensions({ inputPath, maxDimension = MAX_DIMENSION_FOR_RESIZE }) {
-	const metadata = await sharp(inputPath).metadata();
-	if (!metadata) { throw new Error('Could not read metadata from inputPath'); }
-	let { width, height } = metadata;
-	const scale = maxDimension / (width > height ? width : height);
-	if (scale >= 1) { return false; }
+	const metadata = await sharp(inputPath).metadata()
+	if (!metadata) { 
+		throw new Error('Could not read metadata from inputPath')
+	}
+	let { width, height } = metadata
+	const scale = maxDimension / (width > height ? width : height)
+	if (scale >= 1) { 
+		return false
+	}
 	return {
 		width: Math.round(width * scale),
 		height: Math.round(height * scale),
-	};
+	}
 }
 
 async function resizeImage({ inputPath, outputPath, width, height }) {
 	try {
+
+		if (!outputPath) {
+			outputPath = switchExtension(inputPath, '.png')
+		}
+
 		const inputBuffer = fs.readFileSync(inputPath);
 		
 		console.log(`Attempting to resize image:
@@ -136,53 +124,100 @@ async function resizeImage({ inputPath, outputPath, width, height }) {
 	}
 }
 
-async function convertPdfToImages({ pdfPath, outputDir }) {
-	// Check Ghostscript availability before conversion
-	await checkGhostscript();
+async function optimizeImage({ inputPath, outputPath, maxSize = MAX_FILE_SIZE }) {
 
-	try {
-		if (!fs.existsSync(outputDir)) {
-			fs.mkdirSync(outputDir, { recursive: true });
+	if (!outputPath) {
+		outputPath = switchExtension(inputPath, '.png')
+	}
+
+	let { width, height } = await getDimensions({ inputPath })
+	const initSize = getFileSize(inputPath)
+	if (initSize.int <= maxSize) {
+		return {
+			message: `Image already optimized at ${params.width} x ${params.height} at ${initSize.str} mb`
 		}
+	}
 
-		const gsCommand = `gs -dQuiet -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -sDEVICE=png16m -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r200 -dFirstPage=1 -dLastPage=999999 -sOutputFile="${outputDir}/page-%d.png" "${pdfPath}"`;
-		
-		await execPromise(gsCommand);
+	let params = { inputPath, outputPath, width, height }
+	const scale = 0.8
+	let optimized = false
+	let finished = false
 
-		const files = fs.readdirSync(outputDir);
-		const imageFiles = files
-			.filter(f => f.startsWith('page-') && f.endsWith('.png'))
-			.sort((a, b) => {
-				const pageA = parseInt(a.match(/\d+/)[0]);
-				const pageB = parseInt(b.match(/\d+/)[0]);
-				return pageA - pageB;
-			})
-			.map(f => path.join(outputDir, f));
-
-		for (const imagePath of imageFiles) {  
-			let stats = fs.statSync(imagePath);
-			const filename = path.basename(imagePath);
-			const optimizedPath = path.join(outputDir, 'optimized-' + filename);
-			const newDimensions = await getNewDimensions({ 
-				inputPath: imagePath,
-			});
-
-			if (newDimensions || stats.size >= MAX_FILE_SIZE) {
-				console.log(`Image too large in dimensions or size, attempting to optimize...`);
-
-				await resizeImage({ 
-					inputPath: imagePath,
-					outputPath: optimizedPath,
-					width: newDimensions.width,
-					height: newDimensions.height,
-				});
-				console.log(`Resized image...`, optimizedPath);
-				fs.renameSync(optimizedPath, imagePath);
+	while (!finished && params.width > 100 && params.height > 100) {
+		try {
+			const maxDimension = params.width*scale > params.height*scale ? params.width*scale : params.height*scale
+			const newDimensions = await getNewDimensions({ inputPath, maxDimension })
+			params.width = newDimensions.width
+			params.height = newDimensions.height
+			await resizeImage(params)
+			const size = getFileSize(outputPath)
+			if (size.int <= maxSize) {
+				optimized = true
+				finished = true
 			}
 		}
-		return imageFiles;
+		catch (err) {
+			finished = true
+		}
+	}
+	const finalSize = getFileSize(outputPath)
+	const message = `${optimized ? 'Optimized' : 'Not optimized'} image at ${params.width} x ${params.height} at ${finalSize.str} mb`
+	return { 
+		message,
+		success: optimized, 
+		width: params.width, 
+		height: params.height,
+		size: finalSize.int,
+	}
+}
+
+async function convertPdfToImages({ pdfPath, outputDir }) {
+
+	//checking Ghostscript availability before conversion
+	await checkGhostscript()
+
+	try {
+
+		//ensuring our output directory
+		if (!fs.existsSync(outputDir)) {
+			fs.mkdirSync(outputDir, { recursive: true })
+		}
+		
+		//pdf to images with ghostscript
+		await execPromise(`gs -dQuiet -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -sDEVICE=png16m -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r200 -dFirstPage=1 -dLastPage=999999 -sOutputFile="${outputDir}/page-%d.png" "${pdfPath}"`)
+
+		//filtering and ordering images from pdf
+		const files = fs.readdirSync(outputDir)
+		const imageFiles = files.filter(f => f.startsWith('page-') && f.endsWith('.png'))
+			.sort((a, b) => {
+				const pageA = parseInt(a.match(/\d+/)[0])
+				const pageB = parseInt(b.match(/\d+/)[0])
+				return pageA - pageB
+			})
+			.map(f => path.join(outputDir, f))
+
+		//now ensuring each image is optimized accordingly
+		for (const inputPath of imageFiles) {
+			const optimizedPath = switchExtension(inputPath, '.png')
+			const imageResponse = await optimizeImage({
+				inputPath,
+				outputPath: optimizedPath,
+			})
+			fs.renameSync(optimizedPath, imagePath)
+		}
+
+		//finally returning our images
+		return {
+			success: true,
+			images: imageFiles,
+		}
+
 	} catch (error) {
-		throw new Error(`Failed to convert PDF to images: ${error.message}`);
+		console.error(`Failed to convert PDF to images: ${error.message}`)
+		return {
+			success: false,
+			images: [],
+		}
 	}
 }
 
@@ -195,11 +230,13 @@ module.exports = ({ providerVars, providerName }) => {
 		MAX_FILE_SIZE,
 		MAX_DIMENSION_FOR_RESIZE,
 		SUPPORTED_FORMATS,
-		TIME_TO_RETAIN_FILES,
 		sharp,
-		optimizeImage,
+		getFileSize,
+		switchExtension,
+		getDimensions,
 		getNewDimensions,
 		resizeImage,
+		optimizeImage,
 		convertPdfToImages,
 	};
 };
