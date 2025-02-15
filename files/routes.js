@@ -69,7 +69,8 @@ module.exports = (API, { paths, project }) => {
 			const to = req.params.to ? `.${req.params.to}` : API.Files.autoDetectConvertTo({ extension })
 			API.Log('POST /:_id/convert/:to?', { extension, to, inPath, outPath })
 
-			//if we're somehow missing any of this information, throw out an unprocessible entity
+			//if we're somehow missing any of this information, the file isn't supported yet
+			//return 422 unprocessable entity
 			if (!extension || !to || !inPath || !outPath) { throw 422 }
 
 			//then we convert our file. the resulting output may be multiple files

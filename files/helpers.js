@@ -229,36 +229,27 @@ module.exports = ({ API, paths, project }) => {
       API.Log(`  - uploaded ${percent}% of part ${progress.part} (Key:${progress.Key} Bucket:${progress.Bucket})`)
     }
 
-    //checking the status of our upload
-    const uploadPromise = new Promise((resolve, reject) => {
-      upload.on('httpUploadProgress', progress => logProgress(progress))
-      upload.on('complete', progress => {
-        logProgress(progress)
-
-        //we update our fileValues (such as uploaded_at)
-        API.Log(`- finished uploading!`)
-        fileValues = {
-          ...fileValues,
-          uploaded_at: new Date().toISOString(),
-          provider: Remote.NAME,
-          bucket: Remote.ENV.bucket,
-        }
-
-        resolve(fileValues)
-      })
-      upload.done()
-    })
+    upload.on('httpUploadProgress', progress => logProgress(progress))
 
     try {
+      const result = await upload.done()
 
-      //awaiting for our finalized fileValues (showing uploaded_at)
-      fileValues = await uploadPromise
+      //we update our fileValues (such as uploaded_at)
+      API.Log(`- finished uploading!`)
+      fileValues = {
+        ...fileValues,
+        uploaded_at: new Date().toISOString(),
+        provider: Remote.NAME,
+        bucket: Remote.ENV.bucket,
+      }
+
       return fileValues
     }
     catch (err) {
       API.Log('uploadFile err', err)
       throw err
     }
+    
   }
 
   const uploadFiles = (filesValues) => {
