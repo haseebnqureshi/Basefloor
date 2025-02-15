@@ -242,7 +242,7 @@ module.exports = ({ API, paths, project }) => {
         provider: Remote.NAME,
         bucket: Remote.ENV.bucket,
       }
-
+      delete fileValues.filepath
       return fileValues
     }
     catch (err) {
