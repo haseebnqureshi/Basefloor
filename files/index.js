@@ -9,10 +9,10 @@ module.exports = (API, { files, paths, providers, project }) => {
 	const finishAndReturnAPI = () => {
 		API.Files = {
 			...API.Files,
-			require(`./helpers`)({ API, paths, project }),
+			...require('./helpers')({ API, paths, project }),
 		}
-		API = require(`./middlewares`)(API, { paths, project })
-		API = require(`./routes`)(API, { paths, project })
+		API = require('./middlewares')(API, { paths, project })
+		API = require('./routes')(API, { paths, project })
 		return API
 	}
 

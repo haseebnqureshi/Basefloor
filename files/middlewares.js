@@ -1,5 +1,7 @@
 
-module.exports = ({ API, paths, project }) => {
+const Busboy = require('busboy')
+
+module.exports = (API, { paths, project }) => {
 
   const loadFileById = async (req, res, next) => {
     try {
@@ -8,6 +10,7 @@ module.exports = ({ API, paths, project }) => {
       const { _id } = req.params
       const where = { _id, user_id }
       const file = await API.DB.Files.read({ where })
+      API.Log('loadFileById', { where, file })
       if (!file) { throw 404 }
       req.file = file
       next()
@@ -48,10 +51,79 @@ module.exports = ({ API, paths, project }) => {
     next()
   }
 
-  module.exports = {
+  const handleUpload = async (req, res, next) => {
+    const handler = new Promise((resolve, reject) => {
+      if (!req.file) { 
+        return reject(new Error('no req.file!'))
+      }
+
+      const busboy = Busboy({ 
+        headers: req.headers,
+        limits: {
+          fileSize: parseInt(req.file.size)
+        }
+      })
+
+      busboy.on('file', async (fieldName, fileStream, file) => {
+        try {
+
+          //upload our file
+          req.file = await API.Files.uploadFile(req.file, fileStream)
+          if (!req.file) { throw new Error('- failed to upload req.file...') }
+
+          //and then update/upsert values into db
+          const _id = req.file._id || null
+          const updateResponse = await API.DB.Files.update({
+            where: { _id },
+            values: req.file,
+            options: { upsert: true },
+          })
+
+          //if we had an upsert, persist the new _id
+          if (updateResponse.upsertedId) {
+            req.file._id = updateResponse.upsertedId
+          }
+
+          //read the full file
+          req.file = await API.DB.Files.read({
+            where: { _id: req.file._id }
+          })
+
+          resolve()
+        }
+        catch (err) {
+          console.error('handleUpload err inside try/catch', err)
+          reject(err)
+          return
+        }
+      })
+
+      // busboy.on('finish', () => resolve({ }))
+
+      // busboy.on('error', err => reject({ err }))
+
+      req.pipe(busboy)
+    })
+
+    try {
+      await handler
+      console.log('handleUpload req.file', req.file)
+      next()
+    }
+    catch (err) {
+      console.error('err', err)
+      return API.Utils.errorHandler({ res, err })
+    }
+  }
+
+  API.Files = {
+    ...API.Files,
     loadFileById,
     loadFilesByParentId,
     increaseRequestTimeout,
+    handleUpload,
   }
+
+  return API
 
 }

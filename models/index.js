@@ -6,7 +6,7 @@ module.exports = (API, { models, paths, providers, project }) => {
 			labels: ['File', 'Files'],
 			values: {
 				_id: 							['ObjectId', 'rud'],
-				user_id: 					['ObjectId', 'cr'],
+				user_id: 					['ObjectId', 'cru'],
 				name: 						['String', 'cru'],
 				description:  		['String', 'cru'],
 				filename: 				['String', 'cr'],
@@ -17,12 +17,16 @@ module.exports = (API, { models, paths, providers, project }) => {
 				uploaded_at: 			['Date', 'cru'],
 				file_modified_at: ['Date', 'cru'],
 				hash: 						['String', 'cru'],
-				size: 						['Number', 'cr'],
-				content_type: 		['String', 'cr'],
-				extension:  			['String', 'cr'],
+				size: 						['Number', 'cru'],
+				content_type: 		['String', 'cru'],
+				extension:  			['String', 'cru'],
 				parent_file: 			['ObjectId', 'cru'],
-				// flattened_at: 		['Date', 'cru'],
-				// flattened_pages: 	['Object(ObjectId)', 'cru'], //'static CDN url':'ObjectID to file object'
+
+				//legacy fields needed for migrating from previous releases, for whitelisting 
+				//and retrieving existing data
+				type: 						['String', 'ru'],
+				flattened_at: 		['Date', 'cru'],
+				flattened_pages: 	['Object(ObjectId)', 'cru'], //'static CDN url':'ObjectID to file object'
 			},
 			// filters: {
 			// 	"read": {

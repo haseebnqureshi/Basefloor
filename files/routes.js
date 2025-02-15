@@ -1,4 +1,5 @@
 
+
 module.exports = (API, { paths, project }) => {
 
 	API.get('/:_id?', [
@@ -52,7 +53,7 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.post('/:_id/convert/:to', [
+	API.post('/:_id/convert/:to?', [
 		API.requireAuthentication,
 		API.postAuthentication,
 		API.Files.loadFileById,
@@ -61,9 +62,15 @@ module.exports = (API, { paths, project }) => {
 
 			//get important baseline information
 			const { extension, key } = req.file
-			const { to } = req.params
 			const inPath = await API.Files.downloadFile({ key })
 			const outPath = API.Files.getTempFilepath(`${key}-converted`)
+
+			//auto selecting our "to" if not present
+			const to = req.params.to ? `.${req.params.to}` : API.Files.autoDetectConvertTo({ extension })
+			API.Log('POST /:_id/convert/:to?', { extension, to, inPath, outPath })
+
+			//if we're somehow missing any of this information, throw out an unprocessible entity
+			if (!extension || !to || !inPath || !outPath) { throw 422 }
 
 			//then we convert our file. the resulting output may be multiple files
 			const response = await API.Files.convertFile({ 
@@ -82,11 +89,14 @@ module.exports = (API, { paths, project }) => {
 			})	
 
 			//now we upload our file(s)
+			API.Log('POST /:_id/convert/:to? bulk', bulk)
 			bulk = await API.Files.uploadFiles(bulk)
+			API.Log('POST /:_id/convert/:to? uploaded:bulk', bulk)
 
 			//then we save our file(s)
 			const created = await API.DB.Files.createMany({ values: bulk })
 			const insertedIds = Object.values(created.insertedIds)
+			API.Log('POST /:_id/convert/:to? insertedIds', insertedIds)
 
 			//update our values with newly created _ids, and return those values
 			res.status(200).send(
@@ -142,12 +152,12 @@ module.exports = (API, { paths, project }) => {
 		STEP 1: Does this file exist and has it been uploaded?
 		*/
 
-		(req, res, next) => {
+		async (req, res, next) => {
 			try {
 
 				//parse our incoming file information using headers
 				const info = API.Utils.CollectMinapiHeaders(req.headers)
-				const values = API.Files.createFileValues({
+				req.file = API.Files.createFileValues({
 					user_id: req.user._id,
 					name: info.name,
 					size: info.size,
@@ -156,16 +166,17 @@ module.exports = (API, { paths, project }) => {
 				})
 
 				//checking by hash whether file exists (and user_id)
-				req.file = await API.Files.read({
+				const file = await API.DB.Files.read({
 					where: {
-						hash: values.hash,
+						hash: req.file.hash,
 						user_id: req.user._id,
 					}
 				})
 
 				//if the file is in our db and presumed to be uploaded, sending that info back now
-				if (req.file) {
-					if (req.file.uploaded_at) {
+				if (file) {
+					req.file = file
+					if (file.uploaded_at) {
 						API.Log('- file found in db and with "uploaded_at", returning saved file now...')
 						return res.status(200).send(req.file)
 					}
@@ -188,56 +199,23 @@ module.exports = (API, { paths, project }) => {
 
 		API.Files.increaseRequestTimeout,
 
-	], async (req, res) => {
-		
 		/*
 		STEP 3: Attempt to upload our file, using busboy to handle the incoming file stream
 		- load our "Remote" provider's "uploadFile" that should accept a stream
 		- by default, this is using aws-sdk/s3-client and its lib-storage to manage uploads
 		*/
 
-		const busboy = Busboy({ headers: req.headers })
-		busboy.on('file', async (fieldName, fileStream, file) => {
-			try {
+		API.Files.handleUpload,
 
-				//upload our file
-				req.file = await API.Files.uploadFile(req.file, fileStream)
-
-				//and then update/upsert values into db
-				const _id = req.file._id || null
-				const updateResponse = await API.DB.Files.update({
-					where: { _id },
-					values: req.file,
-					options: { upsert: true },
-				})
-
-				//if we had an upsert, persist the new _id
-				if (updateResponse.upsertedId) {
-					req.file._id = updateResponse.upsertedId
-				}
-
-				//read the full file
-				req.file = await API.DB.Files.read({
-					where: { _id: req.file._id }
-				})
-
-				//and send back the file 
-				API.Log('- saved!', { 'req.file': req.file })
-				res.send(req.file)
-
-			}
-			catch (err) {
-				console.error('- failed to upload req.file...')
-				API.Utils.errorHandler({ res, err })
-			}
-		})
-
-		busboy.on('finish', async () => {})
-
-		busboy.on('error', err => API.Utils.errorHandler({ res, err }))
-
-		req.pipe(busboy)
-
+	], async (req, res) => {
+    try {
+	    API.Log('- saved! req.file', req.file)
+	    res.send(req.file)
+    } 
+    catch (err) {
+    	console.error('POST / err', err)
+      API.Utils.errorHandler({ res, err })
+    }
 	})
 
 	return API

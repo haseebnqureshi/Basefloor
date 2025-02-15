@@ -39,6 +39,47 @@ module.exports = ({ API, paths, project }) => {
     },
   ]
 
+  // common MIME types mapping (with dots)
+  const MIME_TYPES = {
+    // Images
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.svg': 'image/svg+xml',
+    
+    // Documents
+    '.pdf': 'application/pdf',
+    '.doc': 'application/msword',
+    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    
+    // Text
+    '.txt': 'text/plain',
+    '.html': 'text/html',
+    '.css': 'text/css',
+    '.csv': 'text/csv',
+    
+    // Audio
+    '.mp3': 'audio/mpeg',
+    '.wav': 'audio/wav',
+    
+    // Video
+    '.mp4': 'video/mp4',
+    '.webm': 'video/webm',
+    
+    // Applications
+    '.json': 'application/json',
+    '.xml': 'application/xml',
+    '.zip': 'application/zip',
+    
+    // MS Office
+    '.xls': 'application/vnd.ms-excel',
+    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    '.ppt': 'application/vnd.ms-powerpoint',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  }
+
   const getTempFilepath = name => path.join(TMP_DIR, `${new Date().toISOString()}-${name}`)
 
   const getFileSize = (filepath) => {
@@ -51,49 +92,29 @@ module.exports = ({ API, paths, project }) => {
   const getFileContentType = (filepath) => {
     const extension = getFileExtension(filepath)
     
-    // common MIME types mapping (with dots)
-    const mimeTypes = {
-      // Images
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp',
-      '.svg': 'image/svg+xml',
-      
-      // Documents
-      '.pdf': 'application/pdf',
-      '.doc': 'application/msword',
-      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      
-      // Text
-      '.txt': 'text/plain',
-      '.html': 'text/html',
-      '.css': 'text/css',
-      '.csv': 'text/csv',
-      
-      // Audio
-      '.mp3': 'audio/mpeg',
-      '.wav': 'audio/wav',
-      
-      // Video
-      '.mp4': 'video/mp4',
-      '.webm': 'video/webm',
-      
-      // Applications
-      '.json': 'application/json',
-      '.xml': 'application/xml',
-      '.zip': 'application/zip',
-      
-      // MS Office
-      '.xls': 'application/vnd.ms-excel',
-      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      '.ppt': 'application/vnd.ms-powerpoint',
-      '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
-    }
-
     // return the MIME type if found, or a default binary type if not recognized
-    return mimeTypes[extension] || 'application/octet-stream'
+    return MIME_TYPES[extension] || 'application/octet-stream'
+  }
+
+  const getTypesByCategory = (category) => {
+    category = category.toLowerCase()
+    let types = {}
+    for (let ext in MIME_TYPES) {
+      const type = MIME_TYPES[ext]
+      if (type.match(category)) {
+        types[ext] = type
+      }
+    }
+    return types
+  }
+
+  const autoDetectConvertTo = ({ extension, filepath }) => {
+    extension = filepath ? getFileExtension(filepath) : extension
+    for (let converter of FILE_CONVERTERS) {
+      if (converter.compatible(extension)) {
+        return converter.to
+      }
+    }
   }
 
   const createFileValues = ({ prefix, user_id, name, extension, size, content_type, file_modified_at, provider, bucket }) => {
@@ -110,12 +131,7 @@ module.exports = ({ API, paths, project }) => {
       content_type 
     }, { algorithm: 'md5' })
 
-    const matches = name.match(/(\.[a-z0-9]+)$/)
-    if (matches) {
-      if (matches[1]) {
-        extension = matches[1]
-      }
-    }
+    extension = extension || getFileExtension(name)
     const filename = `${hash}${extension}`
     const url = Remote.CDN_URL + `/${filename}`
     const key = prefix ? `${prefix}/${filename}` : filename
@@ -139,7 +155,7 @@ module.exports = ({ API, paths, project }) => {
     return values
   }
 
-  const createManyFileValues = async ({ filepaths, parentName, parentId, user_id }) => {
+  const createManyFileValues = ({ filepaths, parentName, parentId, user_id }) => {
 
     //iterate through images and load up values into an array
     const parentBasename = parentName.replace(/\.[a-z0-9]+/, '')
@@ -166,25 +182,6 @@ module.exports = ({ API, paths, project }) => {
       }
     }
     return bulk
-  }
-
-  const onUploadStatus = async ({ status, size, onProgress, onComplete }) => {
-    status.on('httpUploadProgress', async progress => {
-      const percent = Math.round(10000 * progress.loaded / size) / 100
-
-      if (onProgress) { 
-        API.Log(`  - uploaded ${percent}%`, progress)
-        onProgress({ percent }) 
-      }
-
-      if (percent == 100) {
-        API.Log(`- finished uploading!`)
-        if (onComplete) { 
-          return await onComplete({ percent }) 
-        }
-      }
-    })
-    await status.done()
   }
 
   const downloadFile = async ({ key }) => {
@@ -221,19 +218,25 @@ module.exports = ({ API, paths, project }) => {
     //uploading our file
     const { key, filepath, size } = fileValues
     const contentType = fileValues.contentType || fileValues.content_type
-    const status = await Remote.uploadFile({
+    const upload = Remote.uploadFile({
       Key: key,
       ContentType: contentType,
       Body: fileStream || fs.createReadStream(filepath),
     })
 
-    //ensuring that when we're finished uploading...
-    await onUploadStatus({
-      size,
-      status,
-      onComplete: async () => {
+    const logProgress = progress => {
+      const percent = Math.round(10000 * progress.loaded / size) / 100
+      API.Log(`  - uploaded ${percent}% of part ${progress.part} (Key:${progress.Key} Bucket:${progress.Bucket})`)
+    }
+
+    //checking the status of our upload
+    const uploadPromise = new Promise((resolve, reject) => {
+      upload.on('httpUploadProgress', progress => logProgress(progress))
+      upload.on('complete', progress => {
+        logProgress(progress)
 
         //we update our fileValues (such as uploaded_at)
+        API.Log(`- finished uploading!`)
         fileValues = {
           ...fileValues,
           uploaded_at: new Date().toISOString(),
@@ -241,30 +244,45 @@ module.exports = ({ API, paths, project }) => {
           bucket: Remote.ENV.bucket,
         }
 
-        //and return our updated fileValues whose file is now uploaded
-        API.Log('uploadFile:onComplete fileValues', fileValues)
-        return fileValues
+        resolve(fileValues)
+      })
+      upload.done()
+    })
+
+    try {
+
+      //awaiting for our finalized fileValues (showing uploaded_at)
+      fileValues = await uploadPromise
+      return fileValues
+    }
+    catch (err) {
+      API.Log('uploadFile err', err)
+      throw err
+    }
+  }
+
+  const uploadFiles = (filesValues) => {
+    return new Promise(async (resolve, reject) => {
+      for (let i in filesValues) {
+        filesValues[i] = await uploadFile(filesValues[i])
       }
+      resolve(filesValues)
     })
   }
 
-  const uploadFiles = async (filesValues) => {
-    return filesValues.map(async (fileValues) => {
-      return await uploadFile(fileValues)
-    })
-  }
-
-  module.exports = {
+  return {
     IMAGE_MAX_SIZE,
     TMP_DIR,
     FILE_CONVERTERS,
+    MIME_TYPES,
     getTempFilepath,
     getFileExtension,
     getFileContentType,
+    getTypesByCategory,
+    autoDetectConvertTo,
     getFileSize,
     createFileValues,
     createManyFileValues,
-    onUploadStatus,
     downloadFile,
     convertFile,
     uploadFile,

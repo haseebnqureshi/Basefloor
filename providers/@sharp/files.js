@@ -52,8 +52,9 @@ async function checkGhostscript() {
 const getFileSize = (filepath) => {
   const stats = fs.statSync(filepath)
   const int = stats.size
-	const str = Math.round(int / 1024 / 1024)
-  return { int, str }
+  const kb = Math.round(100 * int / 1024)/100
+	const mb = Math.round(100 * kb / 1024)/100
+  return { int, kb, mb }
 }
 
 const switchExtension = (filepath, extension) => {
@@ -133,8 +134,13 @@ async function optimizeImage({ inputPath, outputPath, maxSize = MAX_FILE_SIZE })
 	let { width, height } = await getDimensions({ inputPath })
 	const initSize = getFileSize(inputPath)
 	if (initSize.int <= maxSize) {
+		fs.renameSync(inputPath, outputPath)
 		return {
-			message: `Image already optimized at ${params.width} x ${params.height} at ${initSize.str} mb`
+			message: `Image already optimized at ${width} x ${height} at ${initSize.mb} mb`,
+			success: true,
+			width,
+			height,
+			size: initSize.int,
 		}
 	}
 
@@ -161,7 +167,7 @@ async function optimizeImage({ inputPath, outputPath, maxSize = MAX_FILE_SIZE })
 		}
 	}
 	const finalSize = getFileSize(outputPath)
-	const message = `${optimized ? 'Optimized' : 'Not optimized'} image at ${params.width} x ${params.height} at ${finalSize.str} mb`
+	const message = `${optimized ? 'Optimized' : 'Not optimized'} image at ${params.width} x ${params.height} at ${finalSize.mb} mb`
 	return { 
 		message,
 		success: optimized, 
@@ -203,7 +209,7 @@ async function convertPdfToImages({ pdfPath, outputDir }) {
 				inputPath,
 				outputPath: optimizedPath,
 			})
-			fs.renameSync(optimizedPath, imagePath)
+			fs.renameSync(optimizedPath, inputPath)
 		}
 
 		//finally returning our images
