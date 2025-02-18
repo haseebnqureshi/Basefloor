@@ -89,11 +89,13 @@ module.exports = ({ API, paths, project }) => {
 
   const getFileExtension = (filepath) => path.extname(filepath).toLowerCase()
 
-  const getFileContentType = (filepath) => {
-    const extension = getFileExtension(filepath)
-    
-    // return the MIME type if found, or a default binary type if not recognized
-    return MIME_TYPES[extension] || 'application/octet-stream'
+  const getFileContentType = filepath => MIME_TYPES[getFileExtension(filepath)]
+
+  const getFileContentTypeOptions = ({ extension, filepath }) => {
+    if (filepath) {
+      extension = getFileExtension(filepath)
+    }
+    return MIME_TYPES[extension]
   }
 
   const getTypesByCategory = (category) => {
@@ -118,6 +120,11 @@ module.exports = ({ API, paths, project }) => {
   }
 
   const createFileValues = ({ prefix, user_id, name, extension, size, content_type, file_modified_at, provider, bucket }) => {
+
+    if (!content_type) { return undefined }
+    if (!user_id) { return undefined }
+    if (!name) { return undefined }
+    if (!size) { return undefined }
 
     /*
     still not ideal, as same files may have different names, and so we're still 
@@ -155,7 +162,7 @@ module.exports = ({ API, paths, project }) => {
     return values
   }
 
-  const createManyFileValues = ({ filepaths, parentName, parentId, user_id }) => {
+  const createManyFileValues = ({ filepaths, extension, parentName, parentId, user_id }) => {
 
     //iterate through images and load up values into an array
     const parentBasename = parentName.replace(/\.[a-z0-9]+/, '')
@@ -164,8 +171,7 @@ module.exports = ({ API, paths, project }) => {
 
     for (let i in filepaths) {
       const filepath = filepaths[i]
-      const extension = getFileExtension(filepath)
-      const content_type = getFileContentType(filepath)
+      const content_type = getFileContentType({ extension })
       const number = parseInt(i)+1
       const name = `${parentBasename} (${String(number)} of ${String(total)})`
       bulk[i] = {

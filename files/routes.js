@@ -84,6 +84,7 @@ module.exports = (API, { paths, project }) => {
 			//because response has an array of filepaths, we assume bulk from here on
 			let bulk = API.Files.createManyFileValues({
 				filepaths: response.outPaths,
+				extension: to,
 				parentName: req.file.name,
 				parentId: req.file._id,
 				user_id: req.user._id,
