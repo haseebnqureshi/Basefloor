@@ -91,7 +91,7 @@ module.exports = ({ API, paths, project }) => {
 
   const getFileContentType = filepath => MIME_TYPES[getFileExtension(filepath)]
 
-  const getFileContentTypeOptions = ({ extension, filepath }) => {
+  const getFileContentTypeFrom = ({ extension, filepath }) => {
     if (filepath) {
       extension = getFileExtension(filepath)
     }
@@ -171,7 +171,7 @@ module.exports = ({ API, paths, project }) => {
 
     for (let i in filepaths) {
       const filepath = filepaths[i]
-      const content_type = getFileContentType({ extension })
+      const content_type = getFileContentTypeFrom({ extension })
       const number = parseInt(i)+1
       const name = `${parentBasename} (${String(number)} of ${String(total)})`
       bulk[i] = {
@@ -275,6 +275,7 @@ module.exports = ({ API, paths, project }) => {
     getTempFilepath,
     getFileExtension,
     getFileContentType,
+    getFileContentTypeFrom,
     getTypesByCategory,
     autoDetectConvertTo,
     getFileSize,
