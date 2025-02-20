@@ -53,6 +53,19 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
+	API.get('/convert/:to?', [
+		API.requireAuthentication,
+		API.postAuthentication,
+	], async (req, res) => {
+		const extension = req.params.to
+		const to = API.Files.autoDetectConvertTo({ extension })
+		res.status(200).send({
+			extension,
+			accepted: to ? true : false,
+			to,
+		})
+	})
+
 	API.post('/:_id/convert/:to?', [
 		API.requireAuthentication,
 		API.postAuthentication,

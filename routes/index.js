@@ -255,6 +255,8 @@ module.exports = (API, { routes, paths, providers, project }) => {
 					return result
 				}
 
+				API.Log(`- registering endpoint ${http} ${r.url}`)
+
 				// Add permission middleware
 				API[http](r.url, [
 					API.requireAuthentication,
