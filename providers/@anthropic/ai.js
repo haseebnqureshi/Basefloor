@@ -36,7 +36,7 @@ module.exports = ({ providerVars, providerName }) => {
 			}
 
 			//no matter what, adding a generated_at to prevent any potential caching and better management of message history (just in case)
-			messages.content.push({
+			messages[0].content.push({
 				type: 'text',
 				text: `\ngenerated_at: ${Date.now()}]\n`
 			})
