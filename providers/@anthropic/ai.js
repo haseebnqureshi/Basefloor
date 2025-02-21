@@ -30,14 +30,17 @@ module.exports = ({ providerVars, providerName }) => {
 								type: 'text',
 								text: textPrompt,
 							},
-							{
-								type: 'text',
-								text: `\ngenerated_at: ${Date.now()}]\n`
-							}
 						]
 					} 
 				]
 			}
+
+			//no matter what, adding a generated_at to prevent any potential caching and better management of message history (just in case)
+			messages.content.push({
+				type: 'text',
+				text: `\ngenerated_at: ${Date.now()}]\n`
+			})
+
 			let res
 			try {
 				res = await client.messages.create({ model, max_tokens, temperature, messages })

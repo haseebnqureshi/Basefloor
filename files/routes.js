@@ -57,6 +57,8 @@ module.exports = (API, { paths, project }) => {
 		API.requireAuthentication,
 		API.postAuthentication,
 	], async (req, res) => {
+
+		//@TODO modify to include "."
 		const extension = req.params.to
 		const to = API.Files.autoDetectConvertTo({ extension })
 		res.status(200).send({
