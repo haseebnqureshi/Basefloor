@@ -77,6 +77,17 @@ module.exports = (API, { paths, providers, project }) => {
 
 	API.Utils.hashObject = (obj, options) => hashObject(obj, options || null)
 
+	API.Utils.tokenEncrypt = (token, secretKey) => {
+		secretKey = secretKey || process.env.SECRET_KEY
+		return CryptoJS.AES.encrypt(token, secretKey).toString()
+	}
+
+	API.Utils.tokenDecrypt = (encryptedToken, secretKey) => {
+		secretKey = secretKey || process.env.SECRET_KEY
+		const bytes = CryptoJS.AES.decrypt(encryptedToken, secretKey)
+		return bytes.toString(CryptoJS.enc.Utf8)
+	}
+
 	API.Utils.errorHandler = ({ res, err }) => {
 		API.Log(err)
 		if (_.isString(err)) {

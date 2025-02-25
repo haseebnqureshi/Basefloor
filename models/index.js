@@ -135,21 +135,33 @@ module.exports = (API, { models, paths, providers, project }) => {
 				return dummy
 			},
 
+			// Helper function to safely apply filters
+			applyFilter: (filterFn, data) => {
+				if (!filterFn) return data;
+				try {
+					return filterFn(data);
+				} catch (error) {
+					API.Log.error(`Filter error: ${error.message}`, { error });
+					return data; // Return original data if filter fails
+				}
+			},
+
 			create: async ({ values }) => {
 				if (!values) { return undefined }
 				values = API.DB[name].sanitize(values, 'c')
 				if (filters.values) {
-					values = filters.values(values)
+					values = API.DB[name].applyFilter(filters.values, values);
 					values = API.DB[name].sanitize(values, 'c')
 				}
 				if (filters.create?.values) {
-					values = filters.create.values(values)
+					values = API.DB[name].applyFilter(filters.create.values, values);
 					values = API.DB[name].sanitize(values, 'c')
 				}
 				values = { ...values, created_at: new Date().toISOString() }
-				return await API.Utils.try(`try:${collection}:create`,
+				const output = await API.Utils.try(`try:${collection}:create`,
 					API.DB.run().collection(collection).insertOne(values)
 				)
+				return filters.output ? API.DB[name].applyFilter(filters.output, output) : output
 			},
 
 			createMany: async ({ values }) => {
@@ -157,36 +169,38 @@ module.exports = (API, { models, paths, providers, project }) => {
 				values = values.map(row => {
 					let v = API.DB[name].sanitize(row, 'c')
 					if (filters.values) {
-						v = filters.values(v)
+						v = API.DB[name].applyFilter(filters.values, v);
 						v = API.DB[name].sanitize(v, 'c')
 					}
 					if (filters.createMany?.values) {
-						v = filters.createMany.values(v)
+						v = API.DB[name].applyFilter(filters.createMany.values, v);
 						v = API.DB[name].sanitize(v, 'c')
 					}
 					v = { ...v, created_at: new Date().toISOString() }
 					return v
 				})
-				return await API.Utils.try(`try:${collection}:createMany`,
+				const output = await API.Utils.try(`try:${collection}:createMany`,
 					API.DB.run().collection(collection).insertMany(values)
 				)
+				return filters.output ? API.DB[name].applyFilter(filters.output, output) : output
 			},
 
 			read: async ({ where }) => {
 				if (!where) { return undefined }
 				where = API.DB[name].sanitize(where, 'r', name)
 				if (filters.where) { 
-					where = filters.where(where)
+					where = API.DB[name].applyFilter(filters.where, where);
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 				if (filters.read?.where) {
-					where = filters.read.where(where)
+					where = API.DB[name].applyFilter(filters.read.where, where);
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 				if (Object.values(where).length === 0) { return undefined }
-				return await API.Utils.try(`try:${collection}:read(where:${JSON.stringify(where)})`,
+				const output = await API.Utils.try(`try:${collection}:read(where:${JSON.stringify(where)})`,
 					API.DB.run().collection(collection).findOne(where)
 				)
+				return filters.output ? API.DB[name].applyFilter(filters.output, output) : output
 			},
 
 			readOrCreate: async ({ where, values }) => {
@@ -195,37 +209,48 @@ module.exports = (API, { models, paths, providers, project }) => {
 
 				// Apply filters to where clause for reading
 				if (filters.where) { 
-					where = filters.where(where)
+					where = API.DB[name].applyFilter(filters.where, where);
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 				if (filters.readOrCreate?.where) {
-					where = filters.readOrCreate.where(where)
+					where = API.DB[name].applyFilter(filters.readOrCreate.where, where);
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 
+				let output
 				const existing = await API.DB[name].read({ where })
 				if (existing) {
-					return { insertedId: existing._id }
+					output = { insertedId: existing._id }
+				}
+				else {
+					// Apply readOrCreate values filter if it exists
+					if (filters.readOrCreate?.values) {
+						values = API.DB[name].applyFilter(filters.readOrCreate.values, values);
+						values = API.DB[name].sanitize(values, 'c')
+					}
+					// If not found, create with potentially different filters
+					output = await API.DB[name].create({ values })
 				}
 
-				// If not found, create with potentially different filters
-				return await API.DB[name].create({ values })
+				// Apply output filter 
+				return filters.output ? API.DB[name].applyFilter(filters.output, output) : output
 			},
 
 			readAll: async ({ where }) => {
 				where = where || {}
 				where = API.DB[name].sanitize(where, 'r', name)
 				if (filters.where) { 
-					where = filters.where(where)
+					where = API.DB[name].applyFilter(filters.where, where);
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 				if (filters.readAll?.where) {
-					where = filters.readAll.where(where)
+					where = API.DB[name].applyFilter(filters.readAll.where, where);
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
-				return await API.Utils.try(`try:${collection}:readAll(where:${JSON.stringify(where)})`,
+				const output = await API.Utils.try(`try:${collection}:readAll(where:${JSON.stringify(where)})`,
 					API.DB.run().collection(collection).find(where).toArray()
 				)
+				return filters.output ? API.DB[name].applyFilter(filters.output, output) : output
 			},
 
 			update: async ({ where, values, options }, one=true) => {
@@ -235,27 +260,28 @@ module.exports = (API, { models, paths, providers, project }) => {
 				values = API.DB[name].sanitize(values, 'u', name)
 				
 				if (filters.where) { 
-					where = filters.where(where)
+					where = API.DB[name].applyFilter(filters.where, where);
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 				if (filters.update?.where) {
-					where = filters.update.where(where)
+					where = API.DB[name].applyFilter(filters.update.where, where);
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 				
 				if (filters.values) { 
-					values = filters.values(values)
+					values = API.DB[name].applyFilter(filters.values, values);
 					values = API.DB[name].sanitize(values, 'u', name)
 				}
 				if (filters.update?.values) {
-					values = filters.update.values(values)
+					values = API.DB[name].applyFilter(filters.update.values, values);
 					values = API.DB[name].sanitize(values, 'u', name)
 				}
 				
 				values = { ...values, updated_at: new Date().toISOString() }
-				return await API.Utils.try(`try:${collection}:update(where:${JSON.stringify(where)})`,
+				const output = await API.Utils.try(`try:${collection}:update(where:${JSON.stringify(where)})`,
 					API.DB.run().collection(collection)[one ? 'updateOne' : 'update'](where, { $set: values }, options || {})
 				)
+				return filters.output ? API.DB[name].applyFilter(filters.output, output) : output
 			},
 
 			updateAll: async ({ where, values, options }) => {
@@ -265,59 +291,62 @@ module.exports = (API, { models, paths, providers, project }) => {
 				values = API.DB[name].sanitize(values, 'u', name)
 				
 				if (filters.where) { 
-					where = filters.where(where)
+					where = API.DB[name].applyFilter(filters.where, where);
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 				if (filters.updateAll?.where) {
-					where = filters.updateAll.where(where)
+					where = API.DB[name].applyFilter(filters.updateAll.where, where);
 					where = API.DB[name].sanitize(where, 'r', name)
 				}
 				
 				if (filters.values) { 
-					values = filters.values(values)
+					values = API.DB[name].applyFilter(filters.values, values);
 					values = API.DB[name].sanitize(values, 'u', name)
 				}
 				if (filters.updateAll?.values) {
-					values = filters.updateAll.values(values)
+					values = API.DB[name].applyFilter(filters.updateAll.values, values);
 					values = API.DB[name].sanitize(values, 'u', name)
 				}
 				
 				values = { ...values, updated_at: new Date().toISOString() }
-				return await API.Utils.try(`try:${collection}:updateAll(where:${JSON.stringify(where)})`,
+				const output = await API.Utils.try(`try:${collection}:updateAll(where:${JSON.stringify(where)})`,
 					API.DB.run().collection(collection).updateMany(where, { $set: values }, options || {})
 				)
+				return filters.output ? API.DB[name].applyFilter(filters.output, output) : output
 			},
 
 			delete: async ({ where }, one=true) => {
 				if (!where) { return undefined }
 				where = API.DB[name].sanitize(where, 'd', name)
 				if (filters.where) { 
-					where = filters.where(where)
-					where = API.DB[name].sanitize(where, 'r', name)
+					where = API.DB[name].applyFilter(filters.where, where);
+					where = API.DB[name].sanitize(where, 'd', name)
 				}
 				if (filters.delete?.where) {
-					where = filters.delete.where(where)
-					where = API.DB[name].sanitize(where, 'r', name)
+					where = API.DB[name].applyFilter(filters.delete.where, where);
+					where = API.DB[name].sanitize(where, 'd', name)
 				}
-				return await API.Utils.try(`try:${collection}:delete(where:${JSON.stringify(where)})`,
+				const output = await API.Utils.try(`try:${collection}:delete(where:${JSON.stringify(where)})`,
 					API.DB.run().collection(collection)[one ? 'deleteOne' : 'delete'](where)
 				)
+				return filters.output ? API.DB[name].applyFilter(filters.output, output) : output
 			},
 
 			deleteAll: async ({ where }) => {
 				if (!where) { return undefined }
 				where = API.DB[name].sanitize(where, 'd', name)
 				if (filters.where) { 
-					where = filters.where(where)
-					where = API.DB[name].sanitize(where, 'r', name)
+					where = API.DB[name].applyFilter(filters.where, where);
+					where = API.DB[name].sanitize(where, 'd', name)
 				}
 				if (filters.deleteAll?.where) {
-					where = filters.deleteAll.where(where)
-					where = API.DB[name].sanitize(where, 'r', name)
+					where = API.DB[name].applyFilter(filters.deleteAll.where, where);
+					where = API.DB[name].sanitize(where, 'd', name)
 				}
-				return await API.Utils.try(`try:${collection}:deleteAll(where:${JSON.stringify(where)})`,
+				const output = await API.Utils.try(`try:${collection}:deleteAll(where:${JSON.stringify(where)})`,
 					API.DB.run().collection(collection).deleteMany(where)
 				)
+				return filters.output ? API.DB[name].applyFilter(filters.output, output) : output
 			},
 
 		}
