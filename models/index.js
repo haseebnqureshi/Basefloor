@@ -137,12 +137,13 @@ module.exports = (API, { models, paths, providers, project }) => {
 
 			// Helper function to safely apply filters
 			applyFilter: (filterFn, data) => {
-				if (!filterFn) return data;
+				if (!filterFn) return data
 				try {
-					return filterFn(data);
-				} catch (error) {
-					API.Log.error(`Filter error: ${error.message}`, { error });
-					return data; // Return original data if filter fails
+					return filterFn(data)
+				} 
+				catch (error) {
+					API.Log(`- model filter error: ${error.message}`, { error })
+					return data // Return original data if filter fails
 				}
 			},
 
