@@ -1,6 +1,6 @@
 {
   "name": "minapi",
-  "version": "2.2.20",
+  "version": "2.3.0",
   "main": "index.js",
   "license": "MIT",
   "scripts": {

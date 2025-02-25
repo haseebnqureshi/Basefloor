@@ -16,6 +16,17 @@ module.exports = ({ projectPath, envPath }) => {
 		minapi: __dirname,
 	}
 
+	let API = express()
+	
+	API.express = express
+	API.Utils = {}
+	API.Checks = {}
+	API.DB = {}
+	API.Auth = {}
+	API.Files = {}
+	API.Emails = {}
+	API.AI = {}
+
 	const {
 		project,
 		middlewares,
@@ -26,18 +37,7 @@ module.exports = ({ projectPath, envPath }) => {
 		providers,
 		models,
 		routes,
-	} = require(path.resolve(projectPath, 'minapi.config.js'))
-
-	let API = express()
-
-	API.express = express
-	API.Utils = {}
-	API.Checks = {}
-	API.DB = {}
-	API.Auth = {}
-	API.Files = {}
-	API.Emails = {}
-	API.AI = {}
+	} = require(path.resolve(projectPath, 'minapi.config.js'))(API)
 
 	API.Init = () => {
 		API = require('./utils')(API, { paths, providers, project })

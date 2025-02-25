@@ -119,23 +119,30 @@ One of the most powerful applications of filters is encrypting sensitive data be
 
 ```javascript
 // In minapi.config.js
-models.Users = {
-  // ... other model properties
-  filters: {
-    values: (values) => {
-      // Encrypt sensitive data before storing
-      if (values.access_token) {
-        values.access_token = API.Utils.tokenEncrypt(values.access_token);
+module.exports = (API) => {
+  return {
+    models: {
+      Users: {
+        // ... other model properties
+        filters: {
+          values: (values) => {
+            // Encrypt sensitive data before storing
+            if (values.access_token) {
+              values.access_token = API.Utils.tokenEncrypt(values.access_token);
+            }
+            return values;
+          },
+          output: (output) => {
+            // Decrypt sensitive data when reading
+            if (output && output.access_token) {
+              output.access_token = API.Utils.tokenDecrypt(output.access_token);
+            }
+            return output;
+          }
+        }
       }
-      return values;
-    },
-    output: (output) => {
-      // Decrypt sensitive data when reading
-      if (output && output.access_token) {
-        output.access_token = API.Utils.tokenDecrypt(output.access_token);
-      }
-      return output;
     }
+    // ... other configuration options
   }
 }
 ```
@@ -224,33 +231,36 @@ You can customize and extend models in your `minapi.config.js` file:
 
 ```javascript
 // minapi.config.js
-module.exports = {
-  models: {
-    // Override or extend existing models
-    Files: {
-      filters: {
-        // Add custom filters for the Files model
-        create: {
-          values: (values) => {
-            // Generate a hash for the file
-            values.hash = generateFileHash(values);
-            return values;
+module.exports = (API) => {
+  return {
+    models: {
+      // Override or extend existing models
+      Files: {
+        filters: {
+          // Add custom filters for the Files model
+          create: {
+            values: (values) => {
+              // Generate a hash for the file
+              values.hash = generateFileHash(values);
+              return values;
+            }
           }
         }
-      }
-    },
-    
-    // Define new models
-    CustomModel: {
-      collection: 'custom',
-      labels: ['Custom', 'Customs'],
-      values: {
-        // Define schema
       },
-      filters: {
-        // Define filters
+      
+      // Define new models
+      CustomModel: {
+        collection: 'custom',
+        labels: ['Custom', 'Customs'],
+        values: {
+          // Define schema
+        },
+        filters: {
+          // Define filters
+        }
       }
     }
+    // ... other configuration options
   }
 }
 ```
