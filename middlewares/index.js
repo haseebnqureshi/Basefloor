@@ -41,9 +41,6 @@ module.exports = (API, { middlewares, paths, providers, project }) => {
 
 	//middleware requiring jwt tokens (verify, auth, and reset jwt tokens)
 	API.requireAuthentication = async (req, res, next) => {
-
-		API.Log('API.DB', API.DB)
-
 		const { authorization } = req.headers
 		let { token } = req.body
 		try {
@@ -66,11 +63,18 @@ module.exports = (API, { middlewares, paths, providers, project }) => {
 				req.user = decoded.user
 			}
 
-			//now ensuring user is validated, pulling right from the db
-			//this prevents stale data gaining access and more live auth states
-			const _id = req.user._id
-			const user = await API.DB.Users.read({ _id })
-			req.user = _.omit(user, ['password_hash', '_id']) //prevent these two values from potentially mishandled
+			/*
+			Now if our authentication service is enabled on this config, we then additionally
+			pull live user data. Otherwise, we rely on what is decoded from our JWT.
+			*/
+
+			if (API.DB.Auth.enabled == true) {
+				//now ensuring user is validated, pulling right from the db
+				//this prevents stale data gaining access and more live auth states
+				const _id = req.user._id
+				const user = await API.DB.Users.read({ _id })
+				req.user = _.omit(user, ['password_hash', '_id']) //prevent these two values from potentially mishandled
+			}
 			
 			//finally proceeding
 			next()
