@@ -2,6 +2,7 @@
 const morgan = require('morgan')
 const cors = require('cors')
 const bodyParser = require('body-parser')
+const _ = require('underscore')
 
 module.exports = (API, { middlewares, paths, providers, project }) => {
 
@@ -61,13 +62,20 @@ module.exports = (API, { middlewares, paths, providers, project }) => {
 			if (decoded.sub === 'auth') {
 				req.user = decoded.user
 			}
+
+			//now ensuring user is validated, pulling right from the db
+			//this prevents stale data gaining access and more live auth states
+			const _id = req.user._id
+			const user = await API.DB.Users.read({ _id })
+			req.user = _.omit(user, ['password_hash', '_id']) //prevent these two values from potentially mishandled
+			
+			//finally proceeding
 			next()
 		}
 		catch (err) {
 			API.Utils.errorHandler({ res, err })
 		}
 	}
-
 
 	return API
 

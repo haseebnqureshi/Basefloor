@@ -10,23 +10,6 @@ module.exports = (API, { paths, providers, project }) => {
 		}) 
 	}
 
-	// API.Auth.getAfterRequireUserMiddleware = () => {
-	// 	return API.Auth.afterRequireUser || (async (req, res, next) => {
-	// 		// API.Log('_auth/index.js')
-	// 		next()
-	// 	})
-	// }
-
-	//deprecated: middleware loading user from db
-	API.Auth.requireUser = async (req, res, next) => {
-		next()
-	}
-
-	//deprecated: middleware requiring verified user
-	API.Auth.requireVerifiedUser = async (req, res, next) => {
-		next()
-	}
-
 	//registration route
 	API.post('/register', [], async (req, res) => {
 		const { email, password } = req.body
@@ -47,7 +30,7 @@ module.exports = (API, { paths, providers, project }) => {
 			//creating user
 			user = await API.DB.Users.create({ 
 				values: {
-					..._.omit(req.body, ['sms', 'password']),
+					..._.omit(req.body, ['password']),
 					password_hash: await API.Auth.hashPassword(password),
 					email_verified: false,
 				}
@@ -55,7 +38,6 @@ module.exports = (API, { paths, providers, project }) => {
 
 			res.status(200).send({
 				message: `user registered!`,
-				..._.omit(user, ['password_hash', 'password'])
 			})
 		}
 		catch (err) {
@@ -67,13 +49,17 @@ module.exports = (API, { paths, providers, project }) => {
 	API.post('/login', [], async (req, res) => {
 		const { email, password } = req.body
 		try {
-			const user = await API.DB.Users.read({ where: { email } })
+			const where = { email }
+			const user = await API.DB.Users.read({ where })
+
 			if (!user) { throw { code: 404, err: `user not found!` } }
 			const correctPassword = await API.Utils.try('Auth.login:comparePasswordWithHashed', 
 				API.Auth.comparePasswordWithHashed(password, user.password_hash)
 			)
+
 			if (!correctPassword) { throw { code: 401, err: `incorrect login information!` } }
 			const token = await API.Utils.createUserAuthToken({ user })
+			
 			API.Log({ token })
 			res.status(200).send({ token, message: `logged in!` })
 		}
@@ -88,51 +74,47 @@ module.exports = (API, { paths, providers, project }) => {
 		API.postAuthentication, 
 	], async (req, res) => {
 		try {
-			res.status(200).send(
-				_.omit(req.user, ['password_hash', '_id', 'created_at'])
-			)
+			res.status(200).send(req.user)
 		}
 		catch (err) {
 			API.Utils.errorHandler({ res, err })
 		}
 	})
 
-	if (project.checks) {
+	//update user
+	API.put('/user', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async(req, res) => {
+		try {
+			const { _id } = req.user
+			const where = { _id }
+			const values = req.body
+			await API.DB.Users.update({ where, values })
+			res.status(200).send({ message: `updated user!` })
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
 
-		API.Checks.register({
-			resource: '/register',
-			description: 'register new user',
-			method: 'POST',
-			params: ``,
-			bearerToken: ``,
-			body: `({ first_name: output.firstName, last_name: output.lastName, email: output.email, password: output.password })`,
-			output: `({ output, request }) => ({ ...output, email: request.body.email, password: request.body.password })`,
-			expectedStatusCode: 200,
-		})
+	//delete user
+	API.delete('/user', [
+		API.requireAuthentication, 
+		API.postAuthentication,
+	], async(req, res) => {
+		try {
+			const { _id } = req.user
+			const where = { _id }
+			await API.DB.Users.delete({ where })
+			res.status(200).send({ message: `deleted user!` })
+		}
+		catch (err) {
+			API.Utils.errorHandler({ res, err })
+		}
+	})
 
-		API.Checks.register({
-			resource: '/login',
-			description: 'login user',
-			method: 'POST',
-			params: ``,
-			bearerToken: ``,
-			body: `({ email: output.email, password: output.password })`,
-			output: `({ data, output }) => ({ ...output, token: data.token })`,
-			expectedStatusCode: 200,
-		})
 
-		API.Checks.register({
-			resource: '/user',
-			description: 'get user information',
-			method: 'GET',
-			params: ``,
-			bearerToken: `(output.token)`,
-			body: ``,
-			output: `({ data, output }) => ({ ...output, user: data })`,
-			expectedStatusCode: 200,
-		})
-
-	}
 
 	//request reset password verification code to email 
 	API.post('/user/reset/password', [], async (req, res) => {
@@ -181,18 +163,6 @@ module.exports = (API, { paths, providers, project }) => {
 
 	})
 
-	if (project.checks) {
-		API.Checks.register({
-			resource: '/user/reset/password',
-			description: 'emailing password reset verification code',
-			method: 'POST',
-			params: ``,
-			bearerToken: ``,
-			body: `({ email: output.email })`,
-			output: `({ data, output }) => ({ ...output, token: data.token })`,
-			expectedStatusCode: 200,
-		})
-	}
 
 	API.get('/user/reset/password/:code', [
 		API.requireAuthentication,
@@ -253,40 +223,9 @@ module.exports = (API, { paths, providers, project }) => {
 		}
 	})
 
-	if (project.checks) {
-		API.Checks.register({
-			resource: '/user/reset/password',
-			description: 'update password after clicking email link',
-			method: 'PUT',
-			params: ``,
-			bearerToken: `(output.token)`,
-			body: `({ password: output.newPassword })`,
-			output: `({ output, request }) => ({ ...output, password: request.body.password })`,
-			expectedStatusCode: 200,
-		})
 
-		API.Checks.register({
-			resource: '/login',
-			description: 'login user after changing password',
-			method: 'POST',
-			params: ``,
-			bearerToken: ``,
-			body: `({ email: output.email, password: output.newPassword })`,
-			output: `({ data, output }) => ({ ...output, token: data.token })`,
-			expectedStatusCode: 200,
-		})
 
-		API.Checks.register({
-			resource: '/user',
-			description: 'get user information after changing password',
-			method: 'GET',
-			params: ``,
-			bearerToken: `(output.token)`,
-			body: ``,
-			output: `({ data, output }) => ({ ...output, user: data })`,
-			expectedStatusCode: 200,
-		})
-	}
+
 
 	API.post('/user/verify/:method', [
 		API.requireAuthentication, 
@@ -341,18 +280,6 @@ module.exports = (API, { paths, providers, project }) => {
 		}
 	})
 
-	if (project.checks) {
-		API.Checks.register({
-			resource: '/user/verify/:method',
-			description: 'verifying email',
-			method: 'POST',
-			params: `({ method: 'email' })`,
-			bearerToken: `(output.token)`,
-			body: ``,
-			output: `({ data, output, request }) => ({ ...output, token: data.token, method: request.params.method })`,
-			expectedStatusCode: 200,
-		})		
-	}
 
 	API.get('/user/verify', [
 		API.requireAuthentication
@@ -389,18 +316,6 @@ module.exports = (API, { paths, providers, project }) => {
 		}
 	})
 
-	if (project.checks) {
-		API.Checks.register({
-			resource: '/user/verify',
-			description: 'checking email verification status',
-			method: 'GET',
-			params: ``,
-			bearerToken: `(output.token)`,
-			body: ``,
-			output: `({ output }) => ({ ...output })`,
-			expectedStatusCode: 200,
-		})
-	}
 
 	//complete verification of method
 	API.put('/user/verify', [
@@ -437,7 +352,111 @@ module.exports = (API, { paths, providers, project }) => {
 		}
 	})
 
+
+
+
 	if (project.checks) {
+
+		API.Checks.register({
+			resource: '/register',
+			description: 'register new user',
+			method: 'POST',
+			params: ``,
+			bearerToken: ``,
+			body: `({ first_name: output.firstName, last_name: output.lastName, email: output.email, password: output.password })`,
+			output: `({ output, request }) => ({ ...output, email: request.body.email, password: request.body.password })`,
+			expectedStatusCode: 200,
+		})
+
+		API.Checks.register({
+			resource: '/login',
+			description: 'login user',
+			method: 'POST',
+			params: ``,
+			bearerToken: ``,
+			body: `({ email: output.email, password: output.password })`,
+			output: `({ data, output }) => ({ ...output, token: data.token })`,
+			expectedStatusCode: 200,
+		})
+
+		API.Checks.register({
+			resource: '/user',
+			description: 'get user information',
+			method: 'GET',
+			params: ``,
+			bearerToken: `(output.token)`,
+			body: ``,
+			output: `({ data, output }) => ({ ...output, user: data })`,
+			expectedStatusCode: 200,
+		})
+
+
+		API.Checks.register({
+			resource: '/user/reset/password',
+			description: 'emailing password reset verification code',
+			method: 'POST',
+			params: ``,
+			bearerToken: ``,
+			body: `({ email: output.email })`,
+			output: `({ data, output }) => ({ ...output, token: data.token })`,
+			expectedStatusCode: 200,
+		})
+
+		API.Checks.register({
+			resource: '/user/reset/password',
+			description: 'update password after clicking email link',
+			method: 'PUT',
+			params: ``,
+			bearerToken: `(output.token)`,
+			body: `({ password: output.newPassword })`,
+			output: `({ output, request }) => ({ ...output, password: request.body.password })`,
+			expectedStatusCode: 200,
+		})
+
+		API.Checks.register({
+			resource: '/login',
+			description: 'login user after changing password',
+			method: 'POST',
+			params: ``,
+			bearerToken: ``,
+			body: `({ email: output.email, password: output.newPassword })`,
+			output: `({ data, output }) => ({ ...output, token: data.token })`,
+			expectedStatusCode: 200,
+		})
+
+		API.Checks.register({
+			resource: '/user',
+			description: 'get user information after changing password',
+			method: 'GET',
+			params: ``,
+			bearerToken: `(output.token)`,
+			body: ``,
+			output: `({ data, output }) => ({ ...output, user: data })`,
+			expectedStatusCode: 200,
+		})
+
+		API.Checks.register({
+			resource: '/user/verify/:method',
+			description: 'verifying email',
+			method: 'POST',
+			params: `({ method: 'email' })`,
+			bearerToken: `(output.token)`,
+			body: ``,
+			output: `({ data, output, request }) => ({ ...output, token: data.token, method: request.params.method })`,
+			expectedStatusCode: 200,
+		})	
+
+		API.Checks.register({
+			resource: '/user/verify',
+			description: 'checking email verification status',
+			method: 'GET',
+			params: ``,
+			bearerToken: `(output.token)`,
+			body: ``,
+			output: `({ output }) => ({ ...output })`,
+			expectedStatusCode: 200,
+		})
+
 		API.Checks.register({
 			resource: '/user/verify',
 			description: 'completing email verification',
@@ -460,26 +479,6 @@ module.exports = (API, { paths, providers, project }) => {
 			expectedStatusCode: 200,
 		})
 	}
-
-	//update user
-	API.put('/user', [
-		API.requireAuthentication, 
-		API.postAuthentication,
-	], async(req, res) => {
-		const { _id } = req.user
-		const values = { 
-			...API.DB.Users.sanitize(req.body, 'u'), 
-			updated_at: new Date().toISOString()
-		}
-		try {
-			const where = { _id }
-			await API.DB.Users.update({ where, values })
-			res.status(200).send({ message: `updated user!` })
-		}
-		catch (err) {
-			API.Utils.errorHandler({ res, err })
-		}
-	})
 
 	return API
 
