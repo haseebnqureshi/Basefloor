@@ -41,6 +41,9 @@ module.exports = (API, { middlewares, paths, providers, project }) => {
 
 	//middleware requiring jwt tokens (verify, auth, and reset jwt tokens)
 	API.requireAuthentication = async (req, res, next) => {
+
+		API.Log('API.DB', API.DB)
+
 		const { authorization } = req.headers
 		let { token } = req.body
 		try {

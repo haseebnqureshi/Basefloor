@@ -49,14 +49,14 @@ module.exports = ({ projectPath, envPath }) => {
 		API = require('./db')(API, { db, paths, providers, project })
 		API = require('./models')(API, { models, paths, providers, project })
 
+		//middlewares, since these may be required by internal components -- but need DB access
+		API = require('./middlewares')(API, { middlewares, paths, providers, project }) //loads json middleware
+
 		//our critical services that may be required by middlewares/routes
 		API = require('./auth')(API, { paths, providers, project })
 		API = require('./files')(API, { files, paths, providers, project })
 		API = require('./emails')(API, { emails, paths, providers, project })
 		API = require('./ai')(API, { ai, paths, providers, project })
-
-		//finally middlewares
-		API = require('./middlewares')(API, { middlewares, paths, providers, project }) //loads json middleware
 		
 		//and routes
 		API = require('./routes')(API, { routes: routes(), paths, providers, project })
