@@ -14,10 +14,15 @@ module.exports = (API, { paths, providers, project }) => {
 
 	//registration route
 	API.post('/register', [], async (req, res) => {
-		const { email, password } = req.body
 		try {
+			let values = req.body
+			API.Log('POST /register values', values)
+			const { email, password } = values
+
 			//checking if user email already registered
-			let user = await API.DB.Users.read({ where: { email } })
+			const where = { email }
+			API.Log('POST /register where', where)
+			let user = await API.DB.Users.read({ where })
 			if (user) { 
 				throw { code: 400, err: `${email} is already registered!` }
 			}
@@ -30,14 +35,17 @@ module.exports = (API, { paths, providers, project }) => {
 			// if (user) { throw `${validSMS.normalized} is already registered!` }
 
 			//creating user
-			user = await API.DB.Users.create({ 
-				values: {
-					..._.omit(req.body, ['password']),
-					password_hash: await API.Auth.hashPassword(password),
-					email_verified: false,
-				}
-			})
+			const password_hash = await API.Auth.hashPassword(password)
+			const email_verified = false
+			delete values.password
+			values = {
+				...values,
+				password_hash,
+				email_verified,
+			}
+			API.Log('POST /register values', values)
 
+			user = await API.DB.Users.create({ values })
 			res.status(200).send({
 				message: `user registered!`,
 			})
