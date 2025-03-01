@@ -40,18 +40,26 @@ module.exports = ({ projectPath, envPath }) => {
 	} = require(path.resolve(projectPath, 'minapi.config.js'))(API)
 
 	API.Init = () => {
+		
+		//low level helpers first
 		API = require('./utils')(API, { paths, providers, project })
 		API = require('./checks')(API, { paths, providers, project }) //before, so other features can load checks into the checker
-		API = require('./middlewares')(API, { middlewares, paths, providers, project }) //must be the first thing, loads json middleware
 		
+		//then database handling and models
 		API = require('./db')(API, { db, paths, providers, project })
 		API = require('./models')(API, { models, paths, providers, project })
+
+		//our critical services that may be required by middlewares/routes
 		API = require('./auth')(API, { paths, providers, project })
 		API = require('./files')(API, { files, paths, providers, project })
-
-		API = require('./routes')(API, { routes: routes(), paths, providers, project })
 		API = require('./emails')(API, { emails, paths, providers, project })
 		API = require('./ai')(API, { ai, paths, providers, project })
+
+		//finally middlewares
+		API = require('./middlewares')(API, { middlewares, paths, providers, project }) //loads json middleware
+		
+		//and routes
+		API = require('./routes')(API, { routes: routes(), paths, providers, project })
 
 		if (project.checks) {
 			API.Checks.enable()
