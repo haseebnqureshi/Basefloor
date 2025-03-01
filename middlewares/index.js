@@ -68,7 +68,7 @@ module.exports = (API, { middlewares, paths, providers, project }) => {
 			pull live user data. Otherwise, we rely on what is decoded from our JWT.
 			*/
 
-			if (API.DB.Auth.enabled == true) {
+			if (API.Auth.enabled == true) {
 				//now ensuring user is validated, pulling right from the db
 				//this prevents stale data gaining access and more live auth states
 				const _id = req.user._id
