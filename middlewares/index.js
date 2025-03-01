@@ -72,7 +72,9 @@ module.exports = (API, { middlewares, paths, providers, project }) => {
 				//now ensuring user is validated, pulling right from the db
 				//this prevents stale data gaining access and more live auth states
 				const _id = req.user._id
-				const user = await API.DB.Users.read({ _id })
+				const where = { _id }
+				const user = await API.DB.Users.read({ where })
+				if (!user) { throw { code: 401, err: `malformed, expired, or invalid token!` } }
 				req.user = _.omit(user, ['password_hash', '_id']) //prevent these two values from potentially mishandled
 			}
 			
