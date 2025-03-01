@@ -31,12 +31,13 @@ module.exports = ({ projectPath, envPath }) => {
 		project,
 		middlewares,
 		db,
-		files,
-		emails,
-		ai,
 		providers,
 		models,
 		routes,
+		auth,
+		files,
+		emails,
+		ai,
 	} = require(path.resolve(projectPath, 'minapi.config.js'))(API)
 
 	API.Init = () => {
@@ -53,11 +54,22 @@ module.exports = ({ projectPath, envPath }) => {
 		API = require('./middlewares')(API, { middlewares, paths, providers, project }) //loads json middleware
 
 		//our critical services that may be required by middlewares/routes
-		API = require('./auth')(API, { paths, providers, project })
-		API = require('./files')(API, { files, paths, providers, project })
-		API = require('./emails')(API, { emails, paths, providers, project })
-		API = require('./ai')(API, { ai, paths, providers, project })
-		
+		if (auth && auth.enabled == true) {
+			API = require('./auth')(API, { auth, paths, providers, project })
+		}
+
+		if (files && files?.enabled == true) {
+			API = require('./files')(API, { files, paths, providers, project })
+		}
+
+		if (emails && emails?.enabled == true) {
+			API = require('./emails')(API, { emails, paths, providers, project })
+		}
+
+		if (ai && ai?.enabled == true) {
+			API = require('./ai')(API, { ai, paths, providers, project })
+		}
+
 		//and routes
 		API = require('./routes')(API, { routes: routes(), paths, providers, project })
 

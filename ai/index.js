@@ -2,9 +2,7 @@ const loadProvider = require('../providers/loader');
 
 module.exports = (API, { ai, paths, providers, checks }) => {
 
-  const { enabled } = ai
-
-  if (!enabled) { return API }
+  API.AI.enabled = true
 
   if (ai.provider) {
     try {

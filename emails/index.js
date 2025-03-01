@@ -1,9 +1,8 @@
 const loadProvider = require('../providers/loader');
 
 module.exports = (API, { emails, paths, providers, checks }) => {
-	const { enabled } = emails
 
-	if (!enabled) { return API }
+	API.Emails.enabled = true
 
 	if (emails.provider) {
 		try {

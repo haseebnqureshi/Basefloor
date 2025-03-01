@@ -3,6 +3,8 @@ const _ = require('underscore')
 
 module.exports = (API, { paths, providers, project }) => {
 
+	API.Auth.enabled = true
+
 	API.Auth = { 
 		...API.Auth, 
 		...require('./utils')({ 
