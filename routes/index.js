@@ -138,13 +138,20 @@ module.exports = (API, { routes, paths, providers, project }) => {
 				const { http, db } = methods[m]
 				const r = router[m]
 
-				// Extract models referenced in permission rules
+				// Extract models referenced in permission rules and filter rules
 				const allowJSON = JSON.stringify(r.allow || '')
+				const filterJSON = JSON.stringify(r.filter || '')
 				const pattern = RegExp(/\@([a-z0-9\_]+)\./gi)
-				const matches = allowJSON.match(pattern) || []
-				const modelsInAllow = _.unique(matches).map(v => v.substr(1, v.length-2))
+				const allowMatches = allowJSON.match(pattern) || []
+				const filterMatches = filterJSON.match(pattern) || []
+				const modelsInAllow = _.unique(allowMatches).map(v => v.substr(1, v.length-2))
+				const modelsInFilter = _.unique(filterMatches).map(v => v.substr(1, v.length-2))
+				const allReferencedModels = _.unique([...modelsInAllow, ...modelsInFilter])
 				// API.Log('- allowJSON', allowJSON)
 				// API.Log('- modelsInAllow', modelsInAllow)
+				// API.Log('- filterJSON', filterJSON)
+				// API.Log('- modelsInFilter', modelsInFilter)
+				// API.Log('- allReferencedModels', allReferencedModels)
 
 				// Collect all parameters from current and parent routes
 				let allParams = {
@@ -320,6 +327,98 @@ module.exports = (API, { routes, paths, providers, project }) => {
 					return result
 				}
 
+				/**
+				 * Process filter rules in the format:
+				 * - Simple: '@Course.professor=@req_user._id'
+				 * Returns: object with filter conditions
+				 */
+				const processFilterString = async (str, req) => {
+					API.Log(`Processing filter rule: "${str}"`)
+					
+					// Parse operator (=, =in=, etc.)
+					let operatorPattern = RegExp(/[^\=]+(\=[in]*\=?)/)
+					let operator = str.match(operatorPattern)[1]
+
+					// Only 2 parts given the matching constructs above
+					let parts = str.split(operator)
+					API.Log(`Filter parts: [${parts.join(', ')}], operator: "${operator}"`)
+
+					parts = parts.map(part => {
+						let partPattern = RegExp(/\@([a-z0-9\_]+)\.([a-z0-9\_]+)$/i)
+						let partMatches = part.match(partPattern)
+						return {
+							str: !partMatches ? part : null,
+							model: partMatches? partMatches[1] : null,
+							field: partMatches? partMatches[2] : null,
+						}
+					})
+					API.Log(`Filter parts (deconstructed):`, parts)
+
+					// Extract the model field to filter on and the value to filter with
+					const [filterField, filterValue] = parts;
+					let fieldToFilter, valueToFilterWith;
+
+					// Process the field part (left side of the filter expression)
+					if (filterField.model && filterField.field) {
+						if (filterField.model === router.model) {
+							fieldToFilter = filterField.field;
+						} else {
+							API.Log(`Filter field model ${filterField.model} doesn't match route model ${router.model}`);
+							return null;
+						}
+					}
+
+					// Process the value part (right side of the filter expression)
+					if (filterValue.str) {
+						valueToFilterWith = filterValue.str;
+					} else if (filterValue.model === 'req_user' && req.user && req.user[filterValue.field] !== undefined) {
+						valueToFilterWith = req.user[filterValue.field];
+					} else if (modelData[filterValue.model] && modelData[filterValue.model][filterValue.field] !== undefined) {
+						valueToFilterWith = modelData[filterValue.model][filterValue.field];
+					} else {
+						API.Log(`Could not resolve filter value for @${filterValue.model}.${filterValue.field}`);
+						return null;
+					}
+
+					// Handle ObjectId conversions if needed
+					if (API.DB.mongodb.ObjectId.isValid(valueToFilterWith)) {
+						valueToFilterWith = String(valueToFilterWith);
+						API.Log(`Converted ObjectId to string for filter: ${valueToFilterWith}`);
+					}
+
+					// Return the filter condition
+					let filterCondition = {};
+					filterCondition[fieldToFilter] = valueToFilterWith;
+					API.Log(`Generated filter condition:`, filterCondition);
+					return filterCondition;
+				}
+
+				/**
+				 * Process all filter rules and combine them
+				 */
+				const processFilterRules = async (filter, req) => {
+					if (!filter) return {};
+					
+					let filterConditions = {};
+					
+					if (_.isString(filter)) {
+						const condition = await processFilterString(filter, req);
+						if (condition) {
+							filterConditions = { ...filterConditions, ...condition };
+						}
+					} else if (Array.isArray(filter)) {
+						for (const item of filter) {
+							const condition = await processFilterString(item, req);
+							if (condition) {
+								filterConditions = { ...filterConditions, ...condition };
+							}
+						}
+					}
+					
+					API.Log(`Final filter conditions:`, filterConditions);
+					return filterConditions;
+				}
+
 				API.Log(`- registering endpoint ${http} ${r.url}`)
 
 				// Add permission middleware
@@ -330,9 +429,8 @@ module.exports = (API, { routes, paths, providers, project }) => {
 						try {
 							if (!r.allow) { return next() }
 
-							// Load data for all models referenced in permission rules
+							// Load data for all models referenced in permission rules and filter rules
 							for (let routeParam in allParams) {
-
 								//we're only loading models that are referenced in the url path (including the user object)
 								let { model, key } = allParams[routeParam]
 
@@ -346,9 +444,9 @@ module.exports = (API, { routes, paths, providers, project }) => {
 								API.Log({ modelData, model, where, 'modelData[model]':modelData[model] })
 							}
 
-							API.Log('modelsInAllow', modelsInAllow)
+							API.Log('allReferencedModels', allReferencedModels)
 
-							if (req.user && modelsInAllow.indexOf('req_user') > -1) {
+							if (req.user && (allReferencedModels.indexOf('req_user') > -1)) {
 								modelData['req_user'] = req.user
 								API.Log(`modelData['req_user']`, modelData['req_user'])
 							}
@@ -461,6 +559,19 @@ module.exports = (API, { routes, paths, providers, project }) => {
 						//ensuring values are provided.
 						else if (values) {
 							whereAndValues.values = values 
+						}
+
+						// Process filter rules if they exist
+						if (r.filter) {
+							const filterConditions = await processFilterRules(r.filter, req);
+							
+							// Apply filter conditions to the where clause
+							if (Object.keys(filterConditions).length > 0) {
+								whereAndValues.where = {
+									...whereAndValues.where || {},
+									...filterConditions
+								};
+							}
 						}
 
 						API.Log('router.model', router.model)
