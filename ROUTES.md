@@ -49,7 +49,7 @@ Permissions can be defined using a flexible syntax:
   allow: {
     and: [
       "@user.role=admin",
-      "@organization.ownerId=@user._id"
+      "@organization.ownerId=@req_user._id"
     ]
   }
 }
@@ -59,13 +59,29 @@ Supports:
 - Simple equality checks (`=`)
 - Array membership (`=in=`)
 - AND/OR logic
-- Reference to authenticated user (`@_user`)
+- Reference to authenticated user (`@req_user`)
 - Reference to parent resources
 
 ### 4. Database Integration
 - Automatic mapping of HTTP methods to database operations
 - Built-in parameter extraction and validation
 - Consistent error handling and status codes
+
+### 5. Request Body References
+In request bodies, you can reference the authenticated user's properties using the `@req_user.{field_name}` syntax:
+
+```js
+{
+  "title": "My Document",
+  "owner_id": "@req_user._id",
+  "created_by": "@req_user.email"
+}
+```
+
+This automatically injects the authenticated user's field values into your request, providing several benefits:
+- Makes it easier to associate resources with the current user without having to manually include user information in every request
+- Enhances security by allowing user data to be passed safely via the Authorization token, rather than as plain objects in the request body
+- Prevents client-side tampering with user identity, as the user data is retrieved from the server's authenticated session
 
 ## HTTP Method Mapping
 
@@ -81,8 +97,18 @@ Supports:
 
 - 200: Successful operation
 - 404: Resource not found
-- 422: Authorization failed
+- 403: Authorization failed
 - 500: Server error
+
+## Route Parameters
+- Parameters are automatically extracted from URL paths
+- Foreign key relationships are handled automatically
+- Parameters can be referenced in permission rules
+
+## User Authentication Integration
+- `@req_user` object is available in permission rules
+- User properties can be injected into database queries
+- User authentication is required for all protected routes
 
 ## Health Check
 A default health check endpoint is available at `/` that returns:

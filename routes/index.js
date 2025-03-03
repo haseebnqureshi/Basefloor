@@ -140,15 +140,19 @@ module.exports = (API, { routes, paths, providers, project }) => {
 
 				// Extract models referenced in permission rules
 				const allowJSON = JSON.stringify(r.allow || '')
-				const pattern = RegExp(/\@([a-z0-9\_]+)\./g)
+				const pattern = RegExp(/\@([a-z0-9\_]+)\./gi)
 				const matches = allowJSON.match(pattern) || []
 				const modelsInAllow = _.unique(matches).map(v => v.substr(1, v.length-2))
+				// API.Log('- allowJSON', allowJSON)
+				// API.Log('- modelsInAllow', modelsInAllow)
 
 				// Collect all parameters from current and parent routes
 				let allParams = {
 					...router.parentsParams || {},
 					...r.params || {},                        
 				}
+
+				// API.Log('- allParams', allParams)
 				let keys = {}
 				let modelData = {}
 
@@ -156,78 +160,139 @@ module.exports = (API, { routes, paths, providers, project }) => {
 				 * Process permission rules in the format:
 				 * - Simple: '@user.url=123'
 				 * - Array membership: 'admin=in=@user.roles'
+				 * - Model-to-user comparison: '@course.professor=@req_user._id'
 				 * Returns: boolean indicating if permission is granted
 				 */
-				const processAllowString = str => {
+				const processAllowString = async str => {
+					API.Log(`Processing permission rule: "${str}"`)
 					let values = []
 
 					// Parse operator (=, =in=, etc.)
 					let operatorPattern = RegExp(/[^\=]+(\=[in]*\=?)/)
 					let operator = str.match(operatorPattern)[1]
+
+					// Only 2 parts given the matching constructs above
 					let parts = str.split(operator)
-					
-					// Process each part of the comparison
-					for (let i in parts) {
-						let part = parts[i]
-						let partPattern = RegExp(/\@(req)*[\.]*([a-z0-9\_]+)\.([a-z0-9\_]+)$/)
+					API.Log(`Permission parts: [${parts.join(', ')}], operator: "${operator}"`)
+
+					parts = parts.map(part => {
+						let partPattern = RegExp(/\@([a-z0-9\_]+)\.([a-z0-9\_]+)$/i)
 						let partMatches = part.match(partPattern)
-						if (!partMatches) {
-							values[i] = part
-						} else {
+						return {
+							str: !partMatches ? part : null,
+							model: partMatches? partMatches[1] : null,
+							field: partMatches? partMatches[2] : null,
+						}
+					})
+					API.Log(`Permission parts (deconstructed):`, parts)
 
-							// Extract collection and field from @collection.field format
-							// (or @req.user.role, for i.e. format)
-							let field = partMatches[3] || partMatches[2]
-							let collection = partMatches[3] ? `${partMatches[1]}.${partMatches[2]}` : partMatches[1]
-							// let value = partMatches[3] ? `${collection}.${field}` : modelData[collection][field]
-							let value = modelData[collection][field]
-							API.Log({ value, collection, field })
+					const postValue = (value, i) => {
 
-							// Handle ObjectId comparisons
-							if (API.DB.mongodb.ObjectId.isValid(value)) {
-								value = String(value)
-							}
-							if (Array.isArray(value)) {
-								value = value.map(item => {
-									if (API.DB.mongodb.ObjectId.isValid(item)) {
-										return String(item)
-									} else {
-										return item
-									}
-								})
-							}
+						// Handle ObjectId comparisons
+						if (API.DB.mongodb.ObjectId.isValid(value)) {
+							value = String(value)
+							API.Log(`Converted ObjectId to string: ${value}`)
+						}
+						if (Array.isArray(value)) {
+							API.Log(`Processing array value with ${value.length} items`)
+							value = value.map(item => {
+								if (API.DB.mongodb.ObjectId.isValid(item)) {
+									API.Log(`Converting array item from ObjectId to string: ${item}`)
+									return String(item)
+								} else {
+									return item
+								}
+							})
+						}
 
-							values[i] = value
-							if (value === null || value === undefined) {
-								API.Log(`-- @${collection}.${field} didn't exist in db!`)
-								return null
-							}
+						values[i] = value
+						API.Log(`Final processed value:`, values[i])
+						// if (value === null || value === undefined) {
+						// 	API.Log(`-- @${model}.${field} didn't exist in db!`)
+						// 	return null
+						// }
+					}
+
+					// Collect value methods that can be invoked to obtain the value to test truthiness
+					for (let i in parts) {
+						const part = parts[i]
+						const { model, field, str } = part
+
+						if (str) {
+							postValue(str, i)
+						}
+
+						// If the @model.field is already in our modelData, easily set the value 
+						else if (modelData[model] && modelData[model][field] !== undefined) {
+							API.Log(`Found value in modelData[${model}][${field}]`)
+							postValue(modelData[model][field], i)
+						} 
+
+						// Next easiest thing, determining if we're accessing our authenticated user data
+						else if (model === 'req_user' && req.user && req.user[field] !== undefined) {
+							API.Log(`Found value in req.user[${field}]`)
+							// Direct access to req.user for cases like @req_user._id
+							postValue(req.user[field], i)
+						} 
+
+						// Lastly, showing we hadn't found anything
+						else {
+							API.Log(`-- @${model}.${field} didn't exist in modelData or req.user...`)
+							postValue(null, i)
 						}
 					}
 
-					// Evaluate the comparison based on operator
-					switch (operator) {
-						case '=':
-							return values[0] == values[1]
-						case '=in=':
-							if (!Array.isArray(values[1])) { return false }
-							return values[1].indexOf(values[0]) > -1
+					for (let i in parts) {
+						const part = parts[i]
+						const { model, field, str } = part
+
+						// Need to perform costly DB reads looking in modelsInAllow
+						if (modelsInAllow.indexOf(model) > -1 && model !== 'req_user') {
+							API.Log(`-- @${model} found in modelsInAllow (permissions)...`)
+							let where = {}
+							where[field] = values[1-i]
+							API.Log(`-- Attempting to find @${model}.${field} = ${where[field]}`)
+							const row = await API.DB[model].read({ where })
+							const v = row ? row[field] : null
+							API.Log(`-- Found value "${v}" for @${model}.${field} = ${where[field]}`)
+							postValue(v, i)
+						}
+
 					}
 
-					return false
+					// Evaluate the comparison based on operator
+					let result = false
+					switch (operator) {
+						case '=':
+							result = values[0] == values[1]
+							API.Log(`Equality check: ${values[0]} == ${values[1]} => ${result}`)
+							break
+						case '=in=':
+							if (!Array.isArray(values[1])) { 
+								API.Log(`Array membership check failed: second value is not an array`)
+								result = false 
+							} else {
+								result = values[1].indexOf(values[0]) > -1
+								API.Log(`Array membership check: ${values[0]} in [${values[1]}] => ${result}`)
+							}
+							break
+					}
+
+					API.Log(`Permission rule "${str}" evaluation result: ${result}`)
+					return result
 				}
 
 				/**
 				 * Recursively process permission rules
 				 * Handles complex AND/OR logic in permission rules
 				 */
-				const traverseAllowCommands = (allow, comparison) => {
+				const traverseAllowCommands = async (allow, comparison) => {
 					let result
 					if (_.isString(allow)) {
-						result = processAllowString(allow)
+						result = await processAllowString(allow)
 					}
 					else if (Array.isArray(allow)) {
-						arrResult = allow.map(item => traverseAllowCommands(item))
+						arrResult = allow.map(async item => await traverseAllowCommands(item))
 						switch (comparison) {
 							case 'and':
 								result = true
@@ -246,10 +311,10 @@ module.exports = (API, { routes, paths, providers, project }) => {
 					}
 					else if (_.isObject(allow)) {
 						if (allow.and) {
-							result = traverseAllowCommands(allow.and, 'and')
+							result = await traverseAllowCommands(allow.and, 'and')
 						} 
 						else if (allow.or) {
-							result = traverseAllowCommands(allow.or, 'or')
+							result = await traverseAllowCommands(allow.or, 'or')
 						}
 					}
 					return result
@@ -270,7 +335,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 
 								//we're only loading models that are referenced in the url path (including the user object)
 								let { model, key } = allParams[routeParam]
-								
+
 								//creating a where object to locate the correct data
 								let where = {}
 								where[key] = req.params[routeParam] || null
@@ -278,20 +343,18 @@ module.exports = (API, { routes, paths, providers, project }) => {
 								//pulling data from each route w/ params
 								modelData[model] = await API.DB[model].read({ where })
 
-								// API.Log({ modelData, model, where, 'modelData[model]':modelData[model] })
+								API.Log({ modelData, model, where, 'modelData[model]':modelData[model] })
 							}
 
-							// API.Log({ allParams, 'r.url':r.url })
-							// API.Log({ modelData, allowJSON, modelsInAllow, modelDataJSON: JSON.stringify(modelData) })
-							
-							// Load authenticated user data if needed
-							// if (modelsInAllow.indexOf('req.user') > -1) {
-								// API.Log('req.user found in modelsInAllow', modelsInAllow)
-							modelData['req.user'] = req.user
-							API.Log(`modelData['req.user']`, modelData['req.user'])
-							// }
+							API.Log('modelsInAllow', modelsInAllow)
 
-							const isAuthorized = traverseAllowCommands(r.allow)
+							if (req.user && modelsInAllow.indexOf('req_user') > -1) {
+								modelData['req_user'] = req.user
+								API.Log(`modelData['req_user']`, modelData['req_user'])
+							}
+
+							const isAuthorized = await traverseAllowCommands(r.allow)
+
 							API.Log({ isAuthorized })
 
 							if (!isAuthorized) { 
@@ -311,12 +374,13 @@ module.exports = (API, { routes, paths, providers, project }) => {
 
 						const injectReqUser = (obj, reqUser) => {
 							//Then iterate through and see if there are any auth'd user strings
-							//that we would use the req.user object...
+							//that we would use the req.user object... requiring the string
+							//to access via @req_user
 							for (let key in obj) {
 								const value = obj[key]
 								if (value) {
 									if (value.match) {
-										const matches = value.match(/^req\.user\.([a-z0-9\_]+)$/i)
+										const matches = value.match(/^req\_user\.([a-z0-9\_]+)$/i)
 										if (matches) {
 											if (matches[1]) {
 												const userKey = matches[1]
@@ -348,7 +412,6 @@ module.exports = (API, { routes, paths, providers, project }) => {
 
 							allParams[param] = { model: router.model, key: param }
 						}
-
 
 						//Then iterate through and see if there are any auth'd user strings
 						//that we would use the req.user object...
