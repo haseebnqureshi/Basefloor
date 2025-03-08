@@ -478,7 +478,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 								const value = obj[key]
 								if (value) {
 									if (value.match) {
-										const matches = value.match(/^req\_user\.([a-z0-9\_]+)$/i)
+										const matches = value.match(/^\@req\_user\.([a-z0-9\_]+)$/i)
 										if (matches) {
 											if (matches[1]) {
 												const userKey = matches[1]

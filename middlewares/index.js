@@ -1,4 +1,3 @@
-
 const morgan = require('morgan')
 const cors = require('cors')
 const bodyParser = require('body-parser')
@@ -75,7 +74,7 @@ module.exports = (API, { middlewares, paths, providers, project }) => {
 				const where = { _id }
 				const user = await API.DB.Users.read({ where })
 				if (!user) { throw { code: 401, err: `malformed, expired, or invalid token!` } }
-				req.user = _.omit(user, ['password_hash', '_id']) //prevent these two values from potentially mishandled
+				req.user = _.omit(user, ['password_hash']) // Keep _id for @req_user._id references
 			}
 			
 			//finally proceeding
