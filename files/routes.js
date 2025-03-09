@@ -78,7 +78,7 @@ module.exports = (API, { paths, project }) => {
 			//get important baseline information
 			const { extension, key } = req.file
 			const inPath = await API.Files.downloadFile({ key })
-			const outPath = API.Files.getTempFilepath(`${key}-converted`)
+			const outPath = API.Files.ensureTempFilepath(`${key}-converted`)
 
 			//auto selecting our "to" if not present
 			const to = req.params.to ? `.${req.params.to}` : API.Files.autoDetectConvertTo({ extension })
