@@ -1,5 +1,3 @@
-
-
 module.exports = (API, { paths, project }) => {
 
 	API.get('/:_id?', [
@@ -105,7 +103,7 @@ module.exports = (API, { paths, project }) => {
 					outPath: conversion.outPath,
 				})
 
-				const parentId = i === 0 ? req.file._id : conversion.files[i-1]._id
+				const parentId = i === 0 ? req.file._id : all[i-1].files[0]._id
 				const parentName = req.file.name
 				const user_id = req.user._id
 
@@ -126,7 +124,7 @@ module.exports = (API, { paths, project }) => {
 			}
 
 			//then we save our file(s)
-			const values = all[i].map(v => v.files).flat()
+			const values = all.map(v => v.files).flat()
 			API.Log('POST /:_id/convert/:to? values', values)
 			const created = await API.DB.Files.createMany({ values })
 			const insertedIds = Object.values(created.insertedIds)
