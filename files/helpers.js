@@ -140,8 +140,8 @@ module.exports = ({ API, paths, project }) => {
 
     extension = extension || getFileExtension(name)
     const filename = `${hash}${extension}`
-    const url = Remote.CDN_URL + `/${filename}`
     const key = prefix ? `${prefix}/${filename}` : filename
+    const url = Remote.CDN_URL + `/${key}`
 
     const values = {
       hash,
