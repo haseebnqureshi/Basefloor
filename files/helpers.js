@@ -79,17 +79,20 @@ module.exports = ({ API, paths, project }) => {
     '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
   }
 
-  const ensureTempFilepath = name => {
-    // Create a unique filepath in the temp directory
-    const filepath = path.join(TMP_DIR, `${new Date().toISOString()}-${name}`)
+  const getTempFilepath = name => {
     
+    // Convert any path-like name to a flat filename by replacing path separators
+    const flatName = name.replace(/[\/\\]/g, '-');
+    const filepath = path.join(TMP_DIR, `${new Date().toISOString()}-${flatName}`);
+
     // Ensure the directory exists
     const directory = path.dirname(filepath)
     if (!fs.existsSync(directory)) {
       fs.mkdirSync(directory, { recursive: true })
     }
     
-    return filepath
+    // Create a unique filepath in the temp directory with a flat structure
+    return path.join(TMP_DIR, `${new Date().toISOString()}-${flatName}`);
   }
 
   const getFileSize = (filepath) => {
@@ -203,7 +206,7 @@ module.exports = ({ API, paths, project }) => {
   const downloadFile = async ({ key }) => {
 
     //downloading our pdf to local storage
-    const filepath = ensureTempFilepath(key)
+    const filepath = getTempFilepath(key)
     await Remote.downloadFile({
       Key: key,
       localPath: filepath,
@@ -282,7 +285,7 @@ module.exports = ({ API, paths, project }) => {
     TMP_DIR,
     FILE_CONVERTERS,
     MIME_TYPES,
-    ensureTempFilepath,
+    getTempFilepath,
     getFileExtension,
     getFileContentType,
     getFileContentTypeFrom,
