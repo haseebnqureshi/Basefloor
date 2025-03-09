@@ -173,12 +173,25 @@ module.exports = (API, { paths, project }) => {
 			try {
 
 				//parse our incoming file information using headers
-				const info = API.Utils.CollectMinapiHeaders(req.headers)
+				let info = API.Utils.CollectMinapiHeaders(req.headers)
+
+				//allowing $req_user.{field} in the header, to access the req.user object
+				if (info.prefix) {
+					const parts = info.prefix.split('.')
+					if (parts[0] == '@req_user') {
+						const key = parts[1]
+						if (req.user[key]) {
+							info.prefix = req.user[key]
+						}
+					}
+				}
+
 				req.file = API.Files.createFileValues({
 					user_id: req.user._id,
 					name: info.name,
 					size: info.size,
 					content_type: info.type,
+					prefix: info.prefix || null,
 					file_modified_at: info.modified,
 				})
 
