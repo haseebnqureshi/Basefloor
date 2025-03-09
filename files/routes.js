@@ -77,47 +77,64 @@ module.exports = (API, { paths, project }) => {
 
 			//get important baseline information
 			const { extension, key } = req.file
-			const inPath = await API.Files.downloadFile({ key })
-			const outPath = API.Files.ensureTempFilepath(`${key}-converted`)
 
-			//auto selecting our "to" if not present
-			const to = req.params.to ? `.${req.params.to}` : API.Files.autoDetectConvertTo({ extension })
-			API.Log('POST /:_id/convert/:to?', { extension, to, inPath, outPath })
+			//auto selecting our "to" if not present - to is an array of formats
+			const manyTo = req.params.to ? [`.${req.params.to}`] : API.Files.autoDetectConvertTo({ extension })
 
-			//if we're somehow missing any of this information, the file isn't supported yet
-			//return 422 unprocessable entity
-			if (!extension || !to || !inPath || !outPath) { throw 422 }
+			//conversions
+			let all = manyTo.map(to => ({ to, from:null, outPath:null, inPath:null,  }))
 
-			//then we convert our file. the resulting output may be multiple files
-			const response = await API.Files.convertFile({ 
-				inType: extension,
-				outType: to,
-				inPath,
-				outPath,
-			})
+			for (const i in all) {
+				const to = all[i].to
+				const from = i === 0 ? extension : all[i-1].to
+				const outPath = API.Files.ensureTempFilepath(`${key}-${from}-to-${to}`)
+				const inPath = i === 0 ? await API.Files.downloadFile({ key }) : all[i-1].outPath
+				all[i].from = from
+				all[i].outPath = outPath
+				all[i].inPath = inPath
+			}
 
-			//because response has an array of filepaths, we assume bulk from here on
-			let bulk = API.Files.createManyFileValues({
-				filepaths: response.outPaths,
-				extension: to,
-				parentName: req.file.name,
-				parentId: req.file._id,
-				user_id: req.user._id,
-			})	
+			for (const i in all) {
+				const conversion = all[i]
 
-			//now we upload our file(s)
-			API.Log('POST /:_id/convert/:to? bulk', bulk)
-			bulk = await API.Files.uploadFiles(bulk)
-			API.Log('POST /:_id/convert/:to? uploaded:bulk', bulk)
+				//then we convert our file. the resulting output may be multiple files
+				const response = await API.Files.convertFile({ 
+					inType: conversion.from,
+					outType: conversion.to,
+					inPath: conversion.inPath,
+					outPath: conversion.outPath,
+				})
+
+				const parentId = i === 0 ? req.file._id : conversion.files[i-1]._id
+				const parentName = req.file.name
+				const user_id = req.user._id
+
+				//because response has an array of filepaths, we assume bulk from here on
+				const manyFileValues = API.Files.createManyFileValues({
+					user_id,
+					parentId,
+					parentName,
+					filepaths: response.outPaths,
+					extension: conversion.to,
+				})
+				API.Log('POST /:_id/convert/:to? manyFileValues', manyFileValues)
+
+				//now we upload our file(s)
+				all[i].files = await API.Files.uploadFiles(manyFileValues)
+				API.Log('POST /:_id/convert/:to? uploaded:all[i].files', all[i].files)
+
+			}
 
 			//then we save our file(s)
-			const created = await API.DB.Files.createMany({ values: bulk })
+			const values = all[i].map(v => v.files).flat()
+			API.Log('POST /:_id/convert/:to? values', values)
+			const created = await API.DB.Files.createMany({ values })
 			const insertedIds = Object.values(created.insertedIds)
 			API.Log('POST /:_id/convert/:to? insertedIds', insertedIds)
 
 			//update our values with newly created _ids, and return those values
 			res.status(200).send(
-				bulk.map((v,i) => ({ 
+				values.map((v,i) => ({ 
 					...v,
 					_id: insertedIds[i]
 				}))

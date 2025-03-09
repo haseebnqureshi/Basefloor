@@ -125,11 +125,20 @@ module.exports = ({ API, paths, project }) => {
 
   const autoDetectConvertTo = ({ extension, filepath }) => {
     extension = filepath ? getFileExtension(filepath) : extension
-    for (let converter of FILE_CONVERTERS) {
-      if (converter.compatible(extension)) {
-        return converter.to
+    let tos = [extension]
+    let detecting = true
+    while (detecting) {
+      let recentExtension = tos[tos.length-1]
+      let foundOneCompatible = false
+      for (let converter of FILE_CONVERTERS) {
+        if (converter.compatible(recentExtension)) {
+          tos.push(converter.to)
+          foundOneCompatible = true
+        }
       }
+      if (!foundOneCompatible) { detecting = false }
     }
+    return tos
   }
 
   const createFileValues = ({ prefix, user_id, name, extension, size, content_type, file_modified_at, provider, bucket }) => {
