@@ -79,7 +79,7 @@ module.exports = ({ API, paths, project }) => {
     '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
   }
 
-  const getTempFilepath = name => {
+  const ensureTempFilepath = name => {
     
     // Convert any path-like name to a flat filename by replacing path separators
     const flatName = name.replace(/[\/\\]/g, '-');
@@ -90,7 +90,7 @@ module.exports = ({ API, paths, project }) => {
     if (!fs.existsSync(directory)) {
       fs.mkdirSync(directory, { recursive: true })
     }
-    
+
     // Create a unique filepath in the temp directory with a flat structure
     return path.join(TMP_DIR, `${new Date().toISOString()}-${flatName}`);
   }
