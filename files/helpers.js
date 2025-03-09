@@ -206,7 +206,7 @@ module.exports = ({ API, paths, project }) => {
   const downloadFile = async ({ key }) => {
 
     //downloading our pdf to local storage
-    const filepath = getTempFilepath(key)
+    const filepath = ensureTempFilepath(key)
     await Remote.downloadFile({
       Key: key,
       localPath: filepath,
@@ -285,7 +285,7 @@ module.exports = ({ API, paths, project }) => {
     TMP_DIR,
     FILE_CONVERTERS,
     MIME_TYPES,
-    getTempFilepath,
+    ensureTempFilepath,
     getFileExtension,
     getFileContentType,
     getFileContentTypeFrom,
