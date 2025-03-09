@@ -15,7 +15,7 @@ module.exports = ({ API, paths, project }) => {
       to: ".pdf",
       compatible: (inType) => Libreoffice.SUPPORTED_FORMATS[inType] ? true : false,
       convert: async (inPath, outPath) => await Libreoffice.convertToPdf({ inputPath: inPath }),
-      out: ({ response, inPath, outPath }) => ({ outPaths: [outPath] }) //have to return at least outPaths (plural)
+      out: ({ response, inPath, outPath }) => ({ outPaths: [response] }) //have to return at least outPaths (plural)
     },
     {
       to: ".png",
