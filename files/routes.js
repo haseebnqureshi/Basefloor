@@ -51,92 +51,94 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.get('/convert/:to?', [
+	API.get('/convert/:to?', [ //:to without "."
 		API.requireAuthentication,
 		API.postAuthentication,
 	], async (req, res) => {
 
-		//@TODO modify to include "."
-		const extension = req.params.to
-		const to = API.Files.autoDetectConvertTo({ extension })
+		const from = `.${req.params.to}`
+		const converter = API.Files.checkConverters(from)
+
 		res.status(200).send({
-			extension,
-			accepted: to ? true : false,
-			to,
+			extension: from,
+			accepted: converter ? true : false,
+			to: converter ? converter.to : null,
 		})
 	})
 
-	API.post('/:_id/convert/:to?', [
+	API.post('/:_id/convert', [
 		API.requireAuthentication,
 		API.postAuthentication,
 		API.Files.loadFileById,
 	], async (req, res) => {
+
+		const convertFile = async ({ key, from, user_id, parentId, parentName, inPath }) => {
+			try {
+				const converter = API.Files.checkConverters(from)
+				if (!converter) { return [] }
+	
+				//convert
+				const to = converter.to
+				const outPath = API.Files.ensureTempFilepath(`${key}-${from}-to-${to}`)
+				const response = await converter.convert(inPath, outPath)
+				const result = converter.out({ response, inPath, outPath })
+				const { outPaths } = result
+				if (!outPaths) { throw new Error(`Failed to convert from ${from}: no outPaths returned`) }
+	
+				//create values
+				let values = API.Files.createManyFileValues({
+					user_id,
+					parentName,
+					filepaths: outPaths,
+					extension: to,
+					parentId,
+				})
+	
+				//upload
+				values = await API.Files.uploadFiles(values)
+	
+				//save
+				const created = await API.DB.Files.createMany({ values })
+				const insertedIds = Object.values(created.insertedIds)
+				if (insertedIds.length !== values.length) { throw new Error(`Failed to saved everything that is converted from ${from}: less insertedIds than values`) }
+				
+				let files = values.map((v,i) => ({ ...v, _id: insertedIds[i] }))
+				if (files.length === 0) { return [] }
+	
+				return [
+					...files,
+					... await convertFile({ 
+						key,
+						user_id,
+						parentName,
+						from: to,
+						parentId: files[0]._id,
+						inPath: outPath
+					})
+				]
+			}
+			catch (err) {
+				throw new Error(`Failed to convert from ${from}: ${err.message}`)
+			}
+		}
+
 		try {
+
+			let files = []
 
 			//get important baseline information
 			const { extension, key } = req.file
+			const from = extension
+			const inPath = await API.Files.downloadFile({ key })
+			const parentId = req.file._id
+			const parentName = req.file.name
+			const user_id = req.user._id
 
-			//auto selecting our "to" if not present - to is an array of formats
-			const manyTo = req.params.to ? [`.${req.params.to}`] : API.Files.autoDetectConvertTo({ extension })
+			files = await convertFile({ key, from, user_id, parentId, parentName, inPath })
 
-			//conversions
-			let all = manyTo.map(to => ({ to, from:null, outPath:null, inPath:null,  }))
+			//send back our finalized values
+			res.status(200).send(files.flat())
 
-			for (const i in all) {
-				const to = all[i].to
-				const from = i === 0 ? extension : all[i-1].to
-				const outPath = API.Files.ensureTempFilepath(`${key}-${from}-to-${to}`)
-				const inPath = i === 0 ? await API.Files.downloadFile({ key }) : all[i-1].outPath
-				all[i].from = from
-				all[i].outPath = outPath
-				all[i].inPath = inPath
-			}
-
-			for (const i in all) {
-				const conversion = all[i]
-
-				//then we convert our file. the resulting output may be multiple files
-				const response = await API.Files.convertFile({ 
-					inType: conversion.from,
-					outType: conversion.to,
-					inPath: conversion.inPath,
-					outPath: conversion.outPath,
-				})
-
-				const parentId = i === 0 ? req.file._id : all[i-1].files[0]._id
-				const parentName = req.file.name
-				const user_id = req.user._id
-
-				//because response has an array of filepaths, we assume bulk from here on
-				const manyFileValues = API.Files.createManyFileValues({
-					user_id,
-					parentId,
-					parentName,
-					filepaths: response.outPaths,
-					extension: conversion.to,
-				})
-				API.Log('POST /:_id/convert/:to? manyFileValues', manyFileValues)
-
-				//now we upload our file(s)
-				all[i].files = await API.Files.uploadFiles(manyFileValues)
-				API.Log('POST /:_id/convert/:to? uploaded:all[i].files', all[i].files)
-
-			}
-
-			//then we save our file(s)
-			const values = all.map(v => v.files).flat()
-			API.Log('POST /:_id/convert/:to? values', values)
-			const created = await API.DB.Files.createMany({ values })
-			const insertedIds = Object.values(created.insertedIds)
-			API.Log('POST /:_id/convert/:to? insertedIds', insertedIds)
-
-			//update our values with newly created _ids, and return those values
-			res.status(200).send(
-				values.map((v,i) => ({ 
-					...v,
-					_id: insertedIds[i]
-				}))
-			)
 		}
 		catch (err) {
 			API.Utils.errorHandler({ res, err })
