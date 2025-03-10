@@ -183,14 +183,22 @@ async function convertPdfToImages({ pdfPath, outputDir }) {
 	await checkGhostscript()
 
 	try {
+		// Check if the PDF file exists
+		if (!fs.existsSync(pdfPath)) {
+			throw new Error(`PDF file does not exist at path: ${pdfPath}`);
+		}
 
 		//ensuring our output directory
 		if (!fs.existsSync(outputDir)) {
 			fs.mkdirSync(outputDir, { recursive: true })
 		}
 		
+		// Log the command for debugging
+		const gsCommand = `gs -dQuiet -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -sDEVICE=png16m -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r200 -dFirstPage=1 -dLastPage=999999 -sOutputFile="${outputDir}/page-%d.png" "${pdfPath}"`;
+		console.log(`Executing Ghostscript command: ${gsCommand}`);
+		
 		//pdf to images with ghostscript
-		await execPromise(`gs -dQuiet -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -sDEVICE=png16m -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r200 -dFirstPage=1 -dLastPage=999999 -sOutputFile="${outputDir}/page-%d.png" "${pdfPath}"`)
+		await execPromise(gsCommand);
 
 		//filtering and ordering images from pdf
 		const files = fs.readdirSync(outputDir)
@@ -201,6 +209,10 @@ async function convertPdfToImages({ pdfPath, outputDir }) {
 				return pageA - pageB
 			})
 			.map(f => path.join(outputDir, f))
+
+		if (imageFiles.length === 0) {
+			throw new Error(`No images were generated from PDF: ${pdfPath}`);
+		}
 
 		//now ensuring each image is optimized accordingly
 		for (const inputPath of imageFiles) {
@@ -220,10 +232,7 @@ async function convertPdfToImages({ pdfPath, outputDir }) {
 
 	} catch (error) {
 		console.error(`Failed to convert PDF to images: ${error.message}`)
-		return {
-			success: false,
-			images: [],
-		}
+		throw error; // Re-throw the error to be handled by the caller
 	}
 }
 

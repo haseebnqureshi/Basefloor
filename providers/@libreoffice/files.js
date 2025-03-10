@@ -58,14 +58,32 @@ module.exports = ({ providerVars, providerName }) => {
 		await checkLibreOffice();
 
 		try {
+			// Check if the input file exists
+			if (!fs.existsSync(inputPath)) {
+				throw new Error(`Input file does not exist at path: ${inputPath}`);
+			}
+
 			const outDir = path.dirname(inputPath);
 			const baseNamePdf = path.basename(inputPath, path.extname(inputPath)) + '.pdf';
 			const outputPath = path.join(outDir, baseNamePdf);
-			await execPromise(`libreoffice --headless --convert-to pdf --outdir "${outDir}" "${inputPath}"`);
+			
+			// Log the command for debugging
+			const libreOfficeCommand = `libreoffice --headless --convert-to pdf --outdir "${outDir}" "${inputPath}"`;
+			console.log(`Executing LibreOffice command: ${libreOfficeCommand}`);
+			
+			await execPromise(libreOfficeCommand);
+			
+			// Verify the PDF was created
+			if (!fs.existsSync(outputPath)) {
+				throw new Error(`PDF was not created at expected path: ${outputPath}`);
+			}
+			
+			console.log(`Successfully converted to PDF: ${outputPath}`);
 			return outputPath;
 		} 
 		catch (error) {
-			throw new Error(`Failed to convert document to PDF: ${error.message}`);
+			console.error(`Failed to convert document to PDF: ${error.message}`);
+			throw error; // Re-throw the error to be handled by the caller
 		}
 	}
 

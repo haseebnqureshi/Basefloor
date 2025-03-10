@@ -76,10 +76,11 @@ module.exports = (API, { paths, project }) => {
 			try {
 				const converter = API.Files.checkConverters(from)
 				if (!converter) { return [] }
+				if (converter.to === from) { return [] } //avoiding infinite loops (particularly png to png, resizing)
 	
 				//convert
 				const to = converter.to
-				const outPath = API.Files.ensureTempFilepath(`${key}-${from}-to-${to}`)
+				const outPath = API.Files.ensureTempFilepath(`${user_id}-${key}-${from}-to-${to}`)
 				const response = await converter.convert(inPath, outPath)
 				const result = converter.out({ response, inPath, outPath })
 				const { outPaths } = result
@@ -112,8 +113,9 @@ module.exports = (API, { paths, project }) => {
 						user_id,
 						parentName,
 						from: to,
-						parentId: files[0]._id,
-						inPath: outPath
+						// parentId: files[0]._id, //assuming that only the last converter could be a one to many conversion
+						parentId, //have it link to the original file. that allows us to search by content_type and extension for the original file that we want
+						inPath: outPaths[0]  //assuming that only the last converter could be a one to many conversion
 					})
 				]
 			}
