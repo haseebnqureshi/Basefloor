@@ -1,4 +1,3 @@
-
 const path = require('path')
 const express = require('express')
 const fs = require('fs')
@@ -26,6 +25,7 @@ module.exports = ({ projectPath, envPath }) => {
 	API.Files = {}
 	API.Emails = {}
 	API.AI = {}
+	API.Transcription = {}
 
 	const {
 		project,
@@ -38,6 +38,7 @@ module.exports = ({ projectPath, envPath }) => {
 		files,
 		emails,
 		ai,
+		transcription,
 	} = require(path.resolve(projectPath, 'minapi.config.js'))(API)
 
 	API.Init = () => {
@@ -68,6 +69,10 @@ module.exports = ({ projectPath, envPath }) => {
 
 		if (ai && ai?.enabled == true) {
 			API = require('./ai')(API, { ai, paths, providers, project })
+		}
+
+		if (transcription && transcription?.enabled == true) {
+			API = require('./transcription')(API, { transcription, paths, providers, project })
 		}
 
 		//and routes
