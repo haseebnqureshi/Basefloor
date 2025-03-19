@@ -41,6 +41,25 @@ module.exports = (API) => {
 };
 ```
 
+## Supported Audio Formats
+
+The Google transcription provider supports the following audio formats:
+
+| File Extension | Encoding Type | Default Sample Rate |
+|----------------|--------------|-------------|
+| .wav | LINEAR16 | 16000 Hz |
+| .flac | FLAC | 16000 Hz |
+| .mp3 | MP3 | 16000 Hz |
+| .ogg, .oga, .opus | OGG_OPUS | 16000 Hz |
+| .webm | WEBM_OPUS | 16000 Hz |
+| .m4a | MP4 | 16000 Hz |
+| .aac | AAC | 16000 Hz |
+| .amr | AMR | 8000 Hz |
+| .awb | AMR_WB | 16000 Hz |
+| .spx | SPEEX | 16000 Hz |
+
+The provider will automatically detect the format based on the file extension and use the appropriate encoding and sample rate.
+
 ## Testing
 
 To test the transcription service, you can use the included test script:
@@ -71,6 +90,8 @@ app.post('/api/transcribe', async (req, res) => {
     // Call the transcription service
     const result = await API.Transcription.Provider.transcribe({
       audio: audioFilePath,
+      // No need to specify encoding or sample rate for file paths
+      // They're automatically detected from the file extension
       languageCode: 'en-US', // Optional, defaults to 'en-US'
     });
     
@@ -89,10 +110,12 @@ The `transcribe` method accepts the following parameters:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | audio | Buffer/String | (required) | Audio buffer or file path |
-| encoding | String | 'LINEAR16' | Audio encoding format |
-| sampleRateHertz | Number | 16000 | Sample rate in hertz |
+| encoding | String | (auto-detected) | Audio encoding format (required for Buffer input) |
+| sampleRateHertz | Number | (auto-detected) | Sample rate in hertz (required for Buffer input) |
 | languageCode | String | 'en-US' | Language code |
 | enableAutomaticPunctuation | Boolean | true | Enable automatic punctuation |
 | enableWordTimeOffsets | Boolean | false | Enable word time offsets |
+
+When providing a file path, the encoding and sample rate are automatically detected based on the file extension. When providing a buffer, you must specify the encoding and sample rate explicitly.
 
 For more details on these parameters, see the [Google Speech-to-Text documentation](https://cloud.google.com/speech-to-text/docs/reference/rest/v1/RecognitionConfig). 
