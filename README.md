@@ -1,7 +1,5 @@
 # MinAPI
 
-### This README is outdated and will be updated soon.
-
 MinAPI is a comprehensive API framework built on Express and MongoDB that provides a minimum viable API setup with built-in authentication, permissions, CRUD operations, and resource management.
 
 ## Features
@@ -12,6 +10,8 @@ MinAPI is a comprehensive API framework built on Express and MongoDB that provid
 - 📨 Email Notifications (Postmark integration)
 - 🗄️ MongoDB Integration
 - 🖼️ File Management & Image Processing
+- 🎙️ Audio-to-Text Transcription
+- 🔄 File Format Conversions
 - 🔒 Security Features
 - 📱 Phone Number Validation
 - ☁️ AWS S3 Integration
@@ -28,7 +28,7 @@ yarn add minapi
 
 The following system dependencies are required:
 
-#### LibreOffice (for document processing)
+#### LibreOffice (for document processing and text-to-image conversion)
 ```bash
 # Ubuntu
 sudo apt install libreoffice
@@ -45,6 +45,13 @@ brew install ghostscript
 # Ubuntu
 sudo apt-get install ghostscript
 ```
+
+#### Google Cloud SDK (for audio transcription)
+To use the audio transcription features, you'll need Google Cloud credentials:
+
+1. Create a Google Cloud project and enable the Speech-to-Text API
+2. Create a service account with access to the Speech-to-Text API
+3. Download the service account key file (JSON)
 
 These need to be installed before running `npm install` or `yarn`.
 
@@ -67,6 +74,16 @@ module.exports = (API) => {
     },
     jwt: {
       secret: 'your-jwt-secret',
+    },
+    // For audio transcription
+    transcription: {
+      enabled: true,
+      provider: '@google/transcription',
+    },
+    providers: {
+      '@google/transcription': {
+        keyFilename: '/path/to/your-google-credentials.json',
+      },
     },
     // Add other configurations as needed
   }
@@ -253,6 +270,8 @@ allow: {
 - Image processing with Sharp
 - AWS S3 integration for file storage
 - Document processing capabilities
+- Text-to-image conversion
+- Audio transcription to text
 
 ### Notifications
 - Email notifications via Postmark
@@ -263,6 +282,46 @@ allow: {
 - CRUD operation helpers
 - Query builders
 - Data validation
+
+### File Conversion Capabilities
+
+MinAPI provides robust file conversion capabilities:
+
+| From | To | Provider |
+|------|-----|---------|
+| Documents (.doc, .docx, etc.) | PDF | LibreOffice |
+| PDF | PNG images | Sharp |
+| Images | Optimized PNG | Sharp |
+| Audio files (.mp3, .wav, etc.) | Text (.txt) | Google Transcription |
+| Text (.txt) | Image (.png) | LibreOffice |
+
+#### Converting Audio to Text
+
+With Google Cloud Speech-to-Text integration, MinAPI can transcribe audio files:
+
+```javascript
+// Example: Convert an audio file to text
+const result = await API.Files.convertFile({
+  inType: '.mp3', 
+  outType: '.txt',
+  inPath: '/path/to/audio.mp3',
+  outPath: '/output/directory'
+});
+```
+
+#### Converting Text to Images
+
+Convert plain text files to PNG images:
+
+```javascript
+// Example: Convert a text file to an image
+const result = await API.Files.convertFile({
+  inType: '.txt', 
+  outType: '.png',
+  inPath: '/path/to/text.txt',
+  outPath: '/output/directory'
+});
+```
 
 ## API Reference
 

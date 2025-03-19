@@ -7,6 +7,7 @@ const TMP_DIR = os.tmpdir()
 module.exports = ({ API, paths, project }) => {
 
   const { Sharp, Libreoffice, Remote } = API.Files
+  const { transcription: GoogleTranscription } = API.Google
 
   const IMAGE_MAX_SIZE = Sharp.MAX_FILE_SIZE
 
@@ -15,6 +16,45 @@ module.exports = ({ API, paths, project }) => {
       to: ".pdf",
       compatible: (inType) => Libreoffice.SUPPORTED_FORMATS[inType] ? true : false,
       convert: async (inPath, outPath) => await Libreoffice.convertToPdf({ inputPath: inPath }),
+      out: ({ response, inPath, outPath }) => ({ outPaths: [response] }) //have to return at least outPaths (plural)
+    },
+    {
+      to: ".txt",
+      compatible: (inType) => GoogleTranscription.SUPPORTED_FORMATS[inType] ? true : false,
+      convert: async (inPath, outPath) => {
+        // Create a unique output path for the text file if not specified
+        const txtFilePath = outPath.endsWith('.txt') 
+          ? outPath 
+          : path.join(outPath, `${path.basename(inPath, path.extname(inPath))}.txt`);
+        
+        // Transcribe the audio file
+        const result = await GoogleTranscription.transcribe({
+          audio: inPath,
+          enableAutomaticPunctuation: true
+        });
+        
+        if (!result.success) {
+          throw new Error(`Transcription failed: ${result.error}`);
+        }
+        
+        // Write the transcription to file
+        await fs.promises.writeFile(txtFilePath, result.text, 'utf8');
+        
+        return txtFilePath;
+      },
+      out: ({ response, inPath, outPath }) => ({ outPaths: [response] }) //have to return at least outPaths (plural)
+    },
+    {
+      to: ".png",
+      compatible: (inType) => inType === ".txt",
+      convert: async (inPath, outPath) => {
+        const text = fs.readFileSync(inPath, 'utf8');
+        return await Libreoffice.textToImage({ 
+          text,
+          width: 1240,  // Letter size width at 150dpi
+          height: 1754  // Letter size height at 150dpi
+        });
+      },
       out: ({ response, inPath, outPath }) => ({ outPaths: [response] }) //have to return at least outPaths (plural)
     },
     {

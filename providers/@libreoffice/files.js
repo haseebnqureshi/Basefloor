@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const execPromise = util.promisify(require('child_process').exec);
 const os = require('os');
+const { createCanvas } = require('canvas');
+const fsPromises = fs.promises;
 
 async function checkLibreOffice() {
 	try {
@@ -87,11 +89,65 @@ module.exports = ({ providerVars, providerName }) => {
 		}
 	}
 
+	async function textToImage({ text, width = 1240, height = 1754 }) {
+		try {
+			// Create a temporary directory for our files
+			const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'minapi-text-img-'));
+			const pngFilePath = path.join(tempDir, 'output-image.png');
+			
+			// Create a canvas
+			const canvas = createCanvas(width, height);
+			const ctx = canvas.getContext('2d');
+			
+			// Set background to white
+			ctx.fillStyle = 'white';
+			ctx.fillRect(0, 0, width, height);
+			
+			// Set text properties
+			ctx.font = '16px sans-serif';
+			ctx.fillStyle = 'black';
+			
+			// Split text into lines
+			const lines = text.split('\n');
+			
+			// Add text to the canvas
+			let yPos = 50;  // Start 50px from the top
+			
+			for (const line of lines) {
+				ctx.fillText(line, 50, yPos);
+				yPos += 20;  // Move down for next line
+			}
+			
+			// Save the image
+			const buffer = canvas.toBuffer('image/png');
+			await fsPromises.writeFile(pngFilePath, buffer);
+			
+			console.log(`Successfully generated PNG image: ${pngFilePath}`);
+			
+			// Schedule cleanup
+			setTimeout(() => {
+				try {
+					fs.unlinkSync(pngFilePath);
+					fs.rmdirSync(tempDir);
+				} catch (err) {
+					console.error(`Failed to clean up temporary files: ${err.message}`);
+				}
+			}, TIME_TO_RETAIN_FILES);
+			
+			return pngFilePath;
+		}
+		catch (error) {
+			console.error(`Failed to convert text to image: ${error.message}`);
+			throw error;
+		}
+	}
+
 	return {
 		NAME,
 		ENV,
 		SUPPORTED_FORMATS,
 		TIME_TO_RETAIN_FILES,
 		convertToPdf,
+		textToImage,
 	};
 };
