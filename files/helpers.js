@@ -7,7 +7,7 @@ const TMP_DIR = os.tmpdir()
 module.exports = ({ API, paths, project }) => {
 
   const { Sharp, Libreoffice, Remote } = API.Files
-  const { transcription: GoogleTranscription } = API.Google
+  const Transcriber = API.Transcription.Provider
 
   const IMAGE_MAX_SIZE = Sharp.MAX_FILE_SIZE
 
@@ -20,7 +20,7 @@ module.exports = ({ API, paths, project }) => {
     },
     {
       to: ".txt",
-      compatible: (inType) => GoogleTranscription.SUPPORTED_FORMATS[inType] ? true : false,
+      compatible: (inType) => Transcriber.SUPPORTED_FORMATS[inType] ? true : false,
       convert: async (inPath, outPath) => {
         // Create a unique output path for the text file if not specified
         const txtFilePath = outPath.endsWith('.txt') 
@@ -28,7 +28,7 @@ module.exports = ({ API, paths, project }) => {
           : path.join(outPath, `${path.basename(inPath, path.extname(inPath))}.txt`);
         
         // Transcribe the audio file
-        const result = await GoogleTranscription.transcribe({
+        const result = await Transcriber.transcribe({
           audio: inPath,
           enableAutomaticPunctuation: true
         });
