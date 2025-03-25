@@ -34,21 +34,29 @@ switch (bumpType) {
 // Write updated package.json
 fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
-try {
-  // Run prepublishOnly script
-  console.log('Running prepublish checks...');
-  execSync('npm run prepublishOnly', { stdio: 'inherit' });
+// Main publish function
+const publish = () => {
+  try {
+    // Run prepublishOnly script
+    console.log('Running prepublish checks...');
+    execSync('npm run prepublishOnly', { stdio: 'inherit' });
 
-  // Publish to npm
-  console.log('Publishing to npm...');
-  execSync('npm publish', { stdio: 'inherit' });
+    // Publish to npm with appropriate access based on package.json private flag
+    const isPrivate = packageJson.private === true;
+    const publishCommand = isPrivate ? 'npm publish --access private' : 'npm publish';
+    console.log(`Publishing version ${packageJson.version} to npm...`);
+    execSync(publishCommand, { stdio: 'inherit' });
 
-  // Commit the version change
-  console.log('Committing version change...');
-  execSync(`git add package.json && git commit -m "chore: bump version to ${packageJson.version}"`, { stdio: 'inherit' });
+    // Commit the version change
+    console.log('Committing version change...');
+    execSync(`git add package.json && git commit -m "chore: bump version to ${packageJson.version}"`, { stdio: 'inherit' });
 
-  console.log(`Successfully published version ${packageJson.version} to npm!`);
-} catch (error) {
-  console.error('Error during publish:', error.message);
-  process.exit(1);
-} 
+    console.log(`Successfully published version ${packageJson.version} to npm!`);
+  } catch (error) {
+    console.error('Error during publish:', error.message);
+    process.exit(1);
+  }
+};
+
+// Run the publish function
+publish(); 

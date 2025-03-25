@@ -1,6 +1,7 @@
 {
   "name": "minapi",
   "version": "2.3.25",
+  "private": true,
   "main": "index.js",
   "license": "MIT",
   "scripts": {
@@ -33,7 +34,7 @@
   "description": "Minimum viable API w/ authentication and permissions, CRUD and resource management",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/avenuedigital/MinAPI.git"
+    "url": "git+https://github.com/haseebnqureshi/minAPI.git"
   },
   "keywords": [
     "framework",
