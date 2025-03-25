@@ -1,7 +1,6 @@
 {
   "name": "minapi",
-  "version": "2.3.25",
-  "private": true,
+  "version": "2.5.0",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
@@ -29,7 +28,17 @@
     "object-hash": "^3.0.0",
     "phone": "^3.1.42",
     "speakeasy": "^2.0.0",
-    "underscore": "^1.13.7"
+    "underscore": "^1.13.7",
+    "@anthropic-ai/sdk": "*",
+    "@aws-sdk/client-s3": "*",
+    "@aws-sdk/lib-storage": "*",
+    "@aws-sdk/s3-request-presigner": "*",
+    "@google-cloud/speech": "*",
+    "os": "*",
+    "canvas": "*",
+    "mongodb": "*",
+    "postmark": "*",
+    "sharp": "*"
   },
   "description": "Minimum viable API w/ authentication and permissions, CRUD and resource management",
   "repository": {
