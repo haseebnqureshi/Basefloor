@@ -1,6 +1,6 @@
 {
-  "name": "minapi",
-  "version": "2.5.0",
+  "name": "@hq/minapi",
+  "version": "2.5.1",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
@@ -59,9 +59,9 @@
   ],
   "author": "Haseeb Qureshi (HQ)",
   "bugs": {
-    "url": "https://github.com/avenuedigital/MinAPI/issues"
+    "url": "https://github.com/haseebnqureshi/minAPI/issues"
   },
-  "homepage": "https://github.com/avenuedigital/MinAPI#readme",
+  "homepage": "https://github.com/haseebnqureshi/minAPI#readme",
   "devDependencies": {
     "glob": "^11.0.1"
   }
