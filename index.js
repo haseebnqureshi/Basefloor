@@ -59,6 +59,10 @@ module.exports = ({ projectPath, envPath }) => {
 			API = require('./auth')(API, { auth, paths, providers, project })
 		}
 
+		if (transcription && transcription?.enabled == true) {
+			API = require('./transcription')(API, { transcription, paths, providers, project })
+		}
+
 		if (files && files?.enabled == true) {
 			API = require('./files')(API, { files, paths, providers, project })
 		}
@@ -69,10 +73,6 @@ module.exports = ({ projectPath, envPath }) => {
 
 		if (ai && ai?.enabled == true) {
 			API = require('./ai')(API, { ai, paths, providers, project })
-		}
-
-		if (transcription && transcription?.enabled == true) {
-			API = require('./transcription')(API, { transcription, paths, providers, project })
 		}
 
 		//and routes

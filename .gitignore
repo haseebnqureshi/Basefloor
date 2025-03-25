@@ -7,6 +7,8 @@ yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
 
+manifest.json
+
 # Credentials and sensitive files (NEVER commit these!)
 **/google-credentials.json
 **/*-credentials.json
@@ -34,6 +36,8 @@ package-lock.json
 
 # Test files
 test/
+temp/
+test_files/
 tests/
 __tests__/
 coverage/

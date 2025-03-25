@@ -42,8 +42,19 @@ module.exports = ({ providerVars, providerName }) => {
   // Create a client with Google credentials
   let client;
   try {
+    let credentials;
+    
+    // Handle base64 encoded credentials
+    if (ENV.credentials_base64) {
+      credentials = JSON.parse(Buffer.from(ENV.credentials_base64, 'base64').toString());
+    }
+    // Handle JSON string credentials
+    else if (ENV.credentials) {
+      credentials = JSON.parse(ENV.credentials);
+    }
+
     client = new speech.SpeechClient({
-      credentials: ENV.credentials ? JSON.parse(ENV.credentials) : undefined,
+      credentials: credentials,
       keyFilename: ENV.keyFilename
     });
   } catch (err) {

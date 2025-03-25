@@ -1,12 +1,13 @@
 {
   "name": "minapi",
-  "version": "2.3.24",
+  "version": "2.3.25",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
     "prepare": "node scripts/prepare.js",
     "build": "node scripts/build-providers.js",
-    "postinstall": "node scripts/install-dependencies.js"
+    "postinstall": "node scripts/install-dependencies.js",
+    "prepublishOnly": "node scripts/check-sensitive-files.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
@@ -47,5 +48,8 @@
   "bugs": {
     "url": "https://github.com/avenuedigital/MinAPI/issues"
   },
-  "homepage": "https://github.com/avenuedigital/MinAPI#readme"
+  "homepage": "https://github.com/avenuedigital/MinAPI#readme",
+  "devDependencies": {
+    "glob": "^11.0.1"
+  }
 }
