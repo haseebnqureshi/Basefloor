@@ -18,6 +18,34 @@ lerna-debug.log*
 **/*.cert
 **/*.crt
 
+# Development files
+.git
+.gitignore
+.npmrc
+.npmignore
+.github
+.gitlab
+.vscode
+.idea
+*.log
+*.lock
+yarn.lock
+package-lock.json
+
+# Test files
+test/
+tests/
+__tests__/
+coverage/
+*.test.js
+*.spec.js
+
+# Documentation and examples
+docs/
+examples/
+*.md
+!README.md
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
