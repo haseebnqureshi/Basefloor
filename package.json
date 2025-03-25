@@ -7,7 +7,10 @@
     "prepare": "node scripts/prepare.js",
     "build": "node scripts/build-providers.js",
     "postinstall": "node scripts/install-dependencies.js",
-    "prepublishOnly": "node scripts/check-sensitive-files.js"
+    "prepublishOnly": "node scripts/check-sensitive-files.js",
+    "publish:patch": "node scripts/publish.js patch",
+    "publish:minor": "node scripts/publish.js minor",
+    "publish:major": "node scripts/publish.js major"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
