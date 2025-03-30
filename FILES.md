@@ -11,7 +11,7 @@ All endpoints require authentication. You must include your authentication token
 ### List Files
 
 ```http
-GET /:_id?
+GET /files/:_id?
 ```
 
 Retrieves a list of files or a specific file if `_id` is provided.
@@ -43,7 +43,7 @@ Retrieves a list of files or a specific file if `_id` is provided.
 ### Download File
 
 ```http
-GET /:_id/download
+GET /files/:_id/download
 ```
 
 Downloads a specific file.
@@ -59,7 +59,7 @@ Downloads a specific file.
 ### List Child Files
 
 ```http
-GET /:_id/files
+GET /files/:_id/files
 ```
 
 Retrieves all child files associated with a parent file.
@@ -90,10 +90,30 @@ Retrieves all child files associated with a parent file.
 ]
 ```
 
+### Check Conversion Support
+
+```http
+GET /convert/:to?
+```
+
+Checks if conversion is supported for a specific file extension.
+
+**Parameters:**
+- `to`: The file extension to check for conversion support (without the dot prefix)
+
+**Response:** 200 OK
+```json
+{
+    "extension": ".pdf",
+    "accepted": true,
+    "to": ".png"
+}
+```
+
 ### Convert File
 
 ```http
-POST /:_id/convert/:to?
+POST /files/:_id/convert/:to?
 ```
 
 Converts a file to a different format. If no target format is specified, the API will automatically detect the most suitable conversion format.
@@ -128,7 +148,7 @@ Converts a file to a different format. If no target format is specified, the API
 ### Update File
 
 ```http
-PUT /:_id?
+PUT /files/:_id?
 ```
 
 Updates file metadata.
@@ -168,7 +188,7 @@ Updates file metadata.
 ### Delete File
 
 ```http
-DELETE /:_id?
+DELETE /files/:_id?
 ```
 
 Deletes a file or multiple files.
@@ -187,7 +207,7 @@ Deletes a file or multiple files.
 ### Upload File
 
 ```http
-POST /
+POST /files
 ```
 
 Uploads a new file.

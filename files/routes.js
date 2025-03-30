@@ -1,6 +1,6 @@
 module.exports = (API, { paths, project }) => {
 
-	API.get('/:_id?', [
+	API.get('/files/:_id?', [
 		API.requireAuthentication,
 		API.postAuthentication,
 	], async (req, res) => {
@@ -17,7 +17,7 @@ module.exports = (API, { paths, project }) => {
 	})
 
 	//can add a query 'force=true' to force download of file from api endpoint 
-	API.get('/:_id/download', [
+	API.get('/files/:_id/download', [
 		API.requireAuthentication, 
 		API.postAuthentication,
 		API.Files.loadFileById,
@@ -37,7 +37,7 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.get('/:_id/files', [
+	API.get('/files/:_id/files', [
 		API.requireAuthentication, 
 		API.postAuthentication,
 		API.Files.loadFileById,
@@ -66,7 +66,7 @@ module.exports = (API, { paths, project }) => {
 		})
 	})
 
-	API.post('/:_id/convert', [
+	API.post('/files/:_id/convert', [
 		API.requireAuthentication,
 		API.postAuthentication,
 		API.Files.loadFileById,
@@ -147,7 +147,7 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.put('/:_id?', [
+	API.put('/files/:_id?', [
 		API.requireAuthentication,
 		API.postAuthentication,
 	], async (req, res) => {
@@ -164,7 +164,7 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.delete('/:_id?', [
+	API.delete('/files/:_id?', [
 		API.requireAuthentication,
 		API.postAuthentication,
 	], async (req, res) => {
@@ -180,7 +180,7 @@ module.exports = (API, { paths, project }) => {
 		}
 	})
 
-	API.post('/', [
+	API.post('/files', [
 		API.requireAuthentication,
 		API.postAuthentication,
 

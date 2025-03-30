@@ -34,18 +34,32 @@ switch (bumpType) {
 // Write updated package.json
 fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
+// Check if user is logged into npm
+const checkNpmAuth = () => {
+  try {
+    execSync('npm whoami', { stdio: 'ignore' });
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
 // Main publish function
 const publish = () => {
   try {
+    // Check npm authentication
+    if (!checkNpmAuth()) {
+      console.log('You need to be logged into npm to publish. Running npm login...');
+      execSync('npm login', { stdio: 'inherit' });
+    }
+
     // Run prepublishOnly script
     console.log('Running prepublish checks...');
     execSync('npm run prepublishOnly', { stdio: 'inherit' });
 
-    // Publish to npm with appropriate access based on package.json private flag
-    const isPrivate = packageJson.private === true;
-    const publishCommand = isPrivate ? 'npm publish --access private' : 'npm publish';
+    // Publish to npm as private package
     console.log(`Publishing version ${packageJson.version} to npm...`);
-    execSync(publishCommand, { stdio: 'inherit' });
+    execSync('npm publish --access private', { stdio: 'inherit' });
 
     // Commit the version change
     console.log('Committing version change...');
