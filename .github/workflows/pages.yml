@@ -43,6 +43,7 @@ jobs:
           bundle exec jekyll build --baseurl "" --destination ../_site
           cp -r _layouts ../_site/
           cp -r assets ../_site/
+          cp CNAME ../_site/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
 
