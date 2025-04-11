@@ -1,0 +1,134 @@
+@import "{{ site.theme }}";
+
+// Color variables
+$primary-color: #4a6ee0;
+$text-color: #333;
+$link-color: #1a73e8;
+$code-bg: #f8f9fa;
+$border-color: #e1e4e8;
+
+// Base styles
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: $text-color;
+  line-height: 1.6;
+}
+
+a {
+  color: $link-color;
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Headings
+h1, h2, h3, h4, h5, h6 {
+  color: $primary-color;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-size: 2.5rem;
+  border-bottom: 1px solid $border-color;
+  padding-bottom: 0.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+// Code formatting
+pre {
+  background-color: $code-bg;
+  border-radius: 4px;
+  padding: 1rem;
+  overflow-x: auto;
+  border: 1px solid $border-color;
+}
+
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  background-color: $code-bg;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 85%;
+}
+
+// Tables
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  
+  th, td {
+    border: 1px solid $border-color;
+    padding: 8px 12px;
+  }
+  
+  th {
+    background-color: #f1f2f3;
+    font-weight: 600;
+  }
+  
+  tr:nth-child(even) {
+    background-color: #f8f9fa;
+  }
+}
+
+// Lists
+ul, ol {
+  padding-left: 2rem;
+  
+  li {
+    margin-bottom: 0.5rem;
+  }
+}
+
+// Blockquotes
+blockquote {
+  margin-left: 0;
+  padding-left: 1rem;
+  border-left: 4px solid $primary-color;
+  color: #666;
+}
+
+// Sidebar customizations
+.sidebar {
+  background-color: #f8f9fa;
+  border-right: 1px solid $border-color;
+  
+  a {
+    display: block;
+    padding: 4px 0;
+  }
+}
+
+// Content area
+.content {
+  img {
+    max-width: 100%;
+    border: 1px solid $border-color;
+    border-radius: 4px;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2rem;
+  }
+  
+  h2 {
+    font-size: 1.75rem;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+  }
+} 
