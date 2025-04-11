@@ -25,7 +25,6 @@ manifest.json
 .gitignore
 .npmrc
 .npmignore
-.github
 .gitlab
 .vscode
 .idea
