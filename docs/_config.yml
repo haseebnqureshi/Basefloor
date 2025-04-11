@@ -29,8 +29,13 @@ toc:
       - page: Basic Setup
         url: /examples/basic-setup.html
 
-# Enable GitHub Flavored Markdown
-markdown: GFM
+# Enable Kramdown Markdown processor
+markdown: kramdown
+
+# Kramdown options to enable GitHub Flavored Markdown features
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
 
 # Enable syntax highlighting
 highlighter: rouge
