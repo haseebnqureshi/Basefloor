@@ -1,6 +1,6 @@
 {
   "name": "@hq/minapi",
-  "version": "2.5.3",
+  "version": "2.6.0",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
@@ -39,7 +39,9 @@
     "postmark": "*",
     "sharp": "*",
     "speakeasy": "^2.0.0",
-    "underscore": "^1.13.7"
+    "underscore": "^1.13.7",
+    "stream": "*",
+    "node-fetch": "*"
   },
   "description": "Minimum viable API w/ authentication and permissions, CRUD and resource management",
   "repository": {
