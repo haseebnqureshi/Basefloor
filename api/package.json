@@ -1,0 +1,71 @@
+{
+  "name": "@hq/minapi",
+  "version": "2.6.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "prepare": "node scripts/prepare.js",
+    "build": "node scripts/build-providers.js",
+    "postinstall": "node scripts/install-dependencies.js",
+    "prepublishOnly": "node scripts/check-sensitive-files.js",
+    "publish:patch": "node scripts/publish.js patch",
+    "publish:minor": "node scripts/publish.js minor",
+    "publish:major": "node scripts/publish.js major"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "*",
+    "@aws-sdk/client-s3": "*",
+    "@aws-sdk/lib-storage": "*",
+    "@aws-sdk/s3-request-presigner": "*",
+    "@google-cloud/speech": "*",
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.2",
+    "busboy": "^1.6.0",
+    "canvas": "*",
+    "chance": "^1.1.11",
+    "child_process": "^1.0.2",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "form-data": "^4.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "minio": "^8.0.5",
+    "mongodb": "*",
+    "morgan": "^1.10.0",
+    "object-hash": "^3.0.0",
+    "os": "*",
+    "phone": "^3.1.42",
+    "postmark": "*",
+    "sharp": "*",
+    "speakeasy": "^2.0.0",
+    "underscore": "^1.13.7",
+    "stream": "*",
+    "node-fetch": "*"
+  },
+  "description": "Minimum viable API w/ authentication and permissions, CRUD and resource management",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haseebnqureshi/minAPI.git"
+  },
+  "keywords": [
+    "framework",
+    "mongodb",
+    "api",
+    "express",
+    "auth",
+    "jwt",
+    "backend",
+    "mvp",
+    "crud",
+    "rest"
+  ],
+  "author": "Haseeb Qureshi (HQ)",
+  "bugs": {
+    "url": "https://github.com/haseebnqureshi/minAPI/issues"
+  },
+  "homepage": "https://github.com/haseebnqureshi/minAPI#readme",
+  "devDependencies": {
+    "glob": "^11.0.1"
+  }
+}

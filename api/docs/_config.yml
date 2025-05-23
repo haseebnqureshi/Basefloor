@@ -1,0 +1,46 @@
+title: MinAPI Documentation
+description: Comprehensive documentation for the MinAPI framework
+theme: jekyll-theme-minimal
+baseurl: "" # If using a custom domain, you can leave this blank
+url: "" # Your custom domain (minapi.dev) can go here
+
+# Navigation structure
+toc:
+  - title: Getting Started
+    subfolderitems:
+      - page: Introduction
+        url: /index.html
+      - page: Getting Started
+        url: /guides/getting-started.html
+      - page: Configuration
+        url: /guides/configuration.html
+  - title: Reference
+    subfolderitems:
+      - page: Models
+        url: /reference/models.html
+      - page: Routes
+        url: /reference/routes.html
+      - page: Authentication
+        url: /reference/authentication.html
+      - page: Files
+        url: /reference/files.html
+  - title: Examples
+    subfolderitems:
+      - page: Basic Setup
+        url: /examples/basic-setup.html
+
+# Enable Kramdown Markdown processor
+markdown: kramdown
+
+# Kramdown options to enable GitHub Flavored Markdown features
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Enable syntax highlighting
+highlighter: rouge
+
+# Plugins for enhanced functionality
+plugins:
+  - jekyll-sitemap
+  - jekyll-seo-tag 
