@@ -41,6 +41,7 @@
     "type": "git",
     "url": "git+https://github.com/haseebnqureshi/basefloor.git"
   },
+  "homepage": "https://basefloor.dev/",
   "keywords": [
     "basefloor",
     "api",

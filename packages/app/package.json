@@ -1,6 +1,6 @@
 {
   "name": "@basefloor/app",
-  "version": "1.0.1",
+  "version": "1.1.1",
   "description": "BasefloorApp - Vue.js frontend framework with components and utilities for the Basefloor ecosystem",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -33,6 +33,7 @@
     "url": "git+https://github.com/haseebnqureshi/basefloor.git",
     "directory": "packages/app"
   },
+  "homepage": "https://basefloor.dev/",
   "dependencies": {
     "@basefloor/shared": "^1.0.0",
     "vue": "^3.3.0",
