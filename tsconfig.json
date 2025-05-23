@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "declaration": true,
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "index.js",
+    "api/**/*",
+    "app/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "api/node_modules",
+    "app/node_modules",
+    "dist",
+    "api/dist",
+    "app/dist"
+  ]
+} 

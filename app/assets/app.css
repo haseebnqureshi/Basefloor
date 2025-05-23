@@ -1,0 +1,102 @@
+/* Ensure Rubik font loads properly across all browsers */
+@font-face {
+  font-family: 'Rubik';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-WYiFWUU1.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rubik';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-B4iFWUU1.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rubik';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-NYiFWUU1.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rubik';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-2Y-FWUU1.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rubik';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://fonts.gstatic.com/s/rubik/v28/iJWZBXyIfDnIV5PNhY1KTN7Z-Yh-4I-FWUU1.woff2') format('woff2');
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.font-semibold {
+	font-weight: 500 !important;
+}
+
+button.button {
+	font-weight: 500 !important;
+}
+
+input:disabled {
+	background: #eaeaea !important;
+	color: #898989;
+}
+
+.monaco-editor {
+	height: auto !important;
+	min-height: 120px;
+}
+
+.monaco-editor-container {
+	border-left: solid 1px rgb(209 213 219);
+	border-right: solid 1px rgb(209 213 219);
+
+}
+
+.decorationsOverviewRuler {
+	right: 3px;
+	width: 10px;
+}
+
+.monaco-editor .view-overlays .current-line-exact {
+	border: none !important;
+	border-bottom: 1px solid rgb(209 213 219) !important;
+	width: auto !important;
+	right: 20px !important;
+}
+
+.page-enter-active,
+.page-leave-active {
+  transition: all 0.1s;
+}
+
+.page-enter-from,
+.page-leave-to {
+  opacity: 0;
+/*  filter: blur(0.1rem);*/
+}
+
+.nuxt-loading-indicator {
+	background: rgb(238,28,118) !important;
+}
+
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}

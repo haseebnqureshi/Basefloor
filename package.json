@@ -1,0 +1,46 @@
+{
+  "name": "basefloor",
+  "version": "0.1.0",
+  "description": "Full-stack framework with Node.js API and Vue/Nuxt components",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:app\"",
+    "dev:api": "cd api && npm run dev",
+    "dev:app": "cd app && npm run dev",
+    "test": "npm run test:api",
+    "test:api": "cd api && npm test",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "api",
+    "backend",
+    "frontend",
+    "vue",
+    "nuxt",
+    "node",
+    "fullstack"
+  ],
+  "author": "",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "api/dist",
+    "app/dist"
+  ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./api": "./api/dist/index.js",
+    "./app": "./app/dist/index.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "glob": "^11.0.1",
+    "typescript": "^5.1.6"
+  },
+  "peerDependencies": {
+    "vue": "^3.0.0",
+    "nuxt": "^3.0.0"
+  }
+} 
