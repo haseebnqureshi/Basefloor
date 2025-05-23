@@ -10,7 +10,11 @@
     "prepublishOnly": "node scripts/check-sensitive-files.js",
     "publish:patch": "node scripts/publish.js patch",
     "publish:minor": "node scripts/publish.js minor",
-    "publish:major": "node scripts/publish.js major"
+    "publish:major": "node scripts/publish.js major",
+    "docs:sync": "node ../docs/scripts/sync-docs.js sync",
+    "docs:check": "node ../docs/scripts/sync-docs.js check",
+    "docs:serve": "cd ../docs && bundle exec jekyll serve",
+    "docs:build": "cd ../docs && bundle exec jekyll build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "*",

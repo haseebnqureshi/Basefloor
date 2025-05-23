@@ -1,46 +1,38 @@
 {
   "name": "basefloor",
-  "version": "0.1.0",
-  "description": "Full-stack framework with Node.js API and Vue/Nuxt components",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "1.0.0",
+  "description": "MinAPI Project - Comprehensive API framework and documentation",
+  "main": "api/index.js",
+  "private": true,
   "scripts": {
-    "build": "node scripts/build.js",
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:app\"",
-    "dev:api": "cd api && npm run dev",
-    "dev:app": "cd app && npm run dev",
-    "test": "npm run test:api",
-    "test:api": "cd api && npm test",
-    "prepare": "npm run build"
+    "docs:sync": "node docs/scripts/sync-docs.js sync",
+    "docs:check": "node docs/scripts/sync-docs.js check",
+    "docs:dev": "cd docs && npm run dev",
+    "docs:build": "cd docs && npm run build",
+    "docs:preview": "cd docs && npm run preview",
+    "docs:serve": "cd docs && npm run dev",
+    "api:dev": "cd api && node index.js",
+    "api:build": "cd api && npm run build",
+    "api:test": "cd api && npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haseebnqureshi/minAPI.git"
   },
   "keywords": [
+    "minapi",
     "api",
-    "backend",
-    "frontend",
-    "vue",
-    "nuxt",
-    "node",
-    "fullstack"
+    "framework",
+    "documentation",
+    "mongodb",
+    "express"
   ],
-  "author": "",
+  "author": "Haseeb Qureshi (HQ)",
   "license": "MIT",
-  "files": [
-    "dist",
-    "api/dist",
-    "app/dist"
-  ],
-  "exports": {
-    ".": "./dist/index.js",
-    "./api": "./api/dist/index.js",
-    "./app": "./app/dist/index.js"
-  },
   "devDependencies": {
-    "concurrently": "^8.2.0",
-    "glob": "^11.0.1",
-    "typescript": "^5.1.6"
+    "concurrently": "^8.2.0"
   },
-  "peerDependencies": {
-    "vue": "^3.0.0",
-    "nuxt": "^3.0.0"
-  }
+  "workspaces": [
+    "api"
+  ]
 } 
