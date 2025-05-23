@@ -1,10 +1,10 @@
 # Configuration
 
-This guide covers all the configuration options available in MinAPI through the `minapi.config.js` file.
+This guide covers all the configuration options available in Basefloor through the `basefloor.config.js` file.
 
 ## Configuration File Structure
 
-The `minapi.config.js` file should export a function that receives the API object and returns a configuration object:
+The `basefloor.config.js` file should export a function that receives the API object and returns a configuration object:
 
 ```javascript
 module.exports = (API) => {

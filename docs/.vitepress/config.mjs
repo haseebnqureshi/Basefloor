@@ -1,8 +1,8 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: 'MinAPI Documentation',
-  description: 'Comprehensive documentation for the MinAPI framework',
+  title: 'Basefloor Documentation',
+  description: 'Comprehensive documentation for the Basefloor framework',
   base: '/',
   
   themeConfig: {
@@ -76,12 +76,12 @@ export default defineConfig({
     },
     
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/haseebnqureshi/minAPI' }
+      { icon: 'github', link: 'https://github.com/haseebnqureshi/Basefloor' }
     ],
     
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2024 MinAPI'
+      copyright: 'Copyright © 2022-2025 Basefloor'
     },
     
     search: {

@@ -5,7 +5,7 @@
 ### Important: Information here is auto-generated and not validated.
 
 ## Overview
-The MinAPI routing system provides a flexible and secure way to create RESTful API endpoints with built-in authentication, permissions, and hierarchical routing capabilities.
+The Basefloor routing system provides a flexible and secure way to create RESTful API endpoints with built-in authentication, permissions, and hierarchical routing capabilities.
 
 ## Route Configuration
 Routes are defined in your configuration using a simplified syntax:

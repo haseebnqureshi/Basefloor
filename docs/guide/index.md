@@ -1,6 +1,6 @@
 # Getting Started
 
-MinAPI is a comprehensive API framework built on Express and MongoDB that provides a minimum viable API setup with built-in authentication, permissions, CRUD operations, and resource management.
+BasefloorAPI is a comprehensive API framework built on Express and MongoDB that provides a minimum viable API setup with built-in authentication, permissions, CRUD operations, and resource management.
 
 ## Features
 
@@ -19,9 +19,9 @@ MinAPI is a comprehensive API framework built on Express and MongoDB that provid
 ## Installation
 
 ```bash
-npm install minapi
+npm install basefloor
 # or
-yarn add minapi
+yarn add basefloor
 ```
 
 ### System Requirements
@@ -57,15 +57,15 @@ These need to be installed before running `npm install` or `yarn`.
 
 ## Quick Start
 
-1. Create a new project and install MinAPI:
+1. Create a new project and install Basefloor:
 ```bash
 mkdir my-api
 cd my-api
 npm init -y
-npm install minapi
+npm install basefloor
 ```
 
-2. Create a configuration file (`minapi.config.js`):
+2. Create a configuration file (`basefloor.config.js`):
 ```javascript
 module.exports = (API) => {
   return {
@@ -92,10 +92,10 @@ module.exports = (API) => {
 
 3. Create your main file:
 ```javascript
-const MinAPI = require('minapi');
+const basefloor = require('basefloor');
 
-const api = new MinAPI({
-  config: require('./minapi.config.js')
+const api = new basefloor({
+  config: require('./basefloor.config.js')
 });
 
 api.start();

@@ -1,6 +1,6 @@
 # Blog API Example
 
-This example demonstrates how to build a complete blog API with MinAPI, including users, posts, comments, and authentication.
+This example demonstrates how to build a complete blog API with Basefloor, including users, posts, comments, and authentication.
 
 ## Project Overview
 
@@ -14,7 +14,7 @@ The blog API will include:
 ## Configuration
 
 ```javascript
-// minapi.config.js
+// basefloor.config.js
 module.exports = (API) => {
   return {
     project: {
@@ -234,7 +234,7 @@ curl -X POST http://localhost:3000/posts \
     "content": "This is the content of my first blog post...",
     "excerpt": "A brief excerpt of the post",
     "status": "published",
-    "tags": ["tutorial", "minapi"]
+    "tags": ["tutorial", "basefloor"]
   }'
 ```
 

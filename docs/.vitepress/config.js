@@ -76,12 +76,12 @@ export default defineConfig({
     },
     
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/haseebnqureshi/minAPI' }
+      { icon: 'github', link: 'https://github.com/haseebnqureshi/basefloor' }
     ],
     
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2024 BasefloorAPI'
+      copyright: 'Copyright © 2022-2025 Basefloor'
     },
     
     search: {

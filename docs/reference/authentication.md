@@ -1,6 +1,6 @@
 # Authentication
 
-MinAPI provides a comprehensive authentication system built around JWT tokens with support for user registration, login, email verification, and password reset functionality.
+Basefloor provides a comprehensive authentication system built around JWT tokens with support for user registration, login, email verification, and password reset functionality.
 
 ## Features
 
@@ -13,7 +13,7 @@ MinAPI provides a comprehensive authentication system built around JWT tokens wi
 
 ## Configuration
 
-Configure authentication in your `minapi.config.js`:
+Configure authentication in your `basefloor.config.js`:
 
 ```javascript
 module.exports = (API) => {
@@ -39,7 +39,7 @@ module.exports = (API) => {
 
 ## User Model
 
-MinAPI includes a built-in Users model with the following fields:
+Basefloor includes a built-in Users model with the following fields:
 
 - `email` - User's email address (required, unique)
 - `password_hash` - Hashed password
@@ -188,7 +188,7 @@ Extend the Users model with custom fields:
 2. **Enable email verification**: Prevent unauthorized account creation
 3. **Set appropriate token expiration**: Balance security with user experience
 4. **Use HTTPS**: Always serve authentication endpoints over HTTPS
-5. **Validate input**: MinAPI provides built-in validation for auth endpoints
+5. **Validate input**: basefloor provides built-in validation for auth endpoints
 
 ## Error Handling
 

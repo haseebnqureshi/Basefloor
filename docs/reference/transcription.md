@@ -1,6 +1,6 @@
 # Audio Transcription
 
-The transcription service enables speech-to-text capabilities in your MinAPI application. Currently, it supports Google Cloud Speech-to-Text as a provider.
+The transcription service enables speech-to-text capabilities in your Basefloor application. Currently, it supports Google Cloud Speech-to-Text as a provider.
 
 ## Setup
 
@@ -12,7 +12,7 @@ The transcription service enables speech-to-text capabilities in your MinAPI app
 4. Download the service account key (JSON file)
 5. Store this file securely (never commit it to version control)
 
-### 2. Configure in minapi.config.js
+### 2. Configure in basefloor.config.js
 
 ```javascript
 module.exports = (API) => {
@@ -78,7 +78,7 @@ This will:
 
 ## Usage in your API
 
-The transcription service adds an `API.Transcription` object to your MinAPI instance with the following methods:
+The transcription service adds an `API.Transcription` object to your Basefloor instance with the following methods:
 
 ```javascript
 // Example route to transcribe an audio file

@@ -1,12 +1,12 @@
 # Basic Setup Example
 
-This example shows how to create a minimal MinAPI project with basic CRUD operations.
+This example shows how to create a minimal Basefloor project with basic CRUD operations.
 
 ## Project Structure
 
 ```
 my-api/
-├── minapi.config.js
+├── basefloor.config.js
 ├── index.js
 ├── package.json
 └── .env
@@ -15,7 +15,7 @@ my-api/
 ## Configuration
 
 ```javascript
-// minapi.config.js
+// basefloor.config.js
 module.exports = (API) => {
   return {
     project: {

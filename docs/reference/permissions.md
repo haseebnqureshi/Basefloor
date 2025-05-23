@@ -1,6 +1,6 @@
 # Permissions
 
-MinAPI provides a flexible permission system that allows you to control access to your API endpoints with fine-grained rules based on user properties, resource ownership, and custom logic.
+Basefloor provides a flexible permission system that allows you to control access to your API endpoints with fine-grained rules based on user properties, resource ownership, and custom logic.
 
 ## Permission Syntax
 

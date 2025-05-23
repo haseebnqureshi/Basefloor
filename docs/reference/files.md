@@ -1,10 +1,10 @@
 # File Management
 
-MinAPI provides comprehensive file management capabilities including upload, storage, processing, and serving of files.
+Basefloor provides comprehensive file management capabilities including upload, storage, processing, and serving of files.
 
 ## Configuration
 
-Configure file storage in your `minapi.config.js`:
+Configure file storage in your `basefloor.config.js`:
 
 ### Local Storage
 
@@ -54,7 +54,7 @@ curl -X POST http://localhost:3000/files \
 
 ## File Processing
 
-MinAPI supports various file processing capabilities:
+Basefloor supports various file processing capabilities:
 
 - Image resizing and optimization
 - Document format conversion (using LibreOffice)

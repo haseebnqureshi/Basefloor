@@ -3,7 +3,7 @@ layout: default
 title: Complete Configuration Example
 ---
 
-## Example minapi.config.js
+## Example basefloor.config.js
 
 ```
 module.exports = (API) => {

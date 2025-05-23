@@ -1,11 +1,11 @@
 # Examples
 
-Welcome to the MinAPI examples section. Here you'll find practical examples of how to use MinAPI in real-world scenarios.
+Welcome to the Basefloor examples section. Here you'll find practical examples of how to use Basefloor in real-world scenarios.
 
 ## Available Examples
 
 ### [Basic Setup](./basic-setup)
-Learn how to set up a basic MinAPI project from scratch.
+Learn how to set up a basic Basefloor project from scratch.
 
 ### [Complete Configuration](./complete-config)
 See a comprehensive configuration example with all features enabled.
