@@ -36,7 +36,8 @@ manifest.json
 .idea
 *.lock
 yarn.lock
-package-lock.json
+# Ignore only the root package-lock.json, not the one in docs/
+/package-lock.json
 
 # Test files
 test/
