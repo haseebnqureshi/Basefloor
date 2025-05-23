@@ -1,6 +1,174 @@
 # Basefloor
 
-A full-stack framework that provides both a powerful Node.js API backend and beautiful Vue/Nuxt components for your frontend.
+> Modern full-stack development platform with unified configuration
+
+Basefloor is a comprehensive ecosystem for building full-stack applications with Vue.js and Node.js. It provides a backend API framework and frontend component library that work seamlessly together through a unified configuration system.
+
+## 🏗️ Architecture
+
+Basefloor consists of three main packages:
+
+- **[@basefloor/api](./packages/api)** - Backend API framework with authentication, permissions, and MongoDB integration
+- **[@basefloor/app](./packages/app)** - Vue.js frontend framework with pre-built components and utilities  
+- **[@basefloor/shared](./packages/shared)** - Common types, schemas, and utilities
+
+## 🚀 Quick Start
+
+### 1. Install packages
+
+```bash
+# For backend API
+npm install @basefloor/api
+
+# For frontend app (coming soon)
+npm install @basefloor/app
+
+# For shared utilities
+npm install @basefloor/shared
+```
+
+### 2. Create unified configuration
+
+Create a `basefloor.config.js` file:
+
+```javascript
+module.exports = (API) => ({
+  project: {
+    name: 'My App',
+    port: 3000
+  },
+  
+  database: {
+    uri: 'mongodb://localhost:27017/myapp'
+  },
+  
+  // API configuration
+  api: {
+    models: (m) => [
+      m.create('Users', {
+        fields: {
+          name: { type: 'string', required: true },
+          email: { type: 'string', required: true, unique: true }
+        }
+      })
+    ],
+    routes: (r) => [
+      r.post('/users(Users)', { c: true }),
+      r.get('/users(Users)', { rA: true })
+    ]
+  },
+  
+  // App configuration (coming soon)
+  app: {
+    theme: {
+      primary: '#3B82F6',
+      mode: 'light'
+    }
+  }
+})
+```
+
+### 3. Set up your backend
+
+```javascript
+// server.js
+const BasefloorAPI = require('@basefloor/api')
+
+const api = BasefloorAPI({
+  config: require('./basefloor.config.js')
+})
+```
+
+### 4. Set up your frontend
+
+```javascript
+// main.js (coming soon)
+import { createApp } from 'vue'
+import { createBasefloorApp } from '@basefloor/app'
+
+const app = createApp(App)
+app.use(createBasefloorApp({
+  config: require('./basefloor.config.js')
+}))
+app.mount('#app')
+```
+
+## 📦 Packages
+
+### BasefloorAPI
+
+Complete backend framework with:
+- ✅ Built-in authentication & permissions
+- ✅ MongoDB integration with automatic CRUD
+- ✅ **Smart Dependencies** - Only installs providers you configure
+- ✅ File upload & processing
+- ✅ Email services (SendGrid, Mailgun, Postmark)
+- ✅ AI integration (OpenAI, Anthropic, Google)
+- ✅ Audio transcription
+- ✅ Express.js foundation
+
+**🚀 Dynamic Provider Installation**: BasefloorAPI automatically installs only the packages for services you actually configure, keeping your project lightweight and secure.
+
+### BasefloorApp (Coming Soon)
+
+Vue.js frontend framework with:
+- 🔄 Pre-built UI components
+- 🔄 API integration helpers
+- 🔄 Theming system
+- 🔄 Routing utilities
+- 🔄 State management
+- 🔄 TypeScript support
+
+### Shared
+
+Common utilities with:
+- ✅ TypeScript type definitions
+- ✅ Configuration schemas
+- ✅ Validation utilities
+- ✅ Shared constants
+
+## 🛠️ Development
+
+This is a monorepo managed with npm workspaces:
+
+```bash
+# Install all dependencies
+npm install
+
+# Run API in development mode
+npm run api:dev
+
+# Run documentation site
+npm run docs:dev
+
+# Run both API and docs
+npm run dev
+
+# Run tests for all packages
+npm run test:all
+
+# Build all packages
+npm run build:all
+```
+
+## 📚 Documentation
+
+Visit [basefloor.dev](https://basefloor.dev) for complete documentation.
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [contributing guidelines](CONTRIBUTING.md) for details.
+
+## 📄 License
+
+MIT © [Haseeb Qureshi (HQ)](https://github.com/haseebnqureshi)
+
+## 🔗 Links
+
+- [Documentation](https://basefloor.dev)
+- [GitHub](https://github.com/haseebnqureshi/basefloor)
+- [NPM - BasefloorAPI](https://npmjs.com/package/@basefloor/api)
+- [NPM - BasefloorApp](https://npmjs.com/package/@basefloor/app) (coming soon)
 
 ## Features
 

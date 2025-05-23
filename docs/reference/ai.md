@@ -1,122 +1,170 @@
 # AI Integration
 
-MinAPI provides built-in support for AI services, making it easy to integrate AI capabilities into your applications.
+Basefloor provides built-in support for AI services, making it easy to integrate AI capabilities into your applications.
 
 ## Configuration
 
-Configure AI services in your `minapi.config.js`:
-
-### Anthropic Claude
+Configure AI services in your `basefloor.config.js`:
 
 ```javascript
-{
+module.exports = (API) => ({
   ai: {
-    provider: '@anthropic/claude',
-    defaultModel: 'claude-3-sonnet'
-  },
-  providers: {
-    '@anthropic/claude': {
-      apiKey: process.env.ANTHROPIC_API_KEY
+    openai: {
+      apiKey: process.env.OPENAI_API_KEY,
+      model: 'gpt-4',
+      maxTokens: 1000
+    },
+    anthropic: {
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      model: 'claude-3-sonnet-20240229',
+      maxTokens: 1000
+    },
+    google: {
+      apiKey: process.env.GOOGLE_AI_API_KEY,
+      model: 'gemini-pro',
+      maxTokens: 1000
     }
   }
-}
-```
-
-### OpenAI
-
-```javascript
-{
-  ai: {
-    provider: '@openai/gpt',
-    defaultModel: 'gpt-4'
-  },
-  providers: {
-    '@openai/gpt': {
-      apiKey: process.env.OPENAI_API_KEY
-    }
-  }
-}
+})
 ```
 
 ## Usage
 
-### Text Generation
+### Basic Text Generation
 
 ```javascript
-// Generate text using the configured AI provider
-const response = await API.AI.generate({
-  prompt: 'Write a summary of this document',
-  context: documentText,
-  maxTokens: 500
-});
-
-console.log(response.text);
-```
-
-### Chat Completion
-
-```javascript
-// Have a conversation with the AI
-const chatResponse = await API.AI.chat({
+// In your route handler
+const response = await API.AI.openai.chat({
   messages: [
-    { role: 'user', content: 'What is MinAPI?' },
-    { role: 'assistant', content: 'MinAPI is a comprehensive API framework...' },
-    { role: 'user', content: 'How do I install it?' }
+    { role: 'user', content: 'Hello, how are you?' }
   ]
-});
+})
+
+console.log(response.content)
 ```
 
-### Document Analysis
+### Chat Conversations
 
 ```javascript
-// Analyze uploaded documents
-app.post('/analyze-document', async (req, res) => {
-  const file = req.file;
-  const documentText = await API.Files.extractText(file.path);
-  
-  const analysis = await API.AI.generate({
-    prompt: 'Analyze this document and provide key insights:',
-    context: documentText
-  });
-  
-  res.json({ analysis: analysis.text });
-});
+const conversation = await API.AI.anthropic.chat({
+  messages: [
+    { role: 'user', content: 'What is Basefloor?' },
+    { role: 'assistant', content: 'Basefloor is a comprehensive API framework...' },
+    { role: 'user', content: 'How do I get started?' }
+  ]
+})
 ```
 
-## Environment Variables
-
-Set up your AI provider credentials:
-
-```env
-# Anthropic
-ANTHROPIC_API_KEY=your-anthropic-key
-
-# OpenAI
-OPENAI_API_KEY=your-openai-key
-```
-
-## Examples
-
-### Content Moderation
+### Streaming Responses
 
 ```javascript
-const moderationResult = await API.AI.moderate({
-  text: userGeneratedContent,
-  categories: ['hate', 'violence', 'spam']
-});
+const stream = await API.AI.openai.stream({
+  messages: [
+    { role: 'user', content: 'Write a long story...' }
+  ]
+})
 
-if (moderationResult.flagged) {
-  // Handle flagged content
+for await (const chunk of stream) {
+  process.stdout.write(chunk.content)
 }
 ```
 
-### Smart Search
+## Available Providers
+
+### OpenAI
+- Models: gpt-4, gpt-3.5-turbo, gpt-4-turbo
+- Features: Chat, completions, streaming
+- Configuration: API key required
+
+### Anthropic
+- Models: claude-3-opus, claude-3-sonnet, claude-3-haiku
+- Features: Chat, streaming, long context
+- Configuration: API key required
+
+### Google AI
+- Models: gemini-pro, gemini-pro-vision
+- Features: Chat, multimodal capabilities
+- Configuration: API key required
+
+## Advanced Features
+
+### Custom Prompts
 
 ```javascript
-// Semantic search using AI embeddings
-const searchResults = await API.AI.search({
-  query: userQuery,
-  documents: documentCollection,
-  limit: 10
-});
-``` 
+const customPrompt = await API.AI.openai.chat({
+  messages: [
+    { 
+      role: 'system', 
+      content: 'You are a helpful assistant that always responds in JSON format.' 
+    },
+    { role: 'user', content: 'Tell me about the weather' }
+  ],
+  response_format: { type: 'json_object' }
+})
+```
+
+### Function Calling
+
+```javascript
+const functionCall = await API.AI.openai.chat({
+  messages: [
+    { role: 'user', content: 'What is the weather in New York?' }
+  ],
+  functions: [
+    {
+      name: 'get_weather',
+      description: 'Get the current weather for a location',
+      parameters: {
+        type: 'object',
+        properties: {
+          location: { type: 'string' }
+        }
+      }
+    }
+  ]
+})
+```
+
+### Image Analysis (Multimodal)
+
+```javascript
+const imageAnalysis = await API.AI.google.chat({
+  messages: [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: 'What do you see in this image?' },
+        { type: 'image_url', image_url: { url: 'https://example.com/image.jpg' } }
+      ]
+    }
+  ]
+})
+```
+
+## Error Handling
+
+AI services include built-in error handling and retry logic:
+
+```javascript
+try {
+  const response = await API.AI.openai.chat({
+    messages: [{ role: 'user', content: 'Hello' }]
+  })
+} catch (error) {
+  if (error.code === 'rate_limit_exceeded') {
+    // Handle rate limiting
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Retry logic
+  } else if (error.code === 'insufficient_quota') {
+    // Handle quota issues
+  }
+}
+```
+
+## Best Practices
+
+1. **API Key Security**: Store API keys in environment variables
+2. **Rate Limiting**: Implement proper rate limiting in your application
+3. **Error Handling**: Always handle API errors gracefully
+4. **Cost Management**: Monitor token usage and implement limits
+5. **Content Filtering**: Implement content moderation for user inputs 

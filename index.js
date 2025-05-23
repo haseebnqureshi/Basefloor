@@ -1,9 +1,18 @@
 /**
- * Basefloor - Full-stack framework with Node.js API and Vue/Nuxt components
+ * Example Basefloor application
+ * This demonstrates using BasefloorAPI with unified configuration
  */
 
-// Export the API
-const api = require('./api');
+const BasefloorAPI = require('./packages/api')
+
+// Load the unified configuration
+const api = BasefloorAPI({
+  config: require('./basefloor.config.js')
+})
+
+console.log('🚀 Basefloor application started!')
+console.log('📖 Documentation: http://localhost:5173/')
+console.log('🔧 API: http://localhost:3000/')
 
 // We're not directly requiring the app components here as they should be imported
 // via the Nuxt module system, but we provide a reference to the path

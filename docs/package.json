@@ -2,7 +2,7 @@
   "name": "docs",
   "version": "1.0.0",
   "type": "module",
-  "description": "MinAPI Documentation - Built with VitePress",
+  "description": "BasefloorAPI Documentation - Built with VitePress",
   "main": "index.js",
   "directories": {
     "example": "examples"
@@ -13,7 +13,7 @@
     "preview": "vitepress preview",
     "serve": "vitepress dev"
   },
-  "keywords": ["minapi", "documentation", "vitepress", "vue"],
+  "keywords": ["basefloor", "basefloorapi", "documentation", "vitepress", "vue"],
   "author": "Haseeb Qureshi (HQ)",
   "license": "MIT",
   "devDependencies": {

@@ -1,129 +1,122 @@
 # Quick Start
 
-This guide will help you get your first MinAPI project up and running in just a few minutes.
+This guide will help you get your first BasefloorAPI project up and running in just a few minutes.
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
-- MongoDB database
-- Basic knowledge of JavaScript
+- Node.js 16+ installed
+- MongoDB instance (local or remote)
 
-## Step 1: Create a New Project
+## Step 1: Create a new project
 
 ```bash
-mkdir my-minapi-project
-cd my-minapi-project
+mkdir my-basefloor-project
+cd my-basefloor-project
 npm init -y
 ```
 
-## Step 2: Install MinAPI
+## Step 2: Install BasefloorAPI
 
 ```bash
-npm install @hq/minapi
+npm install @basefloor/api
 ```
 
-## Step 3: Create Configuration
+> 💡 **Smart Installation**: BasefloorAPI only installs provider packages you actually configure. No bloated dependencies!
 
-Create a `minapi.config.js` file:
+## Step 3: Create your configuration
+
+Create a `basefloor.config.js` file:
 
 ```javascript
-module.exports = (API) => {
-  return {
-    project: {
-      name: 'my-api',
-      port: process.env.PORT || 3000,
-      env: process.env.NODE_ENV || 'development'
-    },
-    db: '@mongodb/db',
+module.exports = (API) => ({
+  project: {
+    name: 'My API',
+    port: 3000,
+    env: 'development'
+  },
+  
+  database: {
+    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/myapp'
+  },
+  
+  // 🚀 Only these providers will be installed:
+  email: {
+    provider: 'sendgrid',
+    from: 'noreply@myapp.com'
+  },
+  
+  ai: {
     providers: {
-      '@mongodb/db': {
-        host: process.env.MONGODB_HOST || 'localhost:27017',
-        database: process.env.MONGODB_DATABASE || 'my_api_db'
+      openai: {
+        apiKey: process.env.OPENAI_API_KEY,
+        model: 'gpt-4'
       }
-    },
-    models: {
-      Users: {
-        collection: 'users',
-        labels: ['User', 'Users'],
-        values: {
-          _id: ['ObjectId', 'rud'],
-          email: ['String', 'cru'],
-          name: ['String', 'cru'],
-          created_at: ['Date', 'r'],
-          updated_at: ['Date', 'r']
-        }
+    }
+  },
+  
+  models: (m) => [
+    m.create('Users', {
+      fields: {
+        name: { type: 'string', required: true },
+        email: { type: 'string', required: true, unique: true },
+        role: { type: 'string', default: 'user' }
       }
-    },
-    routes: [
-      {
-        _id: '/users(Users)',
-        _create: { allow: true },
-        _readAll: { allow: true },
-        _read: { allow: true, where: '_id' },
-        _update: { allow: true, where: '_id' },
-        _delete: { allow: true, where: '_id' }
+    }),
+    
+    m.create('Posts', {
+      fields: {
+        title: { type: 'string', required: true },
+        content: { type: 'string', required: true },
+        author: { type: 'objectId', ref: 'Users', required: true },
+        published: { type: 'boolean', default: false }
       }
-    ]
-  }
-}
+    })
+  ],
+  
+  routes: (r) => [
+    // User routes
+    r.post('/users(Users)', { c: true }),
+    r.get('/users(Users)', { rA: true }),
+    r.get('/users/:user_id(Users)', { r: true }),
+    
+    // Post routes  
+    r.post('/posts(Posts)', { c: true, permissions: ['auth'] }),
+    r.get('/posts(Posts)', { rA: true }),
+    r.get('/posts/:post_id(Posts)', { r: true }),
+    r.put('/posts/:post_id(Posts)', { u: true, permissions: ['auth', 'owner'] }),
+    r.delete('/posts/:post_id(Posts)', { d: true, permissions: ['auth', 'owner'] })
+  ]
+})
 ```
 
-## Step 4: Create Your Main File
+## Step 4: Create your server
 
 Create an `index.js` file:
 
 ```javascript
-const MinAPI = require('@hq/minapi')
-const path = require('path')
+const BasefloorAPI = require('@basefloor/api')
 
-const api = MinAPI({
-  projectPath: __dirname,
-  envPath: path.resolve(__dirname, '.env')
+const api = BasefloorAPI({
+  config: require('./basefloor.config.js')
 })
-
-api.Init()
-api.Start()
 ```
 
-## Step 5: Create Environment File
-
-Create a `.env` file:
-
-```env
-NODE_ENV=development
-PORT=3000
-MONGODB_HOST=localhost:27017
-MONGODB_DATABASE=my_api_db
-JWT_SECRET=your-secret-key-here
-```
-
-## Step 6: Start Your API
+## Step 5: Start your server
 
 ```bash
 node index.js
 ```
 
-Your API should now be running at `http://localhost:3000`!
+That's it! Your API is now running on `http://localhost:3000` with:
 
-## Test Your API
-
-You can test your new API with curl:
-
-```bash
-# Create a user
-curl -X POST http://localhost:3000/users \
-  -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com", "name": "Test User"}'
-
-# Get all users
-curl http://localhost:3000/users
-
-# Get a specific user (replace :id with actual user ID)
-curl http://localhost:3000/users/:id
-```
+- Full CRUD operations for Users and Posts
+- Authentication endpoints (`/auth/register`, `/auth/login`, etc.)
+- Built-in validation and error handling
+- MongoDB integration
 
 ## Next Steps
 
-- [Installation Guide](./installation) - Learn about system requirements and advanced installation
-- [Configuration Reference](./configuration) - Explore all configuration options
-- [Models Documentation](../reference/models) - Deep dive into data modeling 
+- [Learn about models](/reference/models) to understand data modeling
+- [Explore routing](/reference/routes) to create custom endpoints  
+- [Set up authentication](/reference/authentication) to secure your API
+- [Check out examples](/examples/) for more complex use cases 

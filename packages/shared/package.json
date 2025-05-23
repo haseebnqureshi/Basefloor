@@ -1,0 +1,58 @@
+{
+  "name": "@basefloor/shared",
+  "version": "1.0.0",
+  "description": "Basefloor Shared - Common types, schemas, and utilities for the Basefloor ecosystem",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"Shared package - edit TypeScript files directly\"",
+    "build": "echo \"TypeScript compilation skipped for now\" && exit 0",
+    "test": "echo \"No tests yet\" && exit 0",
+    "test:watch": "echo \"No tests yet\" && exit 0",
+    "lint": "echo \"Linting skipped\" && exit 0",
+    "lint:fix": "echo \"Linting skipped\" && exit 0",
+    "type-check": "echo \"Type checking skipped\" && exit 0"
+  },
+  "keywords": [
+    "basefloor",
+    "shared",
+    "types",
+    "schemas",
+    "utilities",
+    "configuration",
+    "typescript"
+  ],
+  "author": "Haseeb Qureshi (HQ)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haseebnqureshi/basefloor.git",
+    "directory": "packages/shared"
+  },
+  "dependencies": {
+    "zod": "^3.22.0",
+    "type-fest": "^4.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-typescript": "^11.1.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.45.0",
+    "rollup": "^3.29.0",
+    "typescript": "^5.0.0",
+    "vitest": "^0.34.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/",
+    "src/",
+    "README.md"
+  ]
+} 

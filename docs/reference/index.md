@@ -1,31 +1,23 @@
-# API Reference
+# Reference
 
-Welcome to the MinAPI reference documentation. Here you'll find detailed information about all the core concepts and features of MinAPI.
+Welcome to the BasefloorAPI reference documentation. Here you'll find detailed information about all the core concepts and features of BasefloorAPI.
 
 ## Core Concepts
 
-### [Models](./models)
-Learn about data modeling, MongoDB integration, and automatic CRUD operations.
-
-### [Routes](./routes) 
-Understand routing, parameter extraction, and permission checks.
-
-### [Authentication](./authentication)
-Explore user authentication, JWT tokens, and security features.
-
-### [Permissions](./permissions)
-Discover the permission system and access control.
+- **[Models](./models)** - Data modeling and database integration
+- **[Routes](./routes)** - Creating API endpoints and routing
+- **[Authentication](./authentication)** - User management and security
+- **[Permissions](./permissions)** - Access control and authorization
 
 ## Features
 
-### [File Management](./files)
-File upload, storage, and processing capabilities.
+- **[File Management](./files)** - File upload, storage, and processing
+- **[Email Services](./emails)** - Email notifications and templates
+- **[AI Integration](./ai)** - AI service integrations
+- **[Transcription](./transcription)** - Speech-to-text capabilities
 
-### [Audio Transcription](./transcription)
-Speech-to-text functionality using Google Cloud and other services.
+## Getting Help
 
-### [AI Integration](./ai)
-Integration with AI services like Anthropic Claude.
-
-### [Email Notifications](./emails)
-Email integration through various providers like SendGrid and Mailgun. 
+- Check our [examples](../examples/) for practical implementations
+- Review the [configuration guide](../guide/configuration) for setup details
+- Visit our [GitHub repository](https://github.com/haseebnqureshi/minAPI) for issues and contributions 

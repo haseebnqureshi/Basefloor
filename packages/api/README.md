@@ -1,6 +1,50 @@
-# MinAPI
+# BasefloorAPI
 
-MinAPI is a comprehensive API framework built on Express and MongoDB that provides a minimum viable API setup with built-in authentication, permissions, CRUD operations, and resource management.
+BasefloorAPI is a comprehensive API framework built on Express and MongoDB that provides a minimum viable API setup with built-in authentication, permissions, CRUD operations, and resource management.
+
+## ✨ Key Features
+
+- 🔐 **Built-in Authentication** - JWT, permissions, user management
+- 📝 **Auto CRUD Operations** - Generate REST APIs from model definitions
+- 🚀 **Smart Dependencies** - Only installs providers you actually use
+- 🗄️ **MongoDB Integration** - Seamless database operations
+- 📨 **Multi-Provider Email** - SendGrid, Mailgun, Postmark support
+- 🤖 **AI Integration** - OpenAI, Anthropic, Google AI support
+- 🖼️ **File Management** - Local, S3, Cloudinary storage options
+- 🔒 **Security First** - Rate limiting, validation, sanitization
+
+## 🚀 Smart Provider System
+
+BasefloorAPI uses **dynamic dependency installation** - you only install what you configure:
+
+```javascript
+// Your config determines what gets installed
+module.exports = (API) => ({
+  email: { provider: 'sendgrid' },    // ✅ Installs sendgrid
+  ai: { provider: 'openai' }          // ✅ Installs openai
+  // ❌ Does NOT install: mailgun, anthropic, postmark, etc.
+})
+```
+
+**Benefits:**
+- 🪶 **Lightweight**: ~50% smaller node_modules
+- ⚡ **Faster**: Quick installs and startup
+- 🔒 **Secure**: Fewer dependencies, smaller attack surface
+
+## Installation
+
+```bash
+npm install @basefloor/api
+```
+
+### Supported Providers
+
+| Type | Providers | Auto-Installed |
+|------|-----------|----------------|
+| **Email** | SendGrid, Mailgun, Postmark, Nodemailer | Based on config |
+| **AI** | OpenAI, Anthropic, Google Gemini | Based on config |
+| **Storage** | AWS S3, Cloudinary, Local | Based on config |
+| **Database** | MongoDB, Mongoose | Always included |
 
 ## Features
 

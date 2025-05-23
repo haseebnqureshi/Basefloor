@@ -1,15 +1,15 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: 'MinAPI Documentation',
-  description: 'Comprehensive documentation for the MinAPI framework',
+  title: 'BasefloorAPI Documentation',
+  description: 'Comprehensive documentation for the BasefloorAPI backend framework',
   base: '/',
   
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Guide', link: '/guide/' },
-      { text: 'API Reference', link: '/reference/' },
+      { text: 'Reference', link: '/reference/' },
       { text: 'Examples', link: '/examples/' }
     ],
     
@@ -20,8 +20,8 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: 'Introduction', link: '/guide/' },
-            { text: 'Quick Start', link: '/guide/quick-start' },
             { text: 'Installation', link: '/guide/installation' },
+            { text: 'Quick Start', link: '/guide/quick-start' },
             { text: 'Configuration', link: '/guide/configuration' }
           ]
         }
@@ -32,6 +32,7 @@ export default defineConfig({
           text: 'Core Concepts',
           collapsed: false,
           items: [
+            { text: 'Overview', link: '/reference/' },
             { text: 'Models', link: '/reference/models' },
             { text: 'Routes', link: '/reference/routes' },
             { text: 'Authentication', link: '/reference/authentication' },
@@ -43,9 +44,9 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: 'File Management', link: '/reference/files' },
-            { text: 'Audio Transcription', link: '/reference/transcription' },
+            { text: 'Email Services', link: '/reference/emails' },
             { text: 'AI Integration', link: '/reference/ai' },
-            { text: 'Email Notifications', link: '/reference/emails' }
+            { text: 'Transcription', link: '/reference/transcription' }
           ]
         }
       ],
@@ -55,9 +56,10 @@ export default defineConfig({
           text: 'Examples',
           collapsed: false,
           items: [
+            { text: 'Overview', link: '/examples/' },
             { text: 'Basic Setup', link: '/examples/basic-setup' },
-            { text: 'Complete Configuration', link: '/examples/complete-config' },
-            { text: 'Blog API Example', link: '/examples/blog-api' }
+            { text: 'Blog API', link: '/examples/blog-api' },
+            { text: 'Complete Config', link: '/examples/complete-config' }
           ]
         }
       ],
@@ -67,9 +69,7 @@ export default defineConfig({
           text: 'API Reference',
           collapsed: false,
           items: [
-            { text: 'REST Endpoints', link: '/api/endpoints' },
-            { text: 'File Operations', link: '/api/files' },
-            { text: 'Error Codes', link: '/api/errors' }
+            { text: 'Files', link: '/api/files' }
           ]
         }
       ]
@@ -81,7 +81,7 @@ export default defineConfig({
     
     footer: {
       message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2024 MinAPI'
+      copyright: 'Copyright © 2024 BasefloorAPI'
     },
     
     search: {

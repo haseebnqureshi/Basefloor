@@ -4,11 +4,11 @@
 
 ## Overview
 
-The `models/index.js` file in MinAPI provides a powerful and flexible system for defining data models and their interactions with the database. This document explains how models work in MinAPI and how they can be customized through the `minapi.config.js` file.
+The `models/index.js` file in Basefloor provides a powerful and flexible system for defining data models and their interactions with the database. This document explains how models work in Basefloor and how they can be customized through the `basefloor.config.js` file.
 
 ## Model Definition
 
-Models in MinAPI are defined as JavaScript objects with specific properties that determine how data is stored, retrieved, and manipulated. Each model represents a collection in the database and defines the schema, validation rules, and behavior for that collection.
+Models in Basefloor are defined as JavaScript objects with specific properties that determine how data is stored, retrieved, and manipulated. Each model represents a collection in the database and defines the schema, validation rules, and behavior for that collection.
 
 ### Basic Model Structure
 
@@ -49,7 +49,7 @@ field_name: ['DataType', 'crudOperations', 'defaultValue?']
 
 ## Filters System
 
-The filters system is one of the most powerful features of MinAPI's model system. It allows you to intercept and modify data at various points in the CRUD operations lifecycle.
+The filters system is one of the most powerful features of Basefloor's model system. It allows you to intercept and modify data at various points in the CRUD operations lifecycle.
 
 ### Filter Types
 
@@ -105,7 +105,7 @@ filters: {
 
 ### Error Handling
 
-MinAPI includes built-in error handling for filters. If a filter function throws an error, the system will:
+Basefloor includes built-in error handling for filters. If a filter function throws an error, the system will:
 
 1. Log the error with details
 2. Continue the operation with the original data (as if the filter wasn't applied)
@@ -120,7 +120,7 @@ This makes the system more robust and prevents filter errors from causing applic
 One of the most powerful applications of filters is encrypting sensitive data before storing it and decrypting it when reading:
 
 ```javascript
-// In minapi.config.js
+// In basefloor.config.js
 module.exports = (API) => {
   return {
     models: {
@@ -213,7 +213,7 @@ filters: {
 
 ## Database Operations
 
-MinAPI provides a comprehensive set of database operations that utilize these filters:
+Basefloor provides a comprehensive set of database operations that utilize these filters:
 
 - **create**: Create a single document
 - **createMany**: Create multiple documents
@@ -227,12 +227,12 @@ MinAPI provides a comprehensive set of database operations that utilize these fi
 
 Each operation applies the appropriate filters at the right time in the operation lifecycle.
 
-## Customizing Models in minapi.config.js
+## Customizing Models in basefloor.config.js
 
-You can customize and extend models in your `minapi.config.js` file:
+You can customize and extend models in your `basefloor.config.js` file:
 
 ```javascript
-// minapi.config.js
+// basefloor.config.js
 module.exports = (API) => {
   return {
     models: {
@@ -282,13 +282,13 @@ This allows for a flexible and powerful way to modify data at various points in 
 1. **Keep filters pure**: Filters should not have side effects
 2. **Handle null/undefined values**: Always check if values exist before operating on them
 3. **Return the modified object**: Always return the object from filter functions
-4. **Use sanitization**: Let MinAPI's sanitization handle type conversion
+4. **Use sanitization**: Let Basefloor's sanitization handle type conversion
 5. **Document your filters**: Complex filters should be well-documented
 
 ## Example: Complete Model with Filters
 
 ```javascript
-// In minapi.config.js
+// In basefloor.config.js
 models.SecureDocuments = {
   collection: 'secure_documents',
   labels: ['Secure Document', 'Secure Documents'],
@@ -341,4 +341,4 @@ models.SecureDocuments = {
 }
 ```
 
-This documentation provides a comprehensive overview of MinAPI's model system and how to leverage its powerful filtering capabilities to implement custom business logic, data transformation, encryption, and more. 
+This documentation provides a comprehensive overview of Basefloor's model system and how to leverage its powerful filtering capabilities to implement custom business logic, data transformation, encryption, and more. 

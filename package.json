@@ -1,38 +1,62 @@
 {
   "name": "basefloor",
   "version": "1.0.0",
-  "description": "MinAPI Project - Comprehensive API framework and documentation",
-  "main": "api/index.js",
+  "description": "Basefloor Ecosystem - Modern full-stack development platform",
+  "main": "index.js",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "docs:sync": "node docs/scripts/sync-docs.js sync",
-    "docs:check": "node docs/scripts/sync-docs.js check",
     "docs:dev": "cd docs && npm run dev",
     "docs:build": "cd docs && npm run build",
     "docs:preview": "cd docs && npm run preview",
-    "docs:serve": "cd docs && npm run dev",
-    "api:dev": "cd api && node index.js",
-    "api:build": "cd api && npm run build",
-    "api:test": "cd api && npm test"
+    "api:dev": "cd packages/api && npm run dev",
+    "api:build": "cd packages/api && npm run build",
+    "api:test": "cd packages/api && npm test",
+    "app:dev": "cd packages/app && npm run dev",
+    "app:build": "cd packages/app && npm run build", 
+    "app:test": "cd packages/app && npm test",
+    "shared:build": "cd packages/shared && npm run build",
+    "shared:test": "cd packages/shared && npm test",
+    "test:all": "npm run api:test && npm run app:test && npm run shared:test",
+    "build:all": "npm run shared:build && npm run api:build && npm run app:build && npm run docs:build",
+    "clean": "rm -rf packages/*/node_modules packages/*/dist docs/.vitepress/dist",
+    "install:all": "npm install && npm run api:install && npm run app:install",
+    "dev": "concurrently \"npm run api:dev\" \"npm run docs:dev\"",
+    "version": "lerna version",
+    "version:patch": "lerna version patch",
+    "version:minor": "lerna version minor",
+    "version:major": "lerna version major",
+    "publish": "npm run build:all && lerna publish from-git",
+    "publish:canary": "npm run build:all && lerna publish --canary",
+    "publish:manual": "node scripts/publish.js",
+    "publish:manual:patch": "node scripts/publish.js patch",
+    "publish:manual:minor": "node scripts/publish.js minor",
+    "publish:manual:major": "node scripts/publish.js major",
+    "changed": "lerna changed",
+    "diff": "lerna diff"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/haseebnqureshi/minAPI.git"
+    "url": "git+https://github.com/haseebnqureshi/basefloor.git"
   },
   "keywords": [
-    "minapi",
+    "basefloor",
     "api",
+    "vue",
     "framework",
-    "documentation",
+    "fullstack",
     "mongodb",
     "express"
   ],
   "author": "Haseeb Qureshi (HQ)",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.0",
+    "lerna": "^7.0.0"
   },
-  "workspaces": [
-    "api"
-  ]
+  "engines": {
+    "node": ">=16.0.0"
+  }
 } 

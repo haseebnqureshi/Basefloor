@@ -1,200 +1,264 @@
 # Installation
 
-This guide covers the installation and setup of MinAPI and its dependencies.
+This guide covers the installation and setup of BasefloorAPI and its dependencies.
 
 ## System Requirements
 
-- **Node.js**: Version 14.0 or higher
-- **MongoDB**: Version 4.0 or higher
-- **Operating System**: macOS, Linux, or Windows
+- **Node.js**: Version 16.0 or higher
+- **MongoDB**: Version 4.4 or higher (local or remote)
+- **Operating System**: Windows, macOS, or Linux
 
-## Dependencies
+BasefloorAPI requires certain system dependencies for its advanced features:
 
-MinAPI requires certain system dependencies for its advanced features:
+### LibreOffice (Optional)
 
-### LibreOffice (Required for document processing)
-
-MinAPI uses LibreOffice for document conversion and processing features.
-
-**macOS:**
-```bash
-brew install libreoffice
-```
+BasefloorAPI uses LibreOffice for document conversion and processing features.
 
 **Ubuntu/Debian:**
 ```bash
-sudo apt install libreoffice
+sudo apt-get update
+sudo apt-get install libreoffice
 ```
-
-**CentOS/RHEL:**
-```bash
-sudo yum install libreoffice
-```
-
-### Ghostscript (Required for PDF processing)
 
 **macOS:**
 ```bash
-brew install ghostscript
+brew install --cask libreoffice
 ```
+
+**Windows:**
+Download and install from [LibreOffice official website](https://www.libreoffice.org/download/download/)
+
+### ImageMagick (Optional)
+
+For advanced image processing capabilities:
 
 **Ubuntu/Debian:**
 ```bash
-sudo apt-get install ghostscript
+sudo apt-get install imagemagick
 ```
 
-**CentOS/RHEL:**
+**macOS:**
 ```bash
-sudo yum install ghostscript
+brew install imagemagick
 ```
 
-## Installing MinAPI
+**Windows:**
+Download and install from [ImageMagick website](https://imagemagick.org/script/download.php#windows)
+
+## Installing BasefloorAPI
 
 ### Using npm
 
 ```bash
-npm install @hq/minapi
+npm install @basefloor/api
 ```
 
 ### Using yarn
 
 ```bash
-yarn add @hq/minapi
+yarn add @basefloor/api
 ```
 
 ### Using pnpm
 
 ```bash
-pnpm add @hq/minapi
+pnpm add @basefloor/api
 ```
 
-## Optional Dependencies
+## 🚀 Smart Provider Installation
 
-### Google Cloud SDK (For audio transcription)
+BasefloorAPI uses a **dynamic dependency system** that only installs the packages you actually need based on your configuration. This keeps your project lightweight and secure.
 
-If you plan to use audio transcription features:
+### How It Works
 
-1. **Install Google Cloud SDK:**
+1. **Base Installation**: When you install `@basefloor/api`, you get a lightweight core package
+2. **Configuration**: You specify which providers you want to use in your `basefloor.config.js`
+3. **Smart Dependencies**: BasefloorAPI automatically installs only the packages for providers you've configured
+4. **No Bloat**: You never install unused dependencies
 
-   **macOS:**
-   ```bash
-   brew install google-cloud-sdk
-   ```
+### Example
 
-   **Linux:**
-   ```bash
-   curl https://sdk.cloud.google.com | bash
-   exec -l $SHELL
-   ```
-
-2. **Set up authentication:**
-   - Create a Google Cloud project
-   - Enable the Speech-to-Text API
-   - Create a service account with Speech-to-Text API access
-   - Download the service account key file (JSON)
-
-3. **Configure credentials:**
-   ```bash
-   export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/credentials.json"
-   ```
-
-### AWS CLI (For S3 file storage)
-
-If you plan to use AWS S3 for file storage:
+```javascript
+// basefloor.config.js
+module.exports = (API) => ({
+  email: {
+    provider: 'sendgrid'  // Only installs sendgrid package
+  },
+  ai: {
+    providers: {
+      openai: { apiKey: '...' }  // Only installs openai package
+    }
+  }
+  // Does NOT install: mailgun, postmark, anthropic, etc.
+})
+```
 
 ```bash
-# macOS
-brew install awscli
-
-# Linux
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
+npm install @basefloor/api
+# ✅ Installs core framework
+# ✅ Reads your config
+# ✅ Installs ONLY: sendgrid + openai
+# ❌ SKIPS: All other provider packages
 ```
 
-Configure AWS credentials:
+### Benefits
+
+- **🪶 Lightweight**: Smaller `node_modules` folder
+- **🔒 Secure**: Fewer dependencies = smaller attack surface  
+- **⚡ Faster**: Quicker installs and builds
+- **💰 Cost-effective**: Only pay for services you use
+
+## Available Providers
+
+### Email Providers
+- `sendgrid` - SendGrid email service
+- `mailgun` - Mailgun email service  
+- `postmark` - Postmark email service
+- `nodemailer` - SMTP email (any provider)
+
+### AI Providers  
+- `openai` - OpenAI GPT models
+- `anthropic` - Anthropic Claude models
+- `google` - Google Gemini models
+
+### File Storage Providers
+- `aws-s3` - Amazon S3 storage
+- `cloudinary` - Cloudinary media management
+- `local` - Local file system (no external packages)
+
+### Database Providers
+- `mongodb` - MongoDB (always included)
+- `mongoose` - Mongoose ODM (always included)
+
+## Setting Up MongoDB
+
+### Option 1: Local MongoDB Installation
+
+**Ubuntu/Debian:**
 ```bash
-aws configure
+# Import the public key
+wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+
+# Create a list file for MongoDB
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+
+# Reload local package database
+sudo apt-get update
+
+# Install MongoDB
+sudo apt-get install -y mongodb-org
+
+# Start MongoDB
+sudo systemctl start mongod
+sudo systemctl enable mongod
 ```
-
-## Database Setup
-
-### MongoDB Installation
 
 **macOS:**
 ```bash
+# Install using Homebrew
 brew tap mongodb/brew
 brew install mongodb-community
-brew services start mongodb-community
+
+# Start MongoDB
+brew services start mongodb/brew/mongodb-community
 ```
 
-**Ubuntu:**
-```bash
-wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-sudo apt-get update
-sudo apt-get install -y mongodb-org
-sudo systemctl start mongod
-```
+**Windows:**
+Download and install from [MongoDB official website](https://www.mongodb.com/try/download/community)
 
-### MongoDB Atlas (Cloud)
+### Option 2: MongoDB Atlas (Cloud)
 
-Alternatively, you can use MongoDB Atlas for a cloud-hosted database:
-
-1. Visit [MongoDB Atlas](https://www.mongodb.com/atlas)
-2. Create a free account and cluster
+1. Create a free account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a new cluster
 3. Get your connection string
-4. Use it in your MinAPI configuration
+4. Use it in your BasefloorAPI configuration
+
+## Environment Variables
+
+Create a `.env` file in your project root:
+
+```env
+# Database
+MONGODB_URI=mongodb://localhost:27017/your-app-name
+# Or for MongoDB Atlas:
+# MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/your-app-name
+
+# Server
+PORT=3000
+NODE_ENV=development
+
+# Security
+JWT_SECRET=your-very-secure-secret-key-here
+JWT_EXPIRES_IN=7d
+
+# File Storage (Optional)
+UPLOAD_PATH=./uploads
+MAX_FILE_SIZE=10485760
+
+# Email Provider (Optional)
+EMAIL_PROVIDER=sendgrid
+SENDGRID_API_KEY=your-sendgrid-api-key
+
+# AI Services (Optional)
+OPENAI_API_KEY=your-openai-api-key
+ANTHROPIC_API_KEY=your-anthropic-api-key
+
+# Google Cloud (Optional)
+GOOGLE_CLOUD_PROJECT_ID=your-project-id
+GOOGLE_CLOUD_KEY_FILE=path/to/service-account.json
+```
 
 ## Verification
 
-After installation, verify everything is working:
+To verify your installation:
 
-1. **Check Node.js version:**
-   ```bash
-   node --version
-   ```
+1. Create a simple test file:
 
-2. **Check MongoDB connection:**
-   ```bash
-   mongosh # or mongo for older versions
-   ```
+```javascript
+// test.js
+const BasefloorAPI = require('@basefloor/api')
 
-3. **Test LibreOffice:**
-   ```bash
-   libreoffice --version
-   ```
+console.log('BasefloorAPI version:', require('@basefloor/api/package.json').version)
+```
 
-4. **Test Ghostscript:**
-   ```bash
-   gs --version
-   ```
+2. Run it:
 
-## Troubleshooting
+```bash
+node test.js
+```
 
-### Common Issues
+3. If successful, you should see the version number printed.
 
-**Permission denied errors:**
-- On macOS/Linux, you might need to use `sudo` for system-wide installations
-- Consider using a Node version manager like `nvm` to avoid permission issues
+4. Use it in your BasefloorAPI configuration
 
-**MongoDB connection issues:**
-- Ensure MongoDB is running: `brew services start mongodb-community` (macOS) or `sudo systemctl start mongod` (Linux)
-- Check your connection string and credentials
-- Verify network connectivity and firewall settings
+## Common Issues
 
-**LibreOffice not found:**
-- Ensure LibreOffice is in your system PATH
-- Try restarting your terminal after installation
+### MongoDB Connection Issues
 
-**Missing dependencies:**
-- Run `npm install` again to ensure all dependencies are installed
-- Check for any error messages during installation
+**Issue**: Cannot connect to MongoDB
+**Solution**: 
+- Ensure MongoDB is running
+- Check your connection string
+- Verify network connectivity (for Atlas)
+
+### Permission Issues
+
+**Issue**: Permission denied when starting the server
+**Solution**:
+- Check port availability
+- Use a different port (e.g., 3001, 8080)
+- Run with appropriate permissions
+
+### Missing Dependencies
+
+**Issue**: Optional features not working
+**Solution**:
+- Install LibreOffice for document processing
+- Install ImageMagick for image processing
+- Check system PATH variables
 
 ## Next Steps
 
-Once installation is complete:
-
 - [Quick Start Guide](./quick-start) - Get your first API running
 - [Configuration Reference](./configuration) - Learn about all configuration options
-- [Examples](../examples/) - See real-world usage examples 
+- [Examples](../examples/) - See practical implementations 

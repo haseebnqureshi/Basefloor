@@ -1,0 +1,76 @@
+{
+  "name": "@basefloor/api",
+  "version": "1.0.0",
+  "description": "BasefloorAPI - Modern backend framework with built-in authentication, permissions, and MongoDB integration",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "test": "echo \"No tests yet\" && exit 0",
+    "test:watch": "echo \"No tests yet\" && exit 0",
+    "build": "echo \"No build needed - providers install dynamically based on user config\" && exit 0",
+    "install:deps": "node scripts/install-dependencies.js",
+    "postinstall": "npm run install:deps"
+  },
+  "keywords": [
+    "basefloor",
+    "api",
+    "framework",
+    "express",
+    "mongodb",
+    "authentication",
+    "permissions",
+    "crud",
+    "rest",
+    "backend"
+  ],
+  "author": "Haseeb Qureshi (HQ)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haseebnqureshi/basefloor.git",
+    "directory": "packages/api"
+  },
+  "dependencies": {
+    "@basefloor/shared": "^1.0.0",
+    "express": "^4.18.0",
+    "mongoose": "^7.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "multer": "^1.4.4",
+    "helmet": "^6.0.0",
+    "express-rate-limit": "^6.7.0",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20",
+    "jest": "^29.0.0",
+    "supertest": "^6.3.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "index.js",
+    "auth/",
+    "db/",
+    "models/",
+    "routes/",
+    "files/",
+    "emails/",
+    "ai/",
+    "transcription/",
+    "providers/",
+    "utils/",
+    "middlewares/",
+    "scripts/",
+    "README.md"
+  ]
+}

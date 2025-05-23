@@ -1,10 +1,10 @@
-# Email Notifications
+# Email Services
 
-MinAPI provides built-in email functionality with support for multiple providers and template systems.
+Basefloor provides built-in email functionality with support for multiple providers and template systems.
 
 ## Configuration
 
-Configure email services in your `minapi.config.js`:
+Configure email services in your `basefloor.config.js`:
 
 ### Postmark
 
@@ -107,7 +107,7 @@ await API.Email.sendBulk({
 
 ## Built-in Email Types
 
-MinAPI automatically sends emails for:
+Basefloor automatically sends emails for:
 
 ### User Registration
 
