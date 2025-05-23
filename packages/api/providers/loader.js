@@ -30,7 +30,7 @@ function checkProviderDependencies(providerPath) {
   const manifestPath = path.join(__dirname, 'manifest.json');
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   
-  // Load MinAPI's package.json
+  // Load Basefloor's package.json
   const packageJsonPath = path.join(__dirname, '../package.json');
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
   
@@ -50,14 +50,14 @@ function checkProviderDependencies(providerPath) {
     throw new Error(`Provider ${providerName} not found in manifest`);
   }
   
-  // Check if dependencies are installed in MinAPI's package.json
+  // Check if dependencies are installed in Basefloor's package.json
   const missingDeps = requiredDeps.filter(dep => !installedDeps.has(dep));
   
   if (missingDeps.length > 0) {
     const installCommand = getInstallCommand(missingDeps);
     throw new Error(
       `Missing required dependencies for ${providerName}:\n` +
-      `Please run '${installCommand}' in the MinAPI directory to install the missing dependencies.`
+      `Please run '${installCommand}' in the Basefloor directory to install the missing dependencies.`
     );
   }
   
@@ -68,7 +68,7 @@ function checkProviderDependencies(providerPath) {
     const installCommand = getInstallCommand(requiredDeps);
     throw new Error(
       `Failed to load dependency for ${providerName}: ${err.message}\n` +
-      `Try running '${installCommand}' in the MinAPI directory`
+      `Try running '${installCommand}' in the Basefloor directory`
     );
   }
 }

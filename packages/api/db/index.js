@@ -9,7 +9,7 @@ module.exports = (API, { db, paths, providers, project }) => {
 
   API.DB = { 
     ...API.DB,
-    ...require(`${paths.minapi}/providers/${provider}`)({ providerVars, providerName }),
+    ...require(`${paths.basefloor}/providers/${provider}`)({ providerVars, providerName }),
   }
 
   return API

@@ -5,7 +5,7 @@ const fs = require('fs');
 function installCoreDependencies() {
   const miniApiDir = path.join(__dirname, '..');
   
-  // Check if we're in development mode (running from minapi project directly)
+  // Check if we're in development mode (running from basefloor project directly)
   const isDevelopment = fs.existsSync(path.join(miniApiDir, '.git'));
   
   // If SKIP_POSTINSTALL is set, we're in a recursive install - skip
@@ -14,7 +14,7 @@ function installCoreDependencies() {
     return;
   }
   
-  console.log('Installing MinAPI core dependencies...');
+  console.log('Installing Basefloor core dependencies...');
   
   try {
     // Create node_modules directory if it doesn't exist

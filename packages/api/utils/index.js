@@ -47,8 +47,8 @@ module.exports = (API, { paths, providers, project }) => {
 		let headers = {}
 		for (let reqHeader in reqHeaders) {
 			// console.log({ reqHeader })
-			if (reqHeader.match('x-minapi')) {
-				const [, key] = reqHeader.match(/x\-minapi\-([a-z\-]+)$/i)
+			if (reqHeader.match('x-basefloor')) {
+				const [, key] = reqHeader.match(/x\-basefloor\-([a-z\-]+)$/i)
 				const value = reqHeaders[reqHeader]
 				if (key.match(/size/i)) {
 					headers[key] = parseInt(value)
@@ -59,7 +59,7 @@ module.exports = (API, { paths, providers, project }) => {
 				}
 			}
 		}
-		API.Log('- minapi headers collected', { headers })
+		API.Log('- basefloor headers collected', { headers })
 		return headers
 	}
 
@@ -68,7 +68,7 @@ module.exports = (API, { paths, providers, project }) => {
 		Expecting '@{providerName}/{service}'
 		So for instance, @digitalocean/files means that for our files service,
 		a provider available is digitalocean. The providerVars are loaded
-		from the minapi.config.js and the provider methods are then loaded
+		from the basefloor.config.js and the provider methods are then loaded
 		from the "_providers" directory.
 		*/
 		const [provider, service] = str.split('/')

@@ -12,7 +12,7 @@ module.exports = ({ projectPath, envPath }) => {
 	const paths = {
 		app: projectPath,
 		env: envPath,
-		minapi: __dirname,
+		basefloor: __dirname,
 	}
 
 	let API = express()
@@ -39,7 +39,7 @@ module.exports = ({ projectPath, envPath }) => {
 		emails,
 		ai,
 		transcription,
-	} = require(path.resolve(projectPath, 'minapi.config.js'))(API)
+	} = require(path.resolve(projectPath, 'basefloor.config.js'))(API)
 
 	API.Init = () => {
 		
@@ -85,13 +85,13 @@ module.exports = ({ projectPath, envPath }) => {
 
 	API.Start = () => {
 		API.listen(project.port, () => {
-			API.Log(`${project.name} running MinAPI/Express started HTTP:${project.port} in ${project.env} node environment ...`)
+			API.Log(`${project.name} running Basefloor/Express started HTTP:${project.port} in ${project.env} node environment ...`)
 		})
 	}
 
 	API.StartHTTPS = ({ key, crt }) => {
 		if (project.env !== 'production') {
-			return API.Log(`${project.name} running MinAPI/Express attempted to start HTTPS in not-production node environment, quitting now ...`)
+			return API.Log(`${project.name} running Basefloor/Express attempted to start HTTPS in not-production node environment, quitting now ...`)
 		}
 		const httpServer = require('http').createServer(API)
 		const httpsServer = require('https').createServer({
@@ -100,7 +100,7 @@ module.exports = ({ projectPath, envPath }) => {
 		}, API)
 		httpServer.listen(80)
 		httpsServer.listen(443)
-		API.Log(`${project.name} running MinAPI/Express started HTTPS in production node environment ...`)
+		API.Log(`${project.name} running Basefloor/Express started HTTPS in production node environment ...`)
 	}
 
 	return API

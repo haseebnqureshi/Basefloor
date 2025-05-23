@@ -1,7 +1,7 @@
 /**
- * Ollama Provider for MinAPI
+ * Ollama Provider for Basefloor
  * 
- * This provider enables using local LLMs through Ollama in a MinAPI application.
+ * This provider enables using local LLMs through Ollama in a Basefloor application.
  * 
  * Requirements:
  * - Ollama must be installed and running locally (default: http://localhost:11434)
@@ -10,14 +10,14 @@
  * 
  * Features:
  * - Connect to locally running Ollama instance
- * - Configure default model in minapi.config.js
+ * - Configure default model in basefloor.config.js
  * - Specify custom Ollama endpoint URL if needed
  * - Support for both text and image inputs with multimodal models
  * 
  * Current limitations:
  * - No streaming support currently
  * 
- * Configuration example in minapi.config.js:
+ * Configuration example in basefloor.config.js:
  * ```
  * module.exports = {
  *   ai: {

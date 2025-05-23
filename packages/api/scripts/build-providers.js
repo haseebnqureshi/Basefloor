@@ -23,7 +23,7 @@ function getProjectRoot() {
 
 function isDevMode() {
   try {
-    require(path.join(getProjectRoot(), 'minapi.config.js'));
+    require(path.join(getProjectRoot(), 'basefloor.config.js'));
     return false;
   } catch (err) {
     return true;
@@ -66,9 +66,9 @@ function getServiceTypes() {
 function getEnabledProviders() {
   let config;
   try {
-    config = require(path.join(getProjectRoot(), 'minapi.config.js'));
+    config = require(path.join(getProjectRoot(), 'basefloor.config.js'));
   } catch (err) {
-    console.log('No minapi.config.js found, loading all provider dependencies');
+    console.log('No basefloor.config.js found, loading all provider dependencies');
     const services = getServiceTypes();
     const allProviders = new Set();
     Object.values(services).forEach(providers => {
@@ -168,7 +168,7 @@ function updatePackageJson(dependencies) {
   });
   
   fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
-  console.log('Updated MinAPI package.json with provider dependencies');
+  console.log('Updated Basefloor package.json with provider dependencies');
 }
 
 function getDependenciesToInstall(dependencies) {

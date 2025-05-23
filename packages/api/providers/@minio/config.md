@@ -1,6 +1,6 @@
 # MinIO Local Provider Configuration
 
-This provider allows you to use MinIO as a local file storage option for your MinAPI application.
+This provider allows you to use MinIO as a local file storage option for your Basefloor application.
 
 ## Installation
 
@@ -45,9 +45,9 @@ Add this to your `env.json` file:
       "useSSL": false,
       "access": "miniouser",
       "secret": "miniopassword",
-      "bucket": "minapi",
+      "bucket": "basefloor",
       "region": "us-east-1",
-      "cdn": "http://localhost:9000/minapi",
+      "cdn": "http://localhost:9000/basefloor",
       "defaultAcl": "public-read"
     }
   }

@@ -8,7 +8,7 @@ module.exports = (API, { ai, paths, providers, checks }) => {
     try {
       API.AI = { 
         ...API.AI,
-        ...loadProvider(`${paths.minapi}/providers/${ai.provider}`)({ 
+        ...loadProvider(`${paths.basefloor}/providers/${ai.provider}`)({ 
           providerVars: providers[ai.provider],
           providerName: ai.provider,
         })
@@ -26,7 +26,7 @@ module.exports = (API, { ai, paths, providers, checks }) => {
     for (let key in ai.providers) {
       const name = ai.providers[key];
       try {
-        API.AI[key] = loadProvider(`${paths.minapi}/providers/${name}`)({ 
+        API.AI[key] = loadProvider(`${paths.basefloor}/providers/${name}`)({ 
           providerVars: providers[name],
           providerName: name,
         });

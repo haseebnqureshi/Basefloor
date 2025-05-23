@@ -1,10 +1,10 @@
-# Ollama Provider for MinAPI
+# Ollama Provider for Basefloor
 
-This provider enables integration with [Ollama](https://ollama.ai/), allowing your MinAPI application to use locally running LLMs without requiring API keys or internet connectivity.
+This provider enables integration with [Ollama](https://ollama.ai/), allowing your Basefloor application to use locally running LLMs without requiring API keys or internet connectivity.
 
 ## Overview
 
-Ollama is an open-source tool that lets you run large language models locally on your computer. This provider connects your MinAPI application to a locally running Ollama instance, making it possible to use various models like Gemma, Llama, Mistral, and others directly from your application.
+Ollama is an open-source tool that lets you run large language models locally on your computer. This provider connects your Basefloor application to a locally running Ollama instance, making it possible to use various models like Gemma, Llama, Mistral, and others directly from your application.
 
 ## Requirements
 
@@ -19,11 +19,11 @@ Ollama is an open-source tool that lets you run large language models locally on
 
 3. **Dependencies**:
    - The provider requires `node-fetch` package
-   - It will be automatically installed if you include this provider in your MinAPI configuration
+   - It will be automatically installed if you include this provider in your Basefloor configuration
 
 ## Configuration
 
-Add the Ollama provider to your `minapi.config.js`:
+Add the Ollama provider to your `basefloor.config.js`:
 
 ```javascript
 module.exports = {

@@ -1,6 +1,6 @@
-# Transcription Service for MinAPI
+# Transcription Service for Basefloor
 
-This service enables speech-to-text transcription capabilities in your MinAPI application.
+This service enables speech-to-text transcription capabilities in your Basefloor application.
 
 ⚠️ **SECURITY WARNING**
 When publishing this package:
@@ -21,12 +21,12 @@ When publishing this package:
 npm install @google-cloud/speech --save
 ```
 
-### 2. Configure in minapi.config.js
+### 2. Configure in basefloor.config.js
 
-Add the transcription configuration to your `minapi.config.js` file:
+Add the transcription configuration to your `basefloor.config.js` file:
 
 ```javascript
-// In minapi.config.js
+// In basefloor.config.js
 
 module.exports = (API) => {
   return {

@@ -1,4 +1,4 @@
-## Example minapi.config.js
+## Example basefloor.config.js
 
 ```
 module.exports = (API) => {

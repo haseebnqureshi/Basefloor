@@ -8,7 +8,7 @@ module.exports = (API, { emails, paths, providers, checks }) => {
 		try {
 			API.Emails = { 
 				...API.Emails,
-				...loadProvider(`${paths.minapi}/providers/${emails.provider}`)({ 
+				...loadProvider(`${paths.basefloor}/providers/${emails.provider}`)({ 
 					providerVars: providers[emails.provider],
 					providerName: emails.provider,
 				})
@@ -22,7 +22,7 @@ module.exports = (API, { emails, paths, providers, checks }) => {
   
   /*
   for if we decide to enable multiple providers
-  could be useful, only use with the following config in config.minapi.js:
+  could be useful, only use with the following config in config.basefloor.js:
   
   "emails": {
     enabled: true,
@@ -38,7 +38,7 @@ module.exports = (API, { emails, paths, providers, checks }) => {
 		for (let key in emails.providers) {
 			const name = emails.providers[key];
 			try {
-				API.Emails[key] = loadProvider(`${paths.minapi}/providers/${name}`)({ 
+				API.Emails[key] = loadProvider(`${paths.basefloor}/providers/${name}`)({ 
 					providerVars: providers[name],
 					providerName: name,
 				});

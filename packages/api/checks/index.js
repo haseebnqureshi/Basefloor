@@ -9,7 +9,7 @@ module.exports = (API, { paths, providers, project }) => {
 
   if (!enabled) { return API }
 
-	const filepath = path.resolve(paths.app, 'minapi.test.js')
+	const filepath = path.resolve(paths.app, 'basefloor.test.js')
 
 	API.Checks = { ...API.Checks }
 
@@ -24,7 +24,7 @@ module.exports = (API, { paths, providers, project }) => {
 	}
 
 	//creating our sync route for tester view
-	API.post('/minapi/checks', [notInProduction], async (req, res) => {
+	API.post('/basefloor/checks', [notInProduction], async (req, res) => {
 		try {
 			const json = JSON.stringify(req.body)
 			fs.writeFileSync(filepath, json, 'utf8')
@@ -35,7 +35,7 @@ module.exports = (API, { paths, providers, project }) => {
 		}
 	})
 
-	API.get('/minapi/checks', [notInProduction], async (req, res) => {
+	API.get('/basefloor/checks', [notInProduction], async (req, res) => {
 		try {
 			const json = fs.readFileSync(filepath)
 			const data = JSON.parse(json)
@@ -61,11 +61,11 @@ module.exports = (API, { paths, providers, project }) => {
 
 	API.Checks.enable = () => {
 
-		//ensure we have minapi.test.js in projectpath
+		//ensure we have basefloor.test.js in projectpath
 		if (!fs.existsSync(filepath)) {
 			let id = 1
 			const contents = JSON.stringify({
-				name: 'Auto-Generated MinAPI Checks',
+				name: 'Auto-Generated Basefloor Checks',
 				endpoint: 'http://localhost:4000',
 				output: { firstName: '', lastName: '', email: '', password: '', newPassword: '' },
 				coverage: 0,

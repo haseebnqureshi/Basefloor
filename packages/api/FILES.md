@@ -215,10 +215,10 @@ Uploads a new file.
 **Headers Required:**
 - `Authorization`: Bearer token for authentication
 - `Content-Type`: multipart/form-data
-- `x-minapi-name`: Original filename with extension (e.g., "document.pdf")
-- `x-minapi-size`: File size in bytes (e.g., "1234567")
-- `x-minapi-type`: MIME type of the file (e.g., "application/pdf")
-- `x-minapi-modified`: File's last modified timestamp in ISO format (e.g., "2024-02-15T12:00:00Z")
+- `x-basefloor-name`: Original filename with extension (e.g., "document.pdf")
+- `x-basefloor-size`: File size in bytes (e.g., "1234567")
+- `x-basefloor-type`: MIME type of the file (e.g., "application/pdf")
+- `x-basefloor-modified`: File's last modified timestamp in ISO format (e.g., "2024-02-15T12:00:00Z")
 
 **Request Body:**
 - File content as multipart/form-data

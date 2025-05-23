@@ -33,7 +33,7 @@ module.exports = (API, { routes, paths, providers, project }) => {
 		_delete: { http: 'delete', db: 'delete' },   // Delete -> DELETE
 	}
 
-	// Process route configurations from minapi.config.js
+	// Process route configurations from basefloor.config.js
 	let routers = routes.map(r => {
 		// Parse route pattern like '/parent/path(model)'
 		const pattern = RegExp(/\/?([^\/]*)\/([^\(]+)\(([^\(]+)\)/)

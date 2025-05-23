@@ -92,7 +92,7 @@ module.exports = ({ providerVars, providerName }) => {
 	async function textToImage({ text, width = 1240, height = 1754 }) {
 		try {
 			// Create a temporary directory for our files
-			const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'minapi-text-img-'));
+			const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'basefloor-text-img-'));
 			const pngFilePath = path.join(tempDir, 'output-image.png');
 			
 			// Create a canvas

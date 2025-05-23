@@ -63,9 +63,9 @@ npm install @basefloor/api
 ## Installation
 
 ```bash
-npm install minapi
+npm install basefloor
 # or
-yarn add minapi
+yarn add basefloor
 ```
 
 ### System Requirements
@@ -101,15 +101,15 @@ These need to be installed before running `npm install` or `yarn`.
 
 ## Quick Start
 
-1. Create a new project and install MinAPI:
+1. Create a new project and install Basefloor:
 ```bash
 mkdir my-api
 cd my-api
 npm init -y
-npm install minapi
+npm install basefloor
 ```
 
-2. Create a configuration file (`minapi.config.js`):
+2. Create a configuration file (`basefloor.config.js`):
 ```javascript
 module.exports = (API) => {
   return {
@@ -136,10 +136,10 @@ module.exports = (API) => {
 
 3. Create your main file:
 ```javascript
-const MinAPI = require('minapi');
+const Basefloor = require('basefloor');
 
-const api = new MinAPI({
-  config: require('./minapi.config.js')
+const api = new Basefloor({
+  config: require('./basefloor.config.js')
 });
 
 api.start();
@@ -147,7 +147,7 @@ api.start();
 
 ## Configuration
 
-MinAPI is configured through a `minapi.config.js` file in your project root. Here's a complete configuration reference:
+Basefloor is configured through a `basefloor.config.js` file in your project root. Here's a complete configuration reference:
 
 ```javascript
 module.exports = (API) => {
@@ -329,7 +329,7 @@ allow: {
 
 ### File Conversion Capabilities
 
-MinAPI provides robust file conversion capabilities:
+Basefloor provides robust file conversion capabilities:
 
 | From | To | Provider |
 |------|-----|---------|
@@ -341,7 +341,7 @@ MinAPI provides robust file conversion capabilities:
 
 #### Converting Audio to Text
 
-With Google Cloud Speech-to-Text integration, MinAPI can transcribe audio files:
+With Google Cloud Speech-to-Text integration, Basefloor can transcribe audio files:
 
 ```javascript
 // Example: Convert an audio file to text
@@ -377,8 +377,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-MIT © [Haseeb Qureshi (HQ)](https://github.com/avenuedigital/MinAPI)
+MIT © [Haseeb Qureshi (HQ)](https://github.com/avenuedigital/Basefloor)
 
 ## Support
 
-For issues and feature requests, please use the [GitHub issues page](https://github.com/avenuedigital/MinAPI/issues).
+For issues and feature requests, please use the [GitHub issues page](https://github.com/avenuedigital/Basefloor/issues).

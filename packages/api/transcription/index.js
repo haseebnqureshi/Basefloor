@@ -10,7 +10,7 @@ module.exports = (API, { transcription, paths, providers, project }) => {
   };
 
   const initLoad = (name) => {
-    return loadProvider(`${paths.minapi}/providers/${name}`)({ 
+    return loadProvider(`${paths.basefloor}/providers/${name}`)({ 
       providerVars: providers[name],
       providerName: name,
     });
