@@ -1,6 +1,6 @@
 {
   "name": "@basefloor/shared",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Basefloor Shared - Common types, schemas, and utilities for the Basefloor ecosystem",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
