@@ -23,7 +23,8 @@ export default defineConfig({
             { text: 'Introduction', link: '/guide/' },
             { text: 'Installation', link: '/guide/installation' },
             { text: 'Quick Start', link: '/guide/quick-start' },
-            { text: 'Configuration', link: '/guide/configuration' }
+            { text: 'Configuration', link: '/guide/configuration' },
+            { text: 'Interactive Components', link: '/guide/interactive-components' }
           ]
         }
       ],
@@ -66,6 +67,18 @@ export default defineConfig({
       ],
       
       '/api/': [
+        {
+          text: 'Services',
+          collapsed: false,
+          items: [
+            { text: 'AI Service', link: '/api/ai' },
+            { text: 'Email Service', link: '/api/emails' },
+            { text: 'Authentication', link: '/api/auth' },
+            { text: 'Transcription', link: '/api/transcription' },
+            { text: 'Provider System', link: '/api/providers' },
+            { text: 'File Management', link: '/api/files' }
+          ]
+        },
         {
           text: 'API Routes',
           collapsed: false,

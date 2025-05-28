@@ -81,24 +81,39 @@ module.exports = (API) => ({
     ],
 
     // Routes definition
-    routes: (r) => [
-      // Authentication routes (built-in)
-      r.post('/auth/register', { auth: false }),
-      r.post('/auth/login', { auth: false }),
-
+    routes: {
       // User routes
-      r.post('/users(Users)', { c: true }),
-      r.get('/users(Users)', { rA: true }),
-      r.get('/users/:user_id(Users)', { r: true }),
-      r.put('/users/:user_id(Users)', { u: true, permissions: ['auth', 'owner'] }),
-
+      "/users(Users)": { 
+        c: { allow: true },  // Anyone can create (register)
+        rA: { allow: "admin=in=@req_user.role" },  // Only admins can list all users
+        r: { allow: true },  // Anyone can read a user profile
+        u: { allow: "@user._id=@req_user._id" },  // Users can only update their own profile
+        d: { allow: "admin=in=@req_user.role" }   // Only admins can delete users
+      },
+      
       // Post routes
-      r.post('/posts(Posts)', { c: true, permissions: ['auth'] }),
-      r.get('/posts(Posts)', { rA: true }),
-      r.get('/posts/:post_id(Posts)', { r: true }),
-      r.put('/posts/:post_id(Posts)', { u: true, permissions: ['auth', 'owner'] }),
-      r.delete('/posts/:post_id(Posts)', { d: true, permissions: ['auth', 'owner'] })
-    ]
+      "/posts(Posts)": {
+        c: { allow: "@req_user._id" },  // Any authenticated user can create posts
+        rA: { allow: true },  // Anyone can list posts
+        r: { allow: true },   // Anyone can read a post
+        u: { 
+          allow: { 
+            or: [
+              "@post.author_id=@req_user._id",  // Author can update
+              "admin=in=@req_user.role"         // Admin can update
+            ]
+          }
+        },
+        d: { 
+          allow: { 
+            or: [
+              "@post.author_id=@req_user._id",  // Author can delete
+              "admin=in=@req_user.role"         // Admin can delete
+            ]
+          }
+        }
+      }
+    }
   },
 
   // BasefloorApp configuration

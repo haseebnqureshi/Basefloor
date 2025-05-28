@@ -1,0 +1,308 @@
+/* Custom styles for Basefloor documentation components */
+
+:root {
+  --bf-primary: #2563eb;
+  --bf-primary-light: #3b82f6;
+  --bf-primary-dark: #1d4ed8;
+  --bf-secondary: #64748b;
+  --bf-success: #10b981;
+  --bf-warning: #f59e0b;
+  --bf-error: #ef4444;
+  --bf-border: #e2e8f0;
+  --bf-bg-light: #f8fafc;
+  --bf-bg-dark: #1e293b;
+  --bf-text-light: #64748b;
+  --bf-text-dark: #0f172a;
+}
+
+/* Config Builder Styles */
+.config-builder {
+  border: 1px solid var(--bf-border);
+  border-radius: 8px;
+  background: var(--bf-bg-light);
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.config-builder__header {
+  display: flex;
+  justify-content: between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--bf-border);
+}
+
+.config-builder__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--bf-text-dark);
+}
+
+.config-builder__tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.config-builder__tab {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--bf-border);
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.config-builder__tab--active {
+  background: var(--bf-primary);
+  color: white;
+  border-color: var(--bf-primary);
+}
+
+.config-builder__content {
+  min-height: 300px;
+}
+
+.config-builder__preview {
+  background: #1e1e1e;
+  border-radius: 4px;
+  padding: 1rem;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.875rem;
+  color: #d4d4d4;
+  overflow-x: auto;
+}
+
+/* API Explorer Styles */
+.api-explorer {
+  border: 1px solid var(--bf-border);
+  border-radius: 8px;
+  background: white;
+  margin: 1rem 0;
+  overflow: hidden;
+}
+
+.api-explorer__header {
+  background: var(--bf-bg-light);
+  padding: 1rem;
+  border-bottom: 1px solid var(--bf-border);
+}
+
+.api-explorer__method {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  margin-right: 0.5rem;
+}
+
+.api-explorer__method--get { background: #10b981; color: white; }
+.api-explorer__method--post { background: #3b82f6; color: white; }
+.api-explorer__method--put { background: #f59e0b; color: white; }
+.api-explorer__method--delete { background: #ef4444; color: white; }
+
+.api-explorer__url {
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.875rem;
+  color: var(--bf-text-dark);
+}
+
+.api-explorer__body {
+  padding: 1rem;
+}
+
+.api-explorer__section {
+  margin-bottom: 1.5rem;
+}
+
+.api-explorer__section-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--bf-text-dark);
+}
+
+.api-explorer__input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--bf-border);
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.875rem;
+}
+
+.api-explorer__textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.api-explorer__button {
+  background: var(--bf-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.api-explorer__button:hover {
+  background: var(--bf-primary-dark);
+}
+
+.api-explorer__button:disabled {
+  background: var(--bf-secondary);
+  cursor: not-allowed;
+}
+
+.api-explorer__response {
+  background: #1e1e1e;
+  border-radius: 4px;
+  padding: 1rem;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.875rem;
+  color: #d4d4d4;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Code Example Styles */
+.code-example {
+  margin: 1rem 0;
+}
+
+.code-example__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bf-bg-light);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--bf-border);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+}
+
+.code-example__tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.code-example__tab {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--bf-border);
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.code-example__tab--active {
+  background: var(--bf-primary);
+  color: white;
+  border-color: var(--bf-primary);
+}
+
+.code-example__copy {
+  background: var(--bf-secondary);
+  color: white;
+  border: none;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.code-example__copy:hover {
+  background: var(--bf-text-dark);
+}
+
+.code-example__content {
+  border: 1px solid var(--bf-border);
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+.code-example__code {
+  background: #1e1e1e;
+  padding: 1rem;
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.875rem;
+  color: #d4d4d4;
+  overflow-x: auto;
+  margin: 0;
+}
+
+/* Form Controls */
+.bf-form-group {
+  margin-bottom: 1rem;
+}
+
+.bf-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--bf-text-dark);
+}
+
+.bf-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--bf-border);
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.bf-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--bf-border);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  background: white;
+}
+
+.bf-button {
+  background: var(--bf-primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.bf-button:hover {
+  background: var(--bf-primary-dark);
+}
+
+.bf-button--secondary {
+  background: var(--bf-secondary);
+}
+
+.bf-button--secondary:hover {
+  background: var(--bf-text-dark);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .config-builder__header,
+  .api-explorer__header,
+  .code-example__header {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  
+  .config-builder__tabs,
+  .code-example__tabs {
+    flex-wrap: wrap;
+  }
+} 
