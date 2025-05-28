@@ -83,6 +83,9 @@ class CoreDocGenerator {
   async extractRoutesFromCode() {
     console.log('📍 Extracting routes...');
     
+    // First extract built-in routes (Files)
+    await this.extractBuiltInRoutes();
+    
     const routesPath = path.join(this.apiDir, 'routes', 'index.js');
     const routesCode = fs.readFileSync(routesPath, 'utf-8');
     
@@ -163,6 +166,176 @@ class CoreDocGenerator {
     }
     
     console.log(`  ✓ Found ${this.docs.routes.length} routes`);
+  }
+
+  /**
+   * Extract built-in routes from API package (Files, Auth)
+   */
+  async extractBuiltInRoutes() {
+    console.log('  📁 Extracting built-in Files routes...');
+    
+    // Extract Files routes
+    const filesRoutesPath = path.join(this.apiDir, 'files', 'routes.js');
+    if (fs.existsSync(filesRoutesPath)) {
+      const filesRoutesCode = fs.readFileSync(filesRoutesPath, 'utf-8');
+      
+      // Parse Files routes using regex
+      const routePattern = /API\.(get|post|put|delete)\s*\(\s*['"`]([^'"`]+)['"`]/g;
+      let match;
+      const filesRoutes = [];
+      
+      while ((match = routePattern.exec(filesRoutesCode)) !== null) {
+        const [, method, path] = match;
+        filesRoutes.push({ method: method.toUpperCase(), path });
+      }
+      
+      // Group routes by base path
+      const routeGroups = {};
+      filesRoutes.forEach(({ method, path }) => {
+        // Determine operation type and base path
+        let operation = '';
+        let key = '';
+        let basePath = path;
+        
+        // Special handling for different file routes
+        if (path === '/files/:_id?' || path === '/files/:_id') {
+          // This route handles both readAll (no ID) and read (with ID)
+          if (method === 'GET') {
+            // Create two separate route entries for the same endpoint
+            // 1. ReadAll - GET /files (no ID)
+            const readAllBasePath = '/files';
+            if (!routeGroups[readAllBasePath]) {
+              routeGroups[readAllBasePath] = {
+                url: readAllBasePath,
+                methods: [],
+                model: 'Files',
+                permissions: {},
+                filters: {}
+              };
+            }
+            routeGroups[readAllBasePath].methods.push({
+              method,
+              operation: 'readAll',
+              key: 'rA',
+              endpoint: readAllBasePath,
+              permissions: 'auth',
+              filter: null
+            });
+            
+            // 2. Read - GET /files/:id (with ID)
+            basePath = '/files/:id';
+            operation = 'read';
+            key = 'r';
+          } else if (method === 'PUT') {
+            basePath = '/files/:id';
+            operation = 'update';
+            key = 'u';
+          } else if (method === 'DELETE') {
+            basePath = '/files/:id';
+            operation = 'delete';
+            key = 'd';
+          }
+        } else if (path === '/files') {
+          if (method === 'POST') {
+            operation = 'create';
+            key = 'c';
+          } else if (method === 'GET') {
+            operation = 'readAll';
+            key = 'rA';
+          }
+        } else if (path.includes('/download')) {
+          basePath = '/files/:id/download';
+          operation = 'download';
+          key = 'download';
+        } else if (path === '/files/:_id/files') {
+          basePath = '/files/:id/files';
+          operation = 'list-children';
+          key = 'list-children';
+        } else if (path === '/convert/:to?') {
+          basePath = '/convert/:to';
+          operation = 'check-conversion';
+          key = 'check-conversion';
+        } else if (path === '/files/:_id/convert') {
+          basePath = '/files/:id/convert';
+          operation = 'convert';
+          key = 'convert';
+        }
+        
+        if (operation) {
+          if (!routeGroups[basePath]) {
+            routeGroups[basePath] = {
+              url: basePath,
+              methods: [],
+              model: 'Files',
+              permissions: {},
+              filters: {}
+            };
+          }
+          
+          routeGroups[basePath].methods.push({
+            method,
+            operation,
+            key,
+            endpoint: basePath,
+            permissions: 'auth', // Files routes require authentication
+            filter: null
+          });
+        }
+      });
+      
+      // Add to docs.routes
+      Object.values(routeGroups).forEach(route => {
+        this.docs.routes.push(route);
+      });
+      
+      console.log(`  ✓ Found ${Object.keys(routeGroups).length} Files route groups`);
+    }
+    
+    // Extract Auth routes
+    console.log('  🔐 Extracting built-in Auth routes...');
+    const authRoutesPath = path.join(this.apiDir, 'auth', 'routes.js');
+    if (fs.existsSync(authRoutesPath)) {
+      const authRoutesCode = fs.readFileSync(authRoutesPath, 'utf-8');
+      
+      // Parse Auth routes
+      const routePattern = /API\.(get|post|put|delete)\s*\(\s*['"`]([^'"`]+)['"`]/g;
+      let match;
+      const authRoutes = [];
+      
+      while ((match = routePattern.exec(authRoutesCode)) !== null) {
+        const [, method, path] = match;
+        authRoutes.push({ method: method.toUpperCase(), path });
+      }
+      
+      // Add auth routes to docs
+      authRoutes.forEach(({ method, path }) => {
+        let operation = '';
+        if (path.includes('/register')) operation = 'register';
+        else if (path.includes('/login')) operation = 'login';
+        else if (path.includes('/verify')) operation = 'verify';
+        else if (path.includes('/forgot')) operation = 'forgot-password';
+        else if (path.includes('/reset')) operation = 'reset-password';
+        
+        if (operation) {
+          this.docs.routes.push({
+            url: path,
+            methods: [{
+              method,
+              operation,
+              key: operation,
+              endpoint: path,
+              permissions: false, // Auth routes don't require authentication
+              filter: null
+            }],
+            model: 'Users',
+            permissions: { [operation]: false },
+            filters: {}
+          });
+        }
+      });
+      
+      console.log(`  ✓ Found ${authRoutes.length} Auth routes`);
+    }
   }
 
   /**
@@ -286,6 +459,10 @@ class CoreDocGenerator {
   async extractModelsFromCode() {
     console.log('📊 Extracting models...');
     
+    // Only extract models that are built into the API package
+    this.docs.models = {};
+    
+    // 1. Extract the Files model from models/index.js
     const modelsPath = path.join(this.apiDir, 'models', 'index.js');
     const modelsCode = fs.readFileSync(modelsPath, 'utf-8');
     
@@ -295,19 +472,35 @@ class CoreDocGenerator {
       this.docs.models.Files = this.parseModelDefinition(filesModelMatch[1]);
     }
     
-    // Also extract models from sample config
-    const configPath = this.sampleConfigPath;
-    if (fs.existsSync(configPath)) {
-      const configContent = fs.readFileSync(configPath, 'utf-8');
+    // 2. Extract the Users model from auth/index.js
+    const authPath = path.join(this.apiDir, 'auth', 'index.js');
+    if (fs.existsSync(authPath)) {
+      const authCode = fs.readFileSync(authPath, 'utf-8');
       
-      // Extract models section
-      const modelsMatch = configContent.match(/models:\s*{([\s\S]*?)^(\s{4}\},|\s{2}\},)/m);
-      if (modelsMatch) {
-        this.parseModelsFromConfig(modelsMatch[1]);
+      // Look for Users model definition in auth
+      const usersModelMatch = authCode.match(/models\.Users\s*=\s*{([\s\S]*?)^(\s{8}\}|\s{4}\})/m);
+      if (usersModelMatch) {
+        this.docs.models.Users = this.parseModelDefinition(usersModelMatch[1]);
+      } else {
+        // If not found in that format, create a basic Users model based on auth requirements
+        this.docs.models.Users = {
+          collection: 'user',
+          labels: ['User', 'Users'],
+          fields: {
+            _id: { type: 'ObjectId', operations: ['r', 'd'], defaultValue: null },
+            email: { type: 'String', operations: ['c', 'r', 'u'], defaultValue: null },
+            password: { type: 'String', operations: ['c'], defaultValue: null },
+            created_at: { type: 'Date', operations: ['r'], defaultValue: null },
+            updated_at: { type: 'Date', operations: ['r'], defaultValue: null }
+          },
+          filters: {}
+        };
       }
     }
     
-    console.log(`  ✓ Found ${Object.keys(this.docs.models).length} models`);
+    // DO NOT extract from example configs or other files outside packages/api
+    
+    console.log(`  ✓ Found ${Object.keys(this.docs.models).length} built-in models`);
   }
 
   /**
@@ -784,8 +977,28 @@ ${this.formatEnvironmentVariables()}
   }
 
   formatRequestBody(model, operation) {
-    if (['read', 'readAll', 'delete'].includes(operation)) {
+    if (['read', 'readAll', 'delete', 'download', 'list-children', 'check-conversion'].includes(operation)) {
       return 'No request body required';
+    }
+    
+    // Handle special Files operations
+    if (model === 'Files') {
+      if (operation === 'create') {
+        return `**Headers:**
+\`\`\`
+minapi-name: filename.jpg
+minapi-size: 1024000
+minapi-type: image/jpeg
+minapi-modified: 2024-01-01T00:00:00.000Z
+minapi-prefix: user-uploads  // optional
+\`\`\`
+
+**Body:** Binary file data (multipart/form-data)`;
+      }
+      
+      if (operation === 'convert') {
+        return 'No request body required - conversion is triggered by the file ID in the URL';
+      }
     }
     
     const modelDef = this.docs.models[model];
@@ -799,6 +1012,81 @@ ${this.formatEnvironmentVariables()}
   }
 
   formatResponse(model, operation) {
+    // Handle special Files operations
+    if (model === 'Files') {
+      const fileExamples = {
+        create: `{
+  "_id": "507f1f77bcf86cd799439011",
+  "filename": "abc123def456.jpg",
+  "name": "profile-photo.jpg",
+  "size": 1024000,
+  "content_type": "image/jpeg",
+  "hash": "abc123def456",
+  "key": "user-uploads/abc123def456.jpg",
+  "url": "https://cdn.example.com/user-uploads/abc123def456.jpg",
+  "uploaded_at": "2024-01-01T00:00:00.000Z",
+  "created_at": "2024-01-01T00:00:00.000Z"
+}`,
+        read: `{
+  "_id": "507f1f77bcf86cd799439011",
+  "filename": "abc123def456.jpg",
+  "name": "profile-photo.jpg",
+  "size": 1024000,
+  "content_type": "image/jpeg",
+  "hash": "abc123def456",
+  "key": "user-uploads/abc123def456.jpg",
+  "url": "https://cdn.example.com/user-uploads/abc123def456.jpg",
+  "uploaded_at": "2024-01-01T00:00:00.000Z",
+  "created_at": "2024-01-01T00:00:00.000Z"
+}`,
+        readAll: `[
+  {
+    "_id": "507f1f77bcf86cd799439011",
+    "filename": "abc123def456.jpg",
+    "name": "profile-photo.jpg",
+    "size": 1024000,
+    "content_type": "image/jpeg",
+    // ... other file fields
+  }
+]`,
+        download: `Binary file data with appropriate Content-Type header`,
+        convert: `[
+  {
+    "_id": "507f1f77bcf86cd799439012",
+    "filename": "converted123.png",
+    "name": "profile-photo (1 of 1)",
+    "size": 2048000,
+    "content_type": "image/png",
+    "parent_file": "507f1f77bcf86cd799439011",
+    // ... other file fields
+  }
+]`,
+        'list-children': `[
+  {
+    "_id": "507f1f77bcf86cd799439012",
+    "parent_file": "507f1f77bcf86cd799439011",
+    "name": "profile-photo (1 of 3)",
+    // ... other file fields
+  }
+]`,
+        'check-conversion': `{
+  "extension": ".pdf",
+  "accepted": true,
+  "to": ".png"
+}`,
+        files: `[
+  {
+    "_id": "507f1f77bcf86cd799439012",
+    "parent_file": "507f1f77bcf86cd799439011",
+    "name": "profile-photo (1 of 3)",
+    // ... other file fields
+  }
+]`
+      };
+      
+      return '```json\n' + (fileExamples[operation] || fileExamples.read) + '\n```';
+    }
+    
     const examples = {
       create: '{\n  "insertedId": "507f1f77bcf86cd799439011"\n}',
       read: '{\n  "_id": "507f1f77bcf86cd799439011",\n  // ... model fields\n}',
@@ -811,6 +1099,101 @@ ${this.formatEnvironmentVariables()}
   }
 
   formatExample(method) {
+    // Special examples for Files operations
+    if (method.endpoint.startsWith('/files')) {
+      if (method.operation === 'create') {
+        return `\`\`\`javascript
+// Upload a file using FormData
+const formData = new FormData();
+const file = document.querySelector('input[type="file"]').files[0];
+
+const response = await fetch('/files', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN',
+    'minapi-name': file.name,
+    'minapi-size': file.size.toString(),
+    'minapi-type': file.type,
+    'minapi-modified': new Date(file.lastModified).toISOString(),
+    'minapi-prefix': 'user-uploads' // optional
+  },
+  body: file
+});
+
+const uploadedFile = await response.json();
+\`\`\``;
+      }
+      
+      if (method.operation === 'download') {
+        return `\`\`\`javascript
+// Download a file
+const response = await fetch('/files/${method.endpoint.includes(':id') ? 'FILE_ID' : ''}/download', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN'
+  }
+});
+
+// Option 1: Get as blob
+const blob = await response.blob();
+const url = URL.createObjectURL(blob);
+window.open(url);
+
+// Option 2: Force download
+const downloadResponse = await fetch('/files/FILE_ID/download?force=true', {
+  headers: { 'Authorization': 'Bearer YOUR_TOKEN' }
+});
+\`\`\``;
+      }
+      
+      if (method.operation === 'convert') {
+        return `\`\`\`javascript
+// Convert a file (e.g., PDF to PNG)
+const response = await fetch('/files/FILE_ID/convert', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN',
+    'Content-Type': 'application/json'
+  }
+});
+
+const convertedFiles = await response.json();
+console.log('Converted files:', convertedFiles);
+\`\`\``;
+      }
+      
+      if (method.operation === 'list-children') {
+        return `\`\`\`javascript
+// Get all child files (e.g., converted versions)
+const response = await fetch('/files/PARENT_FILE_ID/files', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN'
+  }
+});
+
+const childFiles = await response.json();
+console.log('Child files:', childFiles);
+\`\`\``;
+      }
+      
+      if (method.operation === 'check-conversion') {
+        return `\`\`\`javascript
+// Check if a file type can be converted
+const response = await fetch('/convert/pdf', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN'
+  }
+});
+
+const conversionInfo = await response.json();
+// Response: { extension: ".pdf", accepted: true, to: ".png" }
+\`\`\``;
+      }
+    }
+    
+    // Default example for other operations
     return `\`\`\`javascript
 // Using fetch
 const response = await fetch('${method.endpoint}', {
@@ -902,6 +1285,17 @@ const result = await API.DB.${model.collection}.delete({ where: { _id: 'id' } })
   }
 
   formatModelExamples(modelName) {
+    // Helper function to properly pluralize model names
+    const pluralize = (name) => {
+      if (name.toLowerCase().endsWith('s')) {
+        return name; // Already plural (e.g., "Files" stays "Files")
+      }
+      return name + 's'; // Add 's' for singular names (e.g., "User" becomes "Users")
+    };
+    
+    const pluralName = pluralize(modelName);
+    const variableName = modelName.toLowerCase();
+    
     return `
 ### Creating a ${modelName}
 \`\`\`javascript
@@ -912,9 +1306,9 @@ const new${modelName} = await API.DB.${modelName}.create({
 });
 \`\`\`
 
-### Finding ${modelName}s
+### Finding ${pluralName}
 \`\`\`javascript
-const ${modelName.toLowerCase()}s = await API.DB.${modelName}.readAll({
+const ${variableName} = await API.DB.${modelName}.readAll({
   where: {
     // Add your query conditions
   }

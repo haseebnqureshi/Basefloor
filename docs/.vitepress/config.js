@@ -77,6 +77,17 @@ export default defineConfig({
               { text: 'Get User', link: '/api/routes/users-read' },
               { text: 'Update User', link: '/api/routes/users-update' },
               { text: 'Delete User', link: '/api/routes/users-delete' }
+            ]},
+            { text: 'Files', items: [
+              { text: 'Upload File', link: '/api/routes/files-create' },
+              { text: 'List Files', link: '/api/routes/files-readAll' },
+              { text: 'Get File', link: '/api/routes/files-read' },
+              { text: 'Update File', link: '/api/routes/files-update' },
+              { text: 'Delete File', link: '/api/routes/files-delete' },
+              { text: 'Download File', link: '/api/routes/files-download' },
+              { text: 'List Child Files', link: '/api/routes/files-list-children' },
+              { text: 'Convert File', link: '/api/routes/files-convert' },
+              { text: 'Check Conversion', link: '/api/routes/files-check-conversion' }
             ]}
           ]
         },
@@ -86,16 +97,7 @@ export default defineConfig({
           items: [
             { text: 'Overview', link: '/api/models/' },
             { text: 'Users', link: '/api/models/users' },
-            { text: 'Posts', link: '/api/models/posts' },
-            { text: 'Comments', link: '/api/models/comments' },
             { text: 'Files', link: '/api/models/files' }
-          ]
-        },
-        {
-          text: 'Legacy',
-          collapsed: true,
-          items: [
-            { text: 'Files API', link: '/api/files' }
           ]
         }
       ]

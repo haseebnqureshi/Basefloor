@@ -77,9 +77,9 @@ const newFiles = await API.DB.Files.create({
 });
 ```
 
-### Finding Filess
+### Finding Files
 ```javascript
-const filess = await API.DB.Files.readAll({
+const files = await API.DB.Files.readAll({
   where: {
     // Add your query conditions
   }
@@ -89,4 +89,4 @@ const filess = await API.DB.Files.readAll({
 
 ---
 
-*Generated on 2025-05-28T13:50:53.523Z*
+*Generated on 2025-05-28T14:54:24.679Z*

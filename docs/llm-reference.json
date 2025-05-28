@@ -1,12 +1,102 @@
 {
   "basefloor_version": "1.1.2",
-  "last_updated": "2025-05-28T13:50:53.514Z",
+  "last_updated": "2025-05-28T14:54:24.669Z",
   "quick_start": {
     "install": "npm install @basefloor/api",
     "minimal_config": "module.exports = (API) => ({\n  mongodb: { uri: 'mongodb://localhost:27017/myapp' },\n  jwt: { secret: 'your-secret-key' }\n});",
     "run": "node index.js"
   },
   "routes": [
+    {
+      "pattern": "/files",
+      "model": "Files",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/files",
+          "operation": "readAll",
+          "auth_required": true
+        },
+        {
+          "method": "POST",
+          "path": "/files",
+          "operation": "create",
+          "auth_required": true
+        }
+      ]
+    },
+    {
+      "pattern": "/files/:id",
+      "model": "Files",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/files/:id",
+          "operation": "read",
+          "auth_required": true
+        },
+        {
+          "method": "PUT",
+          "path": "/files/:id",
+          "operation": "update",
+          "auth_required": true
+        },
+        {
+          "method": "DELETE",
+          "path": "/files/:id",
+          "operation": "delete",
+          "auth_required": true
+        }
+      ]
+    },
+    {
+      "pattern": "/files/:id/download",
+      "model": "Files",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/files/:id/download",
+          "operation": "download",
+          "auth_required": true
+        }
+      ]
+    },
+    {
+      "pattern": "/files/:id/files",
+      "model": "Files",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/files/:id/files",
+          "operation": "list-children",
+          "auth_required": true
+        }
+      ]
+    },
+    {
+      "pattern": "/convert/:to",
+      "model": "Files",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/convert/:to",
+          "operation": "check-conversion",
+          "auth_required": true
+        }
+      ]
+    },
+    {
+      "pattern": "/files/:id/convert",
+      "model": "Files",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/files/:id/convert",
+          "operation": "convert",
+          "auth_required": true
+        }
+      ]
+    },
     {
       "pattern": "/users(Users)",
       "model": "Users",
@@ -277,23 +367,56 @@
     },
     "Users": {
       "collection": "user",
-      "fields": []
-    },
-    "filters": {
-      "collection": null,
-      "fields": []
-    },
-    "update": {
-      "collection": null,
-      "fields": []
-    },
-    "Posts": {
-      "collection": "post",
-      "fields": []
-    },
-    "Comments": {
-      "collection": "comment",
-      "fields": []
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "operations": [
+            "r",
+            "d"
+          ],
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "email",
+          "type": "String",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "password",
+          "type": "String",
+          "operations": [
+            "c"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "created_at",
+          "type": "Date",
+          "operations": [
+            "r"
+          ],
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "updated_at",
+          "type": "Date",
+          "operations": [
+            "r"
+          ],
+          "default": null,
+          "required": false
+        }
+      ]
     }
   },
   "config_schema": {

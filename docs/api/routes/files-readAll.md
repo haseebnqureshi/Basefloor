@@ -1,11 +1,11 @@
-# GET /users/:id
+# GET /files
 
-## read Users
+## readAll Files
 
 ### Endpoint
 
 ```
-GET /users/:id
+GET /files
 ```
 
 ### Authentication
@@ -15,7 +15,7 @@ GET /users/:id
 ### Permissions
 
 ```json
-"true"
+"auth"
 ```
 
 ### Request
@@ -25,17 +25,23 @@ No request body required
 ### Response
 
 ```json
-{
-  "_id": "507f1f77bcf86cd799439011",
-  // ... model fields
-}
+[
+  {
+    "_id": "507f1f77bcf86cd799439011",
+    "filename": "abc123def456.jpg",
+    "name": "profile-photo.jpg",
+    "size": 1024000,
+    "content_type": "image/jpeg",
+    // ... other file fields
+  }
+]
 ```
 
 ### Example
 
 ```javascript
 // Using fetch
-const response = await fetch('/users/:id', {
+const response = await fetch('/files', {
   method: 'GET',
   headers: {
     'Content-Type': 'application/json',
@@ -48,4 +54,4 @@ const data = await response.json();
 
 ---
 
-*Generated on 2025-05-28T14:54:24.678Z*
+*Generated on 2025-05-28T14:54:24.677Z*

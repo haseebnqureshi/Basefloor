@@ -1,11 +1,11 @@
-# DELETE /users/:id
+# GET /convert/:to
 
-## delete Users
+## check-conversion Files
 
 ### Endpoint
 
 ```
-DELETE /users/:id
+GET /convert/:to
 ```
 
 ### Authentication
@@ -15,7 +15,7 @@ DELETE /users/:id
 ### Permissions
 
 ```json
-"admin=in=@req_user.role"
+"auth"
 ```
 
 ### Request
@@ -26,7 +26,9 @@ No request body required
 
 ```json
 {
-  "deletedCount": 1
+  "extension": ".pdf",
+  "accepted": true,
+  "to": ".png"
 }
 ```
 
@@ -34,15 +36,12 @@ No request body required
 
 ```javascript
 // Using fetch
-const response = await fetch('/users/:id', {
-  method: 'DELETE',
+const response = await fetch('/convert/:to', {
+  method: 'GET',
   headers: {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer YOUR_TOKEN'
-  },
-  body: JSON.stringify({
-    // Your data here
-  })
+  }
 });
 
 const data = await response.json();
@@ -50,4 +49,4 @@ const data = await response.json();
 
 ---
 
-*Generated on 2025-05-28T14:54:24.678Z*
+*Generated on 2025-05-28T14:54:24.677Z*

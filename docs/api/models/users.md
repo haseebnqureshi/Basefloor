@@ -9,7 +9,11 @@
 
 | Field | Type | Operations | Default | Description |
 |-------|------|------------|---------|-------------|
-
+| _id | ObjectId | Read, Delete | - | Unique identifier |
+| email | String | Create, Read, Update | - | User email address |
+| password | String | Create | - | Hashed password |
+| created_at | Date | Read | - | Creation timestamp |
+| updated_at | Date | Read | - | Last update timestamp |
 
 ## Operations
 
@@ -59,9 +63,9 @@ const newUsers = await API.DB.Users.create({
 });
 ```
 
-### Finding Userss
+### Finding Users
 ```javascript
-const userss = await API.DB.Users.readAll({
+const users = await API.DB.Users.readAll({
   where: {
     // Add your query conditions
   }
@@ -71,4 +75,4 @@ const userss = await API.DB.Users.readAll({
 
 ---
 
-*Generated on 2025-05-28T13:50:53.523Z*
+*Generated on 2025-05-28T14:54:24.679Z*
