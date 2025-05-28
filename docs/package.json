@@ -11,7 +11,12 @@
     "dev": "vitepress dev",
     "build": "vitepress build",
     "preview": "vitepress preview",
-    "serve": "vitepress dev"
+    "serve": "vitepress dev",
+    "docs:generate": "node scripts/generate-docs.js",
+    "docs:routes": "node scripts/generate-docs.js routes",
+    "docs:models": "node scripts/generate-docs.js models",
+    "docs:config": "node scripts/generate-docs.js config",
+    "docs:llm": "node scripts/generate-docs.js llm"
   },
   "keywords": ["basefloor", "basefloorapi", "documentation", "vitepress", "vue"],
   "author": "Haseeb Qureshi (HQ)",
