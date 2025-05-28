@@ -10,6 +10,7 @@ export default defineConfig({
       { text: 'Home', link: '/' },
       { text: 'Guide', link: '/guide/' },
       { text: 'Reference', link: '/reference/' },
+      { text: 'API', link: '/api/routes/' },
       { text: 'Examples', link: '/examples/' }
     ],
     
@@ -66,10 +67,35 @@ export default defineConfig({
       
       '/api/': [
         {
-          text: 'API Reference',
+          text: 'API Routes',
           collapsed: false,
           items: [
-            { text: 'Files', link: '/api/files' }
+            { text: 'Overview', link: '/api/routes/' },
+            { text: 'Users', items: [
+              { text: 'Create User', link: '/api/routes/users-create' },
+              { text: 'List Users', link: '/api/routes/users-readAll' },
+              { text: 'Get User', link: '/api/routes/users-read' },
+              { text: 'Update User', link: '/api/routes/users-update' },
+              { text: 'Delete User', link: '/api/routes/users-delete' }
+            ]}
+          ]
+        },
+        {
+          text: 'Models',
+          collapsed: false,
+          items: [
+            { text: 'Overview', link: '/api/models/' },
+            { text: 'Users', link: '/api/models/users' },
+            { text: 'Posts', link: '/api/models/posts' },
+            { text: 'Comments', link: '/api/models/comments' },
+            { text: 'Files', link: '/api/models/files' }
+          ]
+        },
+        {
+          text: 'Legacy',
+          collapsed: true,
+          items: [
+            { text: 'Files API', link: '/api/files' }
           ]
         }
       ]
