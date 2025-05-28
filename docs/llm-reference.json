@@ -1,0 +1,378 @@
+{
+  "basefloor_version": "1.1.2",
+  "last_updated": "2025-05-28T13:50:53.514Z",
+  "quick_start": {
+    "install": "npm install @basefloor/api",
+    "minimal_config": "module.exports = (API) => ({\n  mongodb: { uri: 'mongodb://localhost:27017/myapp' },\n  jwt: { secret: 'your-secret-key' }\n});",
+    "run": "node index.js"
+  },
+  "routes": [
+    {
+      "pattern": "/users(Users)",
+      "model": "Users",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/users",
+          "operation": "create",
+          "auth_required": true,
+          "permissions": "true"
+        },
+        {
+          "method": "GET",
+          "path": "/users",
+          "operation": "readAll",
+          "auth_required": true,
+          "permissions": "admin=in=@req_user.role"
+        },
+        {
+          "method": "GET",
+          "path": "/users/:id",
+          "operation": "read",
+          "auth_required": true,
+          "permissions": "true"
+        },
+        {
+          "method": "PUT",
+          "path": "/users/:id",
+          "operation": "update",
+          "auth_required": true,
+          "permissions": "@user._id=@req_user._id"
+        },
+        {
+          "method": "DELETE",
+          "path": "/users/:id",
+          "operation": "delete",
+          "auth_required": true,
+          "permissions": "admin=in=@req_user.role"
+        }
+      ]
+    },
+    {
+      "pattern": "/users(Users)/posts(Posts)",
+      "model": "Users",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/users/posts(Posts)",
+          "operation": "readAll",
+          "auth_required": true,
+          "permissions": "true"
+        }
+      ]
+    }
+  ],
+  "models": {
+    "Files": {
+      "collection": "file",
+      "fields": [
+        {
+          "name": "_id",
+          "type": "ObjectId",
+          "operations": [
+            "r",
+            "u",
+            "d"
+          ],
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "user_id",
+          "type": "ObjectId",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "String",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "String",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "filename",
+          "type": "String",
+          "operations": [
+            "c",
+            "r"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "provider",
+          "type": "String",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "bucket",
+          "type": "String",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "key",
+          "type": "String",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "url",
+          "type": "String",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "uploaded_at",
+          "type": "Date",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "file_modified_at",
+          "type": "Date",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "hash",
+          "type": "String",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "size",
+          "type": "Number",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "content_type",
+          "type": "String",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "extension",
+          "type": "String",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "parent_file",
+          "type": "ObjectId",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "String",
+          "operations": [
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "flattened_at",
+          "type": "Date",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        },
+        {
+          "name": "flattened_pages",
+          "type": "Object(ObjectId)",
+          "operations": [
+            "c",
+            "r",
+            "u"
+          ],
+          "default": null,
+          "required": true
+        }
+      ]
+    },
+    "Users": {
+      "collection": "user",
+      "fields": []
+    },
+    "filters": {
+      "collection": null,
+      "fields": []
+    },
+    "update": {
+      "collection": null,
+      "fields": []
+    },
+    "Posts": {
+      "collection": "post",
+      "fields": []
+    },
+    "Comments": {
+      "collection": "comment",
+      "fields": []
+    }
+  },
+  "config_schema": {
+    "name": {
+      "type": "string",
+      "required": false,
+      "description": "The name of your API",
+      "example": "My Basefloor API"
+    },
+    "mongodb": {
+      "type": "object",
+      "required": true,
+      "description": "MongoDB connection configuration",
+      "properties": {
+        "uri": {
+          "type": "string",
+          "required": true,
+          "description": "MongoDB connection URI",
+          "example": "mongodb://localhost:27017/myapp",
+          "env": "MONGODB_URI"
+        }
+      }
+    },
+    "jwt": {
+      "type": "object",
+      "required": true,
+      "description": "JWT authentication configuration",
+      "properties": {
+        "secret": {
+          "type": "string",
+          "required": true,
+          "description": "Secret key for JWT token signing",
+          "example": "your-secret-key-change-in-production",
+          "env": "JWT_SECRET"
+        }
+      }
+    },
+    "cors": {
+      "type": "object",
+      "required": false,
+      "description": "CORS configuration",
+      "properties": {
+        "origin": {
+          "type": "string",
+          "required": false,
+          "description": "Allowed CORS origin",
+          "example": "http://localhost:3000",
+          "env": "FRONTEND_URL"
+        }
+      }
+    },
+    "models": {
+      "type": "object",
+      "required": true,
+      "description": "Model definitions for your API",
+      "example": "{ Users: { ... }, Posts: { ... } }"
+    },
+    "routes": {
+      "type": "object",
+      "required": false,
+      "description": "Route definitions with permissions",
+      "example": "{ \"/users(Users)\": { c: { allow: true }, r: { allow: true } } }"
+    }
+  },
+  "common_patterns": {
+    "authentication": {
+      "login": "\n// Login a user\nconst response = await fetch('/auth/login', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({ email, password })\n});\nconst { token } = await response.json();",
+      "register": "\n// Register a new user\nconst response = await fetch('/auth/register', {\n  method: 'POST',\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({ email, password, name })\n});\nconst { user, token } = await response.json();"
+    },
+    "crud_operations": {
+      "create": "API.DB.ModelName.create({ values: { field1: 'value1' } })",
+      "read": "API.DB.ModelName.read({ where: { _id: 'id' } })",
+      "update": "API.DB.ModelName.update({ where: { _id: 'id' }, values: { field1: 'new' } })",
+      "delete": "API.DB.ModelName.delete({ where: { _id: 'id' } })"
+    },
+    "permissions": {
+      "user_owns_resource": "\"@resource.user_id=@req_user._id\"",
+      "user_has_role": "\"admin=in=@req_user.roles\"",
+      "complex_permission": "{ \"or\": [\"@resource.public=true\", \"@resource.user_id=@req_user._id\"] }"
+    }
+  }
+}
