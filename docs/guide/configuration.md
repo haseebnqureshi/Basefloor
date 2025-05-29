@@ -58,7 +58,7 @@ This page documents all configuration options for Basefloor.
   - **Required**: No
   - **Description**: Allowed CORS origin
   - **Environment Variable**: `FRONTEND_URL`
-  - **Example**: `http://localhost:3000`
+  - **Example**: `https://yourdomain.com`
 
 ### models
 
@@ -95,7 +95,7 @@ module.exports = (API) => {
     
     // CORS configuration
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000'
+      origin: process.env.FRONTEND_URL || 'https://yourdomain.com'
     },
     
     // Models configuration
@@ -117,7 +117,7 @@ module.exports = (API) => {
 |----------|-------------|----------|----------|
 | MONGODB_URI | MongoDB connection URI | Yes | mongodb://localhost:27017/myapp |
 | JWT_SECRET | Secret key for JWT token signing | Yes | your-secret-key-change-in-production |
-| FRONTEND_URL | Allowed CORS origin | No | http://localhost:3000 |
+| FRONTEND_URL | Allowed CORS origin | No | https://yourdomain.com |
 
 
 ---
