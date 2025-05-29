@@ -76,7 +76,7 @@ export default defineConfig({
     },
     
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/haseebnqureshi/Basefloor' }
+      { icon: 'github', link: 'https://github.com/haseebnqureshi/basefloor' }
     ],
     
     footer: {

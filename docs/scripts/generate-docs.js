@@ -986,11 +986,11 @@ ${this.formatEnvironmentVariables()}
       if (operation === 'create') {
         return `**Headers:**
 \`\`\`
-minapi-name: filename.jpg
-minapi-size: 1024000
-minapi-type: image/jpeg
-minapi-modified: 2024-01-01T00:00:00.000Z
-minapi-prefix: user-uploads  // optional
+x-basefloor-name: filename.jpg
+x-basefloor-size: 1024000
+x-basefloor-type: image/jpeg
+x-basefloor-modified: 2024-01-01T00:00:00.000Z
+x-basefloor-prefix: user-uploads  // optional
 \`\`\`
 
 **Body:** Binary file data (multipart/form-data)`;
@@ -1111,11 +1111,11 @@ const response = await fetch('/files', {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer YOUR_TOKEN',
-    'minapi-name': file.name,
-    'minapi-size': file.size.toString(),
-    'minapi-type': file.type,
-    'minapi-modified': new Date(file.lastModified).toISOString(),
-    'minapi-prefix': 'user-uploads' // optional
+    'x-basefloor-name': file.name,
+    'x-basefloor-size': file.size.toString(),
+    'x-basefloor-type': file.type,
+    'x-basefloor-modified': new Date(file.lastModified).toISOString(),
+    'x-basefloor-prefix': 'user-uploads' // optional
   },
   body: file
 });

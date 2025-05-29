@@ -174,7 +174,7 @@ switch (command) {
     break;
   default:
     console.log(`
-MinAPI Documentation Sync Tool
+Basefloor Documentation Sync Tool
 
 Usage:
   node sync-docs.js sync   - Sync all documentation files

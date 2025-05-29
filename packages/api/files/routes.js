@@ -192,7 +192,7 @@ module.exports = (API, { paths, project }) => {
 			try {
 
 				//parse our incoming file information using headers
-				let info = API.Utils.CollectMinapiHeaders(req.headers)
+				let info = API.Utils.CollectBasefloorHeaders(req.headers)
 
 				//allowing $req_user.{field} in the header, to access the req.user object
 				if (info.prefix) {

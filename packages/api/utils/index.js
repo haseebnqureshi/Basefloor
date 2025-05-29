@@ -1,4 +1,3 @@
-
 const util = require('util')
 const _ = require('underscore')
 const mongodb = require('mongodb')
@@ -42,7 +41,7 @@ module.exports = (API, { paths, providers, project }) => {
 	API.Utils.TOTP_ENCODING = TOTP_ENCODING
 	API.Utils.JWT_ALGORITHM = JWT_ALGORITHM
 
-	API.Utils.CollectMinapiHeaders = (reqHeaders) => {
+	API.Utils.CollectBasefloorHeaders = (reqHeaders) => {
 		// console.log({ reqHeaders })
 		let headers = {}
 		for (let reqHeader in reqHeaders) {

@@ -8,7 +8,7 @@ This guide helps verify that all Phase 2 interactive components are working corr
 
 ### 1. Start the Development Servers
 
-From the project root (`/Users/haseebqureshi/Code/minapi.dev/basefloor/`):
+From the project root:
 
 ```bash
 npm run dev
