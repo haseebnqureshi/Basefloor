@@ -356,7 +356,7 @@ const config: BasefloorConfig = {
 
 ## Related
 
-- [Configuration](/guide/configuration) - Configuration options
+- [Configuration](/reference/guide/configuration) - Configuration options
 - [Models](/reference/models) - Data modeling
 - [Routes](/reference/routes) - Route definitions
-- [API Reference](/api/) - Complete API documentation 
+- [API Reference](/api/routes/) - Complete API documentation 

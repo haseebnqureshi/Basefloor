@@ -9,55 +9,113 @@ Configure email services in your `basefloor.config.js`:
 ### Postmark
 
 ```javascript
-{
-  email: {
-    provider: 'postmark',
-    from: 'noreply@yourdomain.com',
-    providers: {
-      postmark: {
-        serverToken: process.env.POSTMARK_TOKEN
+module.exports = (API) => ({
+  api: {
+    emails: {
+      enabled: true,
+      provider: '@postmark/emails',
+      templates: {
+        welcome: {
+          subject: 'Welcome to {{appName}}!',
+          html: '<h1>Welcome {{name}}!</h1><p>Thanks for joining {{appName}}.</p>',
+          text: 'Welcome {{name}}! Thanks for joining {{appName}}.'
+        }
       }
-    },
-    templates: {
-      welcome: 'template-id',
-      passwordReset: 'template-id',
-      emailVerification: 'template-id'
+    }
+  },
+  providers: {
+    '@postmark/emails': {
+      serverToken: process.env.POSTMARK_SERVER_TOKEN,
+      from: process.env.EMAIL_FROM || 'noreply@yourdomain.com'
     }
   }
-}
+})
 ```
 
 ### SendGrid
 
 ```javascript
-{
-  email: {
-    provider: 'sendgrid',
-    from: 'noreply@yourdomain.com',
-    providers: {
-      sendgrid: {
-        apiKey: process.env.SENDGRID_API_KEY
+module.exports = (API) => ({
+  api: {
+    emails: {
+      enabled: true,
+      provider: '@sendgrid/emails',
+      templates: {
+        welcome: {
+          subject: 'Welcome to {{appName}}!',
+          html: '<h1>Welcome {{name}}!</h1><p>Thanks for joining {{appName}}.</p>',
+          text: 'Welcome {{name}}! Thanks for joining {{appName}}.'
+        }
       }
     }
+  },
+  providers: {
+    '@sendgrid/emails': {
+      apiKey: process.env.SENDGRID_API_KEY,
+      from: process.env.EMAIL_FROM || 'noreply@yourdomain.com'
+    }
   }
-}
+})
 ```
 
 ### Mailgun
 
 ```javascript
-{
-  email: {
-    provider: 'mailgun',
-    from: 'noreply@yourdomain.com',
-    providers: {
-      mailgun: {
-        apiKey: process.env.MAILGUN_API_KEY,
-        domain: process.env.MAILGUN_DOMAIN
+module.exports = (API) => ({
+  api: {
+    emails: {
+      enabled: true,
+      provider: '@mailgun/emails',
+      templates: {
+        welcome: {
+          subject: 'Welcome to {{appName}}!',
+          html: '<h1>Welcome {{name}}!</h1><p>Thanks for joining {{appName}}.</p>',
+          text: 'Welcome {{name}}! Thanks for joining {{appName}}.'
+        }
       }
     }
+  },
+  providers: {
+    '@mailgun/emails': {
+      apiKey: process.env.MAILGUN_API_KEY,
+      domain: process.env.MAILGUN_DOMAIN,
+      from: process.env.EMAIL_FROM || 'noreply@yourdomain.com'
+    }
   }
-}
+})
+```
+
+### Multiple Providers
+
+```javascript
+module.exports = (API) => ({
+  api: {
+    emails: {
+      enabled: true,
+      providers: {
+        'Transactional': '@postmark/emails',
+        'Marketing': '@sendgrid/emails'
+      },
+      templates: {
+        welcome: {
+          subject: 'Welcome to {{appName}}!',
+          html: '<h1>Welcome {{name}}!</h1><p>Thanks for joining {{appName}}.</p>',
+          text: 'Welcome {{name}}! Thanks for joining {{appName}}.'
+        }
+      }
+    }
+  },
+  providers: {
+    '@postmark/emails': {
+      serverToken: process.env.POSTMARK_SERVER_TOKEN,
+      from: process.env.EMAIL_FROM || 'noreply@yourdomain.com'
+    },
+    '@sendgrid/emails': {
+      apiKey: process.env.SENDGRID_API_KEY,
+      from: process.env.EMAIL_FROM || 'noreply@yourdomain.com'
+    }
+  }
+})
 ```
 
 ## Usage
@@ -66,7 +124,7 @@ Configure email services in your `basefloor.config.js`:
 
 ```javascript
 // Send a simple email
-await API.Email.send({
+await API.Emails.send({
   to: 'user@example.com',
   subject: 'Welcome to our platform',
   text: 'Thank you for signing up!',
@@ -77,13 +135,13 @@ await API.Email.send({
 ### Template Email
 
 ```javascript
-// Send using a template
-await API.Email.sendTemplate({
+// Send using a local template (defined in config)
+await API.Emails.sendTemplate({
   to: 'user@example.com',
   template: 'welcome',
   variables: {
     name: 'John Doe',
-    loginUrl: 'https://yourapp.com/login'
+    appName: 'My Awesome App'
   }
 });
 ```
@@ -92,7 +150,7 @@ await API.Email.sendTemplate({
 
 ```javascript
 // Send to multiple recipients
-await API.Email.sendBulk({
+await API.Emails.sendBulk({
   recipients: [
     { email: 'user1@example.com', name: 'User 1' },
     { email: 'user2@example.com', name: 'User 2' }
@@ -135,11 +193,11 @@ Basefloor automatically sends emails for:
 
 ## Environment Variables
 
-Set up your email provider credentials:
+Set up your email provider credentials in your `.env` file:
 
 ```env
 # Postmark
-POSTMARK_TOKEN=your-postmark-token
+POSTMARK_SERVER_TOKEN=your-postmark-token
 
 # SendGrid
 SENDGRID_API_KEY=your-sendgrid-key
@@ -147,6 +205,12 @@ SENDGRID_API_KEY=your-sendgrid-key
 # Mailgun
 MAILGUN_API_KEY=your-mailgun-key
 MAILGUN_DOMAIN=your-domain.com
+
+# Common
+EMAIL_FROM=noreply@yourdomain.com
+APP_NAME=Your App Name
+APP_AUTHOR=Your Company
+APP_AUTHOR_EMAIL=support@yourdomain.com
 ```
 
 ## Examples
@@ -158,10 +222,9 @@ MAILGUN_DOMAIN=your-domain.com
 app.post('/orders', async (req, res) => {
   const order = await API.Orders.create(req.body);
   
-  // Send confirmation email
-  await API.Email.send({
+  // Send confirmation email using template
+  await API.Emails.sendTemplate({
     to: order.customer_email,
-    subject: `Order Confirmation #${order._id}`,
     template: 'orderConfirmation',
     variables: {
       orderNumber: order._id,
@@ -178,12 +241,33 @@ app.post('/orders', async (req, res) => {
 
 ```javascript
 // Queue emails for background processing
-await API.Email.queue({
+await API.Emails.queue({
   to: 'user@example.com',
   subject: 'Daily Report',
   template: 'dailyReport',
   variables: reportData,
   sendAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // Send tomorrow
+});
+```
+
+### Multiple Provider Usage
+
+```javascript
+// Send transactional email via Postmark
+await API.Emails.Transactional.send({
+  to: 'user@example.com',
+  subject: 'Password Reset',
+  html: '<p>Click here to reset your password...</p>'
+});
+
+// Send marketing email via SendGrid
+await API.Emails.Marketing.sendTemplate({
+  to: 'subscriber@example.com',
+  template: 'newsletter',
+  variables: {
+    month: 'January',
+    content: 'This month in our app...'
+  }
 });
 ```
 
@@ -193,7 +277,7 @@ Email operations include proper error handling:
 
 ```javascript
 try {
-  await API.Email.send(emailData);
+  await API.Emails.send(emailData);
   console.log('Email sent successfully');
 } catch (error) {
   console.error('Email failed:', error.message);

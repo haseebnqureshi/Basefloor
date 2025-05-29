@@ -8,7 +8,18 @@ module.exports = (API) => ({
     name: 'My Basefloor App',
     port: process.env.PORT || 3000,
     env: process.env.NODE_ENV || 'development',
-    domain: process.env.DOMAIN || 'localhost'
+    domain: process.env.DOMAIN || 'localhost',
+    app: {
+      secret: process.env.JWT_SECRET || 'your-secret-key',
+      name: process.env.APP_NAME || 'My Basefloor App',
+      author: {
+        name: process.env.APP_AUTHOR || 'Your Company',
+        email: process.env.APP_AUTHOR_EMAIL || 'support@yourapp.com'
+      },
+      urls: {
+        verify: process.env.VERIFY_URL || 'https://yourapp.com/verify/:token'
+      }
+    }
   },
 
   // Database configuration (shared)
@@ -23,42 +34,48 @@ module.exports = (API) => ({
   api: {
     // Authentication configuration
     auth: {
+      enabled: true,
       jwt: {
         secret: process.env.JWT_SECRET || 'your-secret-key',
         expiresIn: '7d'
       }
     },
 
-    // Email configuration
-    email: {
-      provider: 'sendgrid',
-      from: 'noreply@myapp.com',
+    // Email configuration - corrected structure
+    emails: {
+      enabled: true,
+      provider: '@postmark/emails', // or '@sendgrid/emails' or '@mailgun/emails'
       templates: {
         welcome: {
           subject: 'Welcome to {{appName}}!',
-          html: '<h1>Welcome {{name}}!</h1>',
-          text: 'Welcome {{name}}!'
+          html: '<h1>Welcome {{name}}!</h1><p>Thanks for joining {{appName}}.</p>',
+          text: 'Welcome {{name}}! Thanks for joining {{appName}}.'
+        },
+        passwordReset: {
+          subject: '{{appName}} - Password Reset',
+          html: '<h1>Password Reset</h1><p>Click <a href="{{resetUrl}}">here</a> to reset your password.</p>',
+          text: 'Password Reset: {{resetUrl}}'
+        },
+        emailVerification: {
+          subject: '{{appName}} - Email Verification',
+          html: '<h1>Email Verification</h1><p>Click <a href="{{verificationUrl}}">here</a> to verify your email.</p>',
+          text: 'Email Verification: {{verificationUrl}}'
         }
       }
     },
 
     // File upload configuration
     files: {
-      provider: 'local',
+      enabled: true,
+      provider: '@aws/files', // or 'local' or '@minio/files' or '@digitalocean/files'
       maxSize: 10 * 1024 * 1024, // 10MB
       allowedTypes: ['image/*', 'application/pdf']
     },
 
     // AI services configuration
     ai: {
-      openai: {
-        apiKey: process.env.OPENAI_API_KEY,
-        model: 'gpt-4'
-      },
-      anthropic: {
-        apiKey: process.env.ANTHROPIC_API_KEY,
-        model: 'claude-3-sonnet-20240229'
-      }
+      enabled: true,
+      provider: '@openai/ai', // or '@anthropic/ai' or '@google/ai' or '@ollama/ai'
     },
 
     // Models definition
@@ -138,15 +155,82 @@ module.exports = (API) => ({
     }
   },
 
-  // Provider configurations (shared)
+  // Provider configurations (shared) - corrected structure
   providers: {
-    sendgrid: {
-      apiKey: process.env.SENDGRID_API_KEY
+    '@postmark/emails': {
+      serverToken: process.env.POSTMARK_SERVER_TOKEN || 'your-postmark-token',
+      from: process.env.EMAIL_FROM || 'noreply@yourapp.com'
     },
-    aws: {
+    '@sendgrid/emails': {
+      apiKey: process.env.SENDGRID_API_KEY || 'your-sendgrid-key',
+      from: process.env.EMAIL_FROM || 'noreply@yourapp.com'
+    },
+    '@mailgun/emails': {
+      apiKey: process.env.MAILGUN_API_KEY || 'your-mailgun-key',
+      domain: process.env.MAILGUN_DOMAIN || 'your-domain.com',
+      from: process.env.EMAIL_FROM || 'noreply@yourapp.com'
+    },
+    '@openai/ai': {
+      apiKey: process.env.OPENAI_API_KEY,
+      models: {
+        default: process.env.OPENAI_MODEL || 'gpt-4',
+        chat: 'gpt-4',
+        completion: 'gpt-3.5-turbo-instruct',
+        embedding: 'text-embedding-ada-002'
+      }
+    },
+    '@anthropic/ai': {
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      models: {
+        default: process.env.ANTHROPIC_MODEL || 'claude-3-sonnet-20240229',
+        sonnet: 'claude-3-sonnet-20240229',
+        haiku: 'claude-3-haiku-20240307',
+        opus: 'claude-3-opus-20240229'
+      }
+    },
+    '@google/ai': {
+      apiKey: process.env.GOOGLE_AI_API_KEY,
+      models: {
+        default: process.env.GOOGLE_AI_MODEL || 'gemini-pro',
+        pro: 'gemini-pro',
+        vision: 'gemini-pro-vision'
+      }
+    },
+    '@google/transcription': {
+      credentials: process.env.GOOGLE_CLOUD_CREDENTIALS, // JSON string
+      credentials_base64: process.env.GOOGLE_CLOUD_CREDENTIALS_BASE64, // Base64 encoded JSON
+      keyFilename: process.env.GOOGLE_CLOUD_KEY_FILENAME // Path to service account key file
+    },
+    '@ollama/ai': {
+      baseUrl: process.env.OLLAMA_BASE_URL || 'http://localhost:11434',
+      models: {
+        default: process.env.OLLAMA_MODEL || 'llama2',
+        llama2: 'llama2',
+        codellama: 'codellama',
+        mistral: 'mistral'
+      }
+    },
+    '@aws/files': {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      region: process.env.AWS_REGION
+      region: process.env.AWS_REGION || 'us-east-1',
+      bucket: process.env.AWS_S3_BUCKET,
+      cdn: process.env.AWS_CLOUDFRONT_URL // Optional CDN URL
+    },
+    '@digitalocean/files': {
+      access: process.env.DO_SPACES_ACCESS_KEY,
+      secret: process.env.DO_SPACES_SECRET_KEY,
+      region: process.env.DO_SPACES_REGION,
+      bucket: process.env.DO_SPACES_BUCKET,
+      cdn: process.env.DO_SPACES_CDN_URL
+    },
+    '@minio/files': {
+      endPoint: process.env.MINIO_ENDPOINT,
+      port: parseInt(process.env.MINIO_PORT) || 9000,
+      useSSL: process.env.MINIO_USE_SSL === 'true',
+      accessKey: process.env.MINIO_ACCESS_KEY,
+      secretKey: process.env.MINIO_SECRET_KEY,
+      bucket: process.env.MINIO_BUCKET
     }
   }
 }) 

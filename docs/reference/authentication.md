@@ -53,6 +53,16 @@ Basefloor includes a built-in Users model with the following fields:
 
 ### Register
 
+Register a new user account:
+
+<APIExplorer 
+  method="POST" 
+  endpoint="/auth/register" 
+  :requiresAuth="false"
+  sampleBody='{"email": "user@example.com", "password": "securePassword123", "name": "John Doe"}'
+/>
+
+**Static Example:**
 ```http
 POST /auth/register
 Content-Type: application/json
@@ -66,17 +76,16 @@ Content-Type: application/json
 
 ### Login
 
-```http
-POST /auth/login
-Content-Type: application/json
+Authenticate a user and receive a JWT token:
 
-{
-  "email": "user@example.com", 
-  "password": "securepassword"
-}
-```
+<APIExplorer 
+  method="POST" 
+  endpoint="/auth/login" 
+  :requiresAuth="false"
+  sampleBody='{"email": "user@example.com", "password": "securePassword123"}'
+/>
 
-Response:
+**Response:**
 ```json
 {
   "token": "jwt-token-here",
@@ -89,8 +98,29 @@ Response:
 }
 ```
 
+**Static Example:**
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com", 
+  "password": "securepassword"
+}
+```
+
 ### Verify Email
 
+Verify a user's email address with a verification token:
+
+<APIExplorer 
+  method="POST" 
+  endpoint="/auth/verify" 
+  :requiresAuth="false"
+  sampleBody='{"token": "verification-token-here"}'
+/>
+
+**Static Example:**
 ```http
 POST /auth/verify
 Content-Type: application/json
@@ -102,6 +132,16 @@ Content-Type: application/json
 
 ### Forgot Password
 
+Request a password reset email:
+
+<APIExplorer 
+  method="POST" 
+  endpoint="/auth/forgot" 
+  :requiresAuth="false"
+  sampleBody='{"email": "user@example.com"}'
+/>
+
+**Static Example:**
 ```http
 POST /auth/forgot
 Content-Type: application/json
@@ -113,6 +153,16 @@ Content-Type: application/json
 
 ### Reset Password
 
+Reset password using a reset token:
+
+<APIExplorer 
+  method="POST" 
+  endpoint="/auth/reset" 
+  :requiresAuth="false"
+  sampleBody='{"token": "reset-token-here", "password": "newSecurePassword123"}'
+/>
+
+**Static Example:**
 ```http
 POST /auth/reset
 Content-Type: application/json
@@ -122,6 +172,28 @@ Content-Type: application/json
   "password": "newpassword"
 }
 ```
+
+### Get Current User
+
+Get the authenticated user's information:
+
+<APIExplorer 
+  method="GET" 
+  endpoint="/auth/user" 
+  :requiresAuth="true"
+/>
+
+## Testing Authentication Flow
+
+### Complete Authentication Workflow
+
+1. **Register a new user** using the registration endpoint above
+2. **Login with credentials** to get a JWT token
+3. **Copy the token** from the login response
+4. **Use the token** in the "Get Current User" endpoint to verify authentication
+5. **Test protected endpoints** using the token
+
+> **💡 Pro Tip**: After logging in, copy the JWT token from the response and paste it into the "Bearer Token" field of other authenticated endpoints to test them.
 
 ## Using Authentication in Routes
 
@@ -218,22 +290,51 @@ Configure email settings for verification and password reset:
 }
 ```
 
+## Environment Configuration
+
+### Development
+```bash
+API_BASE_URL=http://localhost:3000
+JWT_SECRET=dev-secret-key
+EMAIL_PROVIDER=console  # Logs emails to console
+```
+
+### Production
+```bash
+API_BASE_URL=https://api.yourdomain.com
+JWT_SECRET=your-secure-production-secret
+EMAIL_PROVIDER=postmark
+POSTMARK_SERVER_TOKEN=your-postmark-token
+```
+
 ## Testing Authentication
 
-Test your authentication endpoints:
+Test your authentication endpoints using the interactive tools above, or use these command-line examples:
 
 ```bash
+# Set your API base URL
+API_BASE_URL="https://api.yourdomain.com"  # Production
+# API_BASE_URL="http://localhost:3000"     # Development
+
 # Register a new user
-curl -X POST http://localhost:3000/auth/register \
+curl -X POST ${API_BASE_URL}/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123","name":"Test User"}'
 
 # Login
-curl -X POST http://localhost:3000/auth/login \
+curl -X POST ${API_BASE_URL}/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123"}'
 
 # Use the token in protected requests
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  http://localhost:3000/protected-endpoint
-``` 
+  ${API_BASE_URL}/auth/user
+```
+
+## Next Steps
+
+- **Test the endpoints** using the interactive tools above
+- **Configure email services** for verification and password reset
+- **Set up proper environment variables** for your deployment
+- **Implement frontend authentication** using the [Code Playground](/tools/code-playground) examples
+- **Explore the [API Explorer](/tools/api-explorer)** for more advanced testing 

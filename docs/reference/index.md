@@ -27,5 +27,5 @@ Welcome to the BasefloorAPI reference documentation. Here you'll find detailed i
 ## Getting Help
 
 - Check our [examples](../examples/) for practical implementations
-- Review the [configuration guide](../guide/configuration) for setup details
+- Review the [configuration guide](./guide/configuration) for setup details
 - Visit our [GitHub repository](https://github.com/haseebnqureshi/basefloor) for issues and contributions 

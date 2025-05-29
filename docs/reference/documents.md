@@ -244,4 +244,4 @@ Each step creates new file records with `parent_file` pointing to the original f
 
 - [File Management](/reference/files) - Core file handling functionality
 - [API Routes](/api/routes/) - Complete API reference
-- [Authentication](/guide/authentication) - Authentication setup 
+- [Authentication](/reference/authentication) - Authentication setup 

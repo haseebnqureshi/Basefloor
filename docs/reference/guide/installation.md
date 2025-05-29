@@ -261,4 +261,4 @@ node test.js
 
 - [Quick Start Guide](./quick-start) - Get your first API running
 - [Configuration Reference](./configuration) - Learn about all configuration options
-- [Examples](../examples/) - See practical implementations 
+- [Examples](../../examples/) - See practical implementations 
