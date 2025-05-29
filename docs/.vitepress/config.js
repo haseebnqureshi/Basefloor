@@ -8,28 +8,25 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Guide', link: '/guide/' },
+      { text: 'Guide', link: '/reference/guide/' },
       { text: 'Reference', link: '/reference/' },
       { text: 'API', link: '/api/routes/' },
+      { text: 'Tools', link: '/tools/' },
       { text: 'Examples', link: '/examples/' }
     ],
     
     sidebar: {
-      '/guide/': [
+      '/reference/': [
         {
           text: 'Getting Started',
           collapsed: false,
           items: [
-            { text: 'Introduction', link: '/guide/' },
-            { text: 'Installation', link: '/guide/installation' },
-            { text: 'Quick Start', link: '/guide/quick-start' },
-            { text: 'Configuration', link: '/guide/configuration' },
-            { text: 'Interactive Components', link: '/guide/interactive-components' }
+            { text: 'Introduction', link: '/reference/guide/' },
+            { text: 'Installation', link: '/reference/guide/installation' },
+            { text: 'Quick Start', link: '/reference/guide/quick-start' },
+            { text: 'Configuration', link: '/reference/guide/configuration' }
           ]
-        }
-      ],
-      
-      '/reference/': [
+        },
         {
           text: 'Core Concepts',
           collapsed: false,
@@ -51,6 +48,19 @@ export default defineConfig({
             { text: 'Transcription', link: '/reference/transcription' },
             { text: 'Document Processing', link: '/reference/documents' },
             { text: 'TypeScript Support', link: '/reference/typescript' }
+          ]
+        }
+      ],
+
+      '/tools/': [
+        {
+          text: 'Interactive Tools',
+          collapsed: false,
+          items: [
+            { text: 'Overview', link: '/tools/' },
+            { text: 'Configuration Builder', link: '/tools/config-builder' },
+            { text: 'API Explorer', link: '/tools/api-explorer' },
+            { text: 'Code Playground', link: '/tools/code-playground' }
           ]
         }
       ],

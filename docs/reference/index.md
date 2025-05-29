@@ -2,6 +2,14 @@
 
 Welcome to the BasefloorAPI reference documentation. Here you'll find detailed information about all the core concepts and features of BasefloorAPI.
 
+## Getting Started
+
+- **[Introduction](./guide/)** - Overview and features of BasefloorAPI
+- **[Installation](./guide/installation)** - System requirements and installation steps
+- **[Quick Start](./guide/quick-start)** - Build your first API
+- **[Configuration](./guide/configuration)** - Complete configuration reference
+- **[Interactive Components](./guide/interactive-components)** - Working with interactive features
+
 ## Core Concepts
 
 - **[Models](./models)** - Data modeling and database integration
