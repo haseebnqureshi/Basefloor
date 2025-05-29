@@ -152,14 +152,14 @@ html.dark .card:hover {
     <div class="card-title">📧 Email Services</div>
     <div class="card-desc">Send emails with multiple provider support and template systems.</div>
     <div class="card-code" data-line-numbers="1">email: { provider: 'sendgrid' }</div>
-    <a href="/reference/email" class="card-cta">Email setup guide</a>
+    <a href="/reference/emails" class="card-cta">Email setup guide</a>
   </div>
 
   <div class="card">
     <div class="card-title">🎤 Audio Transcription</div>
     <div class="card-desc">Speech-to-text capabilities with Google Cloud Speech integration.</div>
     <div class="card-code" data-line-numbers="1">audio: { provider: 'google' }</div>
-    <a href="/reference/audio" class="card-cta">Audio transcription</a>
+    <a href="/reference/transcription" class="card-cta">Audio transcription</a>
   </div>
 
   <div class="card">

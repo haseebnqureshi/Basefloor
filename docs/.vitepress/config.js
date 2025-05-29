@@ -48,7 +48,9 @@ export default defineConfig({
             { text: 'File Management', link: '/reference/files' },
             { text: 'Email Services', link: '/reference/emails' },
             { text: 'AI Integration', link: '/reference/ai' },
-            { text: 'Transcription', link: '/reference/transcription' }
+            { text: 'Transcription', link: '/reference/transcription' },
+            { text: 'Document Processing', link: '/reference/documents' },
+            { text: 'TypeScript Support', link: '/reference/typescript' }
           ]
         }
       ],
