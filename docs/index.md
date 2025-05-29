@@ -202,14 +202,16 @@ html.dark .card:hover {
 
 <script>
 // Auto-generate line numbers for code blocks
-document.addEventListener('DOMContentLoaded', function() {
-  const codeBlocks = document.querySelectorAll('.card-code');
-  codeBlocks.forEach(block => {
-    const lines = block.innerHTML.split('<br>').length;
-    const lineNumbers = Array.from({length: lines}, (_, i) => i + 1).join('\n');
-    block.setAttribute('data-line-numbers', lineNumbers);
+if (typeof window !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', function() {
+    const codeBlocks = document.querySelectorAll('.card-code');
+    codeBlocks.forEach(block => {
+      const lines = block.innerHTML.split('<br>').length;
+      const lineNumbers = Array.from({length: lines}, (_, i) => i + 1).join('\n');
+      block.setAttribute('data-line-numbers', lineNumbers);
+    });
   });
-});
+}
 </script>
 
 ## Installation
