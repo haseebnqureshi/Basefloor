@@ -2,11 +2,11 @@ module.exports = (API) => {
   return {
     // Project configuration (required)
     project: {
-      name: 'Basefloor Authentication Example API',
+      name: 'Basefloor Document Processing Example API',
       port: process.env.PORT || 4000,
       env: process.env.NODE_ENV || 'development',
       app: {
-        name: 'Basefloor Authentication Example API',
+        name: 'Basefloor Document Processing Example API',
         secret: process.env.JWT_SECRET || 'example-secret-key-change-in-production',
         author: {
           name: 'Basefloor',
@@ -31,12 +31,12 @@ module.exports = (API) => {
     // Provider configurations
     providers: {
       '@mongodb/local-db': {
-        uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/basefloor-example',
-        database: process.env.MONGODB_DATABASE || 'basefloor-example'
+        uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/basefloor-documents',
+        database: process.env.MONGODB_DATABASE || 'basefloor-documents'
       }
     },
     
-    // Authentication configuration - ENABLED for auth examples
+    // Authentication configuration - ENABLED
     auth: {
       enabled: true,
       jwt: {
@@ -45,9 +45,24 @@ module.exports = (API) => {
       }
     },
     
-    // File management configuration - disabled
+    // File management configuration - ENABLED for document uploads
     files: {
-      enabled: false
+      enabled: true,
+      provider: 'local',
+      local: {
+        uploadDir: './uploads',
+        maxSize: 50 * 1024 * 1024, // 50MB for documents
+        allowedTypes: [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-powerpoint',
+          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          'text/*'
+        ]
+      }
     },
     
     // Email configuration - disabled
@@ -59,8 +74,13 @@ module.exports = (API) => {
     ai: {
       enabled: false
     },
+    
+    // Transcription configuration - disabled
+    transcription: {
+      enabled: false
+    },
 
-    // Models configuration
+    // Models configuration with document-specific models
     models: {
       Users: {
         collection: 'users',
@@ -91,16 +111,52 @@ module.exports = (API) => {
         }
       },
       
-      Tasks: {
-        collection: 'tasks',
-        labels: ['Task', 'Tasks'],
+      Documents: {
+        collection: 'documents',
+        labels: ['Document', 'Documents'],
         values: {
           _id: ['ObjectId', 'rd'],
-          title: ['String', 'cru'],
-          description: ['String', 'cru'],
-          completed: ['Boolean', 'cru', false],
-          due_date: ['Date', 'cru'],
+          filename: ['String', 'cru'],
+          originalName: ['String', 'cru'],
+          size: ['Number', 'cru'],
+          mimetype: ['String', 'cru'],
+          path: ['String', 'cru'],
+          url: ['String', 'cru'],
           user_id: ['ObjectId', 'cr'],
+          parent_id: ['ObjectId', 'cru'],
+          status: ['String', 'cru', 'uploaded'],
+          conversion_format: ['String', 'cru'],
+          source_documents: ['Array', 'cru'],
+          created_at: ['Date', 'r'],
+          updated_at: ['Date', 'r']
+        },
+        filters: {
+          create: {
+            values: (values) => {
+              values.created_at = new Date();
+              values.updated_at = new Date();
+              return values;
+            }
+          },
+          update: {
+            values: (values) => {
+              values.updated_at = new Date();
+              return values;
+            }
+          }
+        }
+      },
+      
+      DocumentExtractions: {
+        collection: 'document_extractions',
+        labels: ['Document Extraction', 'Document Extractions'],
+        values: {
+          _id: ['ObjectId', 'rd'],
+          document_id: ['ObjectId', 'cr'],
+          user_id: ['ObjectId', 'cr'],
+          text_content: ['String', 'cru'],
+          word_count: ['Number', 'cru'],
+          character_count: ['Number', 'cru'],
           created_at: ['Date', 'r'],
           updated_at: ['Date', 'r']
         },

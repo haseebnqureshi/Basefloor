@@ -2,11 +2,11 @@ module.exports = (API) => {
   return {
     // Project configuration (required)
     project: {
-      name: 'Basefloor Authentication Example API',
+      name: 'Basefloor Audio Transcription Example API',
       port: process.env.PORT || 4000,
       env: process.env.NODE_ENV || 'development',
       app: {
-        name: 'Basefloor Authentication Example API',
+        name: 'Basefloor Audio Transcription Example API',
         secret: process.env.JWT_SECRET || 'example-secret-key-change-in-production',
         author: {
           name: 'Basefloor',
@@ -31,12 +31,12 @@ module.exports = (API) => {
     // Provider configurations
     providers: {
       '@mongodb/local-db': {
-        uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/basefloor-example',
-        database: process.env.MONGODB_DATABASE || 'basefloor-example'
+        uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/basefloor-transcription',
+        database: process.env.MONGODB_DATABASE || 'basefloor-transcription'
       }
     },
     
-    // Authentication configuration - ENABLED for auth examples
+    // Authentication configuration - ENABLED
     auth: {
       enabled: true,
       jwt: {
@@ -45,9 +45,25 @@ module.exports = (API) => {
       }
     },
     
-    // File management configuration - disabled
+    // File management configuration - ENABLED for audio uploads
     files: {
-      enabled: false
+      enabled: true,
+      provider: 'local',
+      local: {
+        uploadDir: './uploads',
+        maxSize: 100 * 1024 * 1024, // 100MB for audio files
+        allowedTypes: ['audio/*', 'video/*']
+      }
+    },
+    
+    // Transcription configuration - ENABLED
+    transcription: {
+      enabled: true,
+      provider: '@google/transcription',
+      google: {
+        apiKey: process.env.GOOGLE_CLOUD_API_KEY,
+        projectId: process.env.GOOGLE_CLOUD_PROJECT_ID
+      }
     },
     
     // Email configuration - disabled
@@ -60,7 +76,7 @@ module.exports = (API) => {
       enabled: false
     },
 
-    // Models configuration
+    // Models configuration with transcription-specific models
     models: {
       Users: {
         collection: 'users',
@@ -91,16 +107,53 @@ module.exports = (API) => {
         }
       },
       
-      Tasks: {
-        collection: 'tasks',
-        labels: ['Task', 'Tasks'],
+      AudioFiles: {
+        collection: 'audio_files',
+        labels: ['Audio File', 'Audio Files'],
         values: {
           _id: ['ObjectId', 'rd'],
-          title: ['String', 'cru'],
-          description: ['String', 'cru'],
-          completed: ['Boolean', 'cru', false],
-          due_date: ['Date', 'cru'],
+          filename: ['String', 'cru'],
+          originalName: ['String', 'cru'],
+          size: ['Number', 'cru'],
+          mimetype: ['String', 'cru'],
+          path: ['String', 'cru'],
+          url: ['String', 'cru'],
           user_id: ['ObjectId', 'cr'],
+          status: ['String', 'cru', 'uploaded'],
+          transcription_id: ['ObjectId', 'cru'],
+          created_at: ['Date', 'r'],
+          updated_at: ['Date', 'r']
+        },
+        filters: {
+          create: {
+            values: (values) => {
+              values.created_at = new Date();
+              values.updated_at = new Date();
+              return values;
+            }
+          },
+          update: {
+            values: (values) => {
+              values.updated_at = new Date();
+              return values;
+            }
+          }
+        }
+      },
+      
+      Transcriptions: {
+        collection: 'transcriptions',
+        labels: ['Transcription', 'Transcriptions'],
+        values: {
+          _id: ['ObjectId', 'rd'],
+          audio_file_id: ['ObjectId', 'cr'],
+          user_id: ['ObjectId', 'cr'],
+          language: ['String', 'cru', 'en-US'],
+          text: ['String', 'cru'],
+          confidence: ['Number', 'cru'],
+          words: ['Array', 'cru'],
+          status: ['String', 'cru', 'pending'],
+          provider: ['String', 'cru', 'google'],
           created_at: ['Date', 'r'],
           updated_at: ['Date', 'r']
         },
