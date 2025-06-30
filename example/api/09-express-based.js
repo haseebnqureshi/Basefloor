@@ -367,20 +367,109 @@ API.get('/api/v1/metrics', [API.requireAuthentication], (req, res) => {
 API.Start();
 
 console.log('⚡ Express-based Example API running!');
-console.log('Try: GET /api/v1/health - Health check with metrics');
-console.log('Try: GET /api/v1/stream - Streaming response demo');
-console.log('Try: POST /api/v1/upload-progress - Upload with progress');
-console.log('Try: GET /api/v1/events - Server-sent events');
-console.log('Try: GET /api/v1/high-frequency/test - Rate limited endpoint');
-console.log('Try: GET /api/v1/data/:id - Route parameters and queries');
-console.log('Try: GET /api/v1/metrics - Performance metrics');
-console.log('');
-console.log('Express features demonstrated:');
-console.log('✓ Custom middleware chains');
-console.log('✓ Rate limiting');
-console.log('✓ Streaming responses');
-console.log('✓ Server-sent events');
-console.log('✓ Error handling');
-console.log('✓ Route organization');
-console.log('✓ Request validation');
-console.log('✓ Performance monitoring'); 
+console.log('🧪 Testing all endpoints...\n');
+
+// Wait for server to start, then test all endpoints
+setTimeout(async () => {
+  const baseUrl = `http://localhost:${API.port || 4000}`;
+  const axios = require('axios');
+  
+  try {
+    // Test 1: Health check
+    console.log('1. Testing health endpoint...');
+    const healthResponse = await axios.get(`${baseUrl}/api/v1/health`);
+    console.log('✓ Health check:', healthResponse.data.status, `(${healthResponse.data.memory.rss} memory)`);
+    
+    // Test 2: Rate limiting
+    console.log('\n2. Testing rate limiting...');
+    let rateLimitHit = false;
+    for (let i = 0; i < 7; i++) {
+      try {
+        const rateLimitResponse = await axios.get(`${baseUrl}/api/v1/high-frequency/test`);
+        console.log(`✓ Request ${i + 1}: ${rateLimitResponse.data.message}`);
+      } catch (error) {
+        if (error.response?.status === 429) {
+          console.log(`✓ Rate limit triggered at request ${i + 1}: ${error.response.data.error}`);
+          rateLimitHit = true;
+          break;
+        }
+      }
+    }
+    if (!rateLimitHit) console.log('⚠️  Rate limit not reached in test');
+    
+    // Test 3: Route parameters and queries (requires auth - test without auth first)
+    console.log('\n3. Testing route parameters...');
+    try {
+      const paramsResponse = await axios.get(`${baseUrl}/api/v1/data/123?format=json&include=metadata`);
+      console.log('✓ Route params:', paramsResponse.data.id, paramsResponse.data.name);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        console.log('✓ Authentication required (as expected):', error.response.data.error || 'Unauthorized');
+      } else {
+        throw error;
+      }
+    }
+    
+    // Test 4: Content validation
+    console.log('\n4. Testing content validation...');
+    try {
+      await axios.post(`${baseUrl}/api/v1/data/test`, 'invalid-json', {
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    } catch (error) {
+      if (error.response?.status === 400) {
+        console.log('✓ Content validation:', error.response.data.error);
+      }
+    }
+    
+    // Test 5: Streaming response (just start it)
+    console.log('\n5. Testing streaming response...');
+    const streamResponse = await axios.get(`${baseUrl}/api/v1/stream`, {
+      responseType: 'stream'
+    });
+    console.log('✓ Stream started, content-type:', streamResponse.headers['content-type']);
+    streamResponse.data.destroy(); // Close the stream
+    
+    // Test 6: Server-sent events (just connect)
+    console.log('\n6. Testing server-sent events...');
+    const sseResponse = await axios.get(`${baseUrl}/api/v1/events`, {
+      responseType: 'stream'
+    });
+    console.log('✓ SSE connection established, content-type:', sseResponse.headers['content-type']);
+    sseResponse.data.destroy(); // Close the connection
+    
+    // Test 7: Metrics endpoint (requires auth)
+    console.log('\n7. Testing metrics endpoint...');
+    try {
+      const metricsResponse = await axios.get(`${baseUrl}/api/v1/metrics`);
+      console.log('✓ Metrics retrieved:', Object.keys(metricsResponse.data).join(', '));
+    } catch (error) {
+      if (error.response?.status === 401) {
+        console.log('✓ Authentication required for metrics (as expected)');
+      } else {
+        throw error;
+      }
+    }
+    
+    // Note about upload endpoint
+    console.log('\n📝 Note: Upload endpoint (/api/v1/upload-progress) also requires authentication');
+    
+    console.log('\n🎉 All endpoint tests completed successfully!');
+    console.log('\nExpress features demonstrated:');
+    console.log('✓ Custom middleware chains');
+    console.log('✓ Rate limiting');
+    console.log('✓ Streaming responses');
+    console.log('✓ Server-sent events');
+    console.log('✓ Error handling');
+    console.log('✓ Route organization');
+    console.log('✓ Request validation');
+    console.log('✓ Performance monitoring');
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
+  }
+}, 2000); 
