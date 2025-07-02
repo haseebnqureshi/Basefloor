@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /guide/quick-start
+      link: /reference/guide/quick-start
     - theme: alt
       text: View on GitHub
       link: https://github.com/haseebnqureshi/basefloor
@@ -115,7 +115,7 @@ html.dark .card:hover {
     <div class="card-title">🚀 Quick Setup</div>
     <div class="card-desc">Get a full-featured API running in minutes with minimal configuration.</div>
     <div class="card-code" data-line-numbers="1">BasefloorAPI({ config })</div>
-    <a href="/guide/quick-start" class="card-cta">Get started</a>
+    <a href="/reference/guide/quick-start" class="card-cta">Get started</a>
   </div>
 
   <div class="card">
@@ -174,7 +174,7 @@ html.dark .card:hover {
     <div class="card-desc">Built on top of Express.js for maximum flexibility and performance.</div>
     <div class="card-code" data-line-numbers="1
 2">API.use()<br>API.get()</div>
-    <a href="/reference/routes" class="card-cta">Custom routes</a>
+    <a href="/reference/express" class="card-cta">Express features</a>
   </div>
 
   <div class="card">
@@ -188,7 +188,7 @@ html.dark .card:hover {
     <div class="card-title">🔧 Highly Configurable</div>
     <div class="card-desc">Customize every aspect through a simple configuration file.</div>
     <div class="card-code" data-line-numbers="1">basefloor.config.js</div>
-    <a href="/guide/configuration" class="card-cta">Configuration docs</a>
+    <a href="/reference/guide/configuration" class="card-cta">Configuration docs</a>
   </div>
 
   <div class="card">

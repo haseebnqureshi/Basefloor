@@ -4,17 +4,18 @@ BasefloorAPI is a comprehensive API framework built on Express and MongoDB that 
 
 ## Features
 
-- 🔐 Built-in Authentication & JWT
-- 👥 User Management & Permissions
-- 📝 CRUD Operations
-- 📨 Email Notifications (Postmark integration)
-- 🗄️ MongoDB Integration
-- 🖼️ File Management & Image Processing
-- 🎙️ Audio-to-Text Transcription
-- 🔄 File Format Conversions
-- 🔒 Security Features
-- 📱 Phone Number Validation
-- ☁️ AWS S3 Integration
+- 🔐 [Built-in Authentication & JWT](../authentication) - User registration, login, and permission management
+- 👥 [User Management & Permissions](../permissions) - Access control and authorization
+- 📝 [CRUD Operations](../models) - Data modeling and database integration
+- 📨 [Email Services](../emails) - Email notifications and templates
+- 🗄️ [MongoDB Integration](../models) - Seamless database integration
+- 🖼️ [File Management](../files) - File upload, storage, and processing
+- 🎙️ [Audio Transcription](../transcription) - Speech-to-text capabilities
+- 🔄 [Document Processing](../documents) - Convert and process documents
+- ⚡ [Express-based](../express) - Built on Express.js for flexibility
+- 🛡️ [Type Safety](../typescript) - Full TypeScript support
+- 🔧 [Highly Configurable](./configuration) - Customize through configuration
+- 🤖 [AI Integration](../ai) - AI service integrations
 
 ## Installation
 

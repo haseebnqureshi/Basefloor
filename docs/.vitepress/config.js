@@ -42,12 +42,18 @@ export default defineConfig({
           text: 'Features',
           collapsed: false,
           items: [
-            { text: 'File Management', link: '/reference/files' },
+            { text: 'Built-in Authentication & JWT', link: '/reference/authentication' },
+            { text: 'User Management & Permissions', link: '/reference/permissions' },
+            { text: 'CRUD Operations', link: '/reference/models' },
             { text: 'Email Services', link: '/reference/emails' },
-            { text: 'AI Integration', link: '/reference/ai' },
-            { text: 'Transcription', link: '/reference/transcription' },
+            { text: 'MongoDB Integration', link: '/reference/models' },
+            { text: 'File Management', link: '/reference/files' },
+            { text: 'Audio Transcription', link: '/reference/transcription' },
             { text: 'Document Processing', link: '/reference/documents' },
-            { text: 'TypeScript Support', link: '/reference/typescript' }
+            { text: 'Express-based', link: '/reference/express' },
+            { text: 'Type Safety', link: '/reference/typescript' },
+            { text: 'Highly Configurable', link: '/reference/guide/configuration' },
+            { text: 'AI Integration', link: '/reference/ai' }
           ]
         }
       ],
