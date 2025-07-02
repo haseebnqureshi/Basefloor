@@ -334,7 +334,7 @@ API.get('/api/async-route', asyncHandler(async (req, res) => {
 
 ## Example: Complete Express Integration
 
-See the [complete Express example](../examples/express-advanced) for a full implementation showcasing:
+See the [complete Express example](../example/api/09-express-based.js) for a full implementation showcasing:
 
 - Custom middleware chains
 - Rate limiting and validation
