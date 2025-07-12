@@ -19,7 +19,10 @@
       "Bash(timeout:*)",
       "Bash(cp:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git rm:*)",
+      "Bash(git push:*)",
+      "Bash(git restore:*)"
     ],
     "deny": []
   }

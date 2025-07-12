@@ -169,4 +169,10 @@ dist
 .yarn/unplugged
 .yarn/build-state.yml
 .yarn/install-state.gz
-.pnp.* 
+.pnp.*
+
+# Claude AI files
+.claude/
+
+# Large binary files
+example/api/minio 
