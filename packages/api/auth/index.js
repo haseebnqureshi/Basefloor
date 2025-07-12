@@ -63,6 +63,8 @@ module.exports = (API, { paths, providers, project }) => {
 			const user = await API.DB.Users.read({ where })
 
 			if (!user) { throw { code: 404, err: `user not found!` } }
+			if (!password) { throw { code: 400, err: `password required!` } }
+			if (!user.password_hash) { throw { code: 500, err: `user password hash not found!` } }
 			const correctPassword = await API.Utils.try('Auth.login:comparePasswordWithHashed', 
 				API.Auth.comparePasswordWithHashed(password, user.password_hash)
 			)

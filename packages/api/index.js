@@ -45,7 +45,7 @@ module.exports = ({ projectPath, envPath }) => {
 		
 		//low level helpers first
 		API = require('./utils')(API, { paths, providers, project })
-		API = require('./checks')(API, { paths, providers, project }) //before, so other features can load checks into the checker
+		API = require('./checks/index')(API, { paths, providers, project }) //before, so other features can load checks into the checker
 		
 		//then database handling and models
 		API = require('./db')(API, { db, paths, providers, project })

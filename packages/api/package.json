@@ -1,6 +1,6 @@
 {
   "name": "@basefloor/api",
-  "version": "1.3.0",
+  "version": "1.5.0",
   "description": "BasefloorAPI - Modern backend framework with built-in authentication, permissions, and MongoDB integration",
   "main": "index.js",
   "type": "commonjs",
@@ -72,6 +72,7 @@
   "files": [
     "index.js",
     "auth/",
+    "checks/",
     "db/",
     "models/",
     "routes/",

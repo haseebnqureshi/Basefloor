@@ -22,7 +22,11 @@
       "Bash(git commit:*)",
       "Bash(git rm:*)",
       "Bash(git push:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm pack:*)",
+      "Bash(mv:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
