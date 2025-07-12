@@ -33,7 +33,10 @@ module.exports = (API) => {
     },
     "files": {
       enabled: true,
-      provider: "@digitalocean/files",
+      providers: {
+        "Remote": "@digitalocean/files",
+        "Sharp": "@sharp/files"
+      }
     },
     "emails": {
       enabled: false,
@@ -59,6 +62,19 @@ module.exports = (API) => {
         region: process.env.DIGITALOCEAN_SPACES_REGION,
         bucket: process.env.DIGITALOCEAN_SPACES_BUCKET,
         cdn: process.env.DIGITALOCEAN_SPACES_CDN,
+      },
+      "@sharp/files": {
+        // Sharp configuration for image processing
+      },
+      "@minio/files": {
+        // MinIO S3-compatible storage configuration
+        endPoint: process.env.MINIO_ENDPOINT || 'localhost',
+        port: parseInt(process.env.MINIO_PORT) || 9000,
+        useSSL: process.env.MINIO_USE_SSL === 'true',
+        access: process.env.MINIO_ACCESS_KEY,
+        secret: process.env.MINIO_SECRET_KEY,
+        bucket: process.env.MINIO_BUCKET,
+        region: process.env.MINIO_REGION || 'us-east-1'
       },
       "@mailgun/emails": {
         username: process.env.MAILGUN_USERNAME,

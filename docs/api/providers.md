@@ -70,29 +70,109 @@ packages/api/providers/
 
 ### Storage Providers
 
-#### MinIO (@minio/storage)
+#### MinIO (@minio/files)
 - **Service**: S3-compatible object storage
 - **Dependencies**: `minio`
 - **Use Cases**: File storage, image hosting, backup solutions
 
-#### DigitalOcean Spaces (@digitalocean/storage)
+#### DigitalOcean Spaces (@digitalocean/files)
 - **Service**: Object storage
 - **Dependencies**: `aws-sdk` (S3-compatible)
 - **Use Cases**: CDN, file hosting, static assets
 
 ### Image Processing Providers
 
-#### Sharp (@sharp/images)
+#### Sharp (@sharp/files)
 - **Service**: High-performance image processing
 - **Dependencies**: `sharp`
 - **Use Cases**: Image resizing, format conversion, optimization
 
 ### Document Processing Providers
 
-#### LibreOffice (@libreoffice/documents)
+#### LibreOffice (@libreoffice/files)
 - **Service**: Document conversion and processing
 - **Dependencies**: System LibreOffice installation
 - **Use Cases**: PDF generation, document conversion, office file processing
+
+## Files Service Multi-Provider Architecture
+
+The Files service uses a unique multi-provider architecture that combines multiple providers to handle different aspects of file management:
+
+### Provider Roles
+
+1. **Remote Provider**: Handles file storage and retrieval
+   - Examples: `@minio/files`, `@digitalocean/files`, `@aws/files`
+   - Responsibilities: Upload, download, delete files from remote storage
+
+2. **Sharp Provider**: Handles image processing
+   - Provider: `@sharp/files`
+   - Responsibilities: Image resizing, format conversion, optimization
+   - Automatically loaded when Files service is enabled
+
+3. **LibreOffice Provider**: Handles document conversion
+   - Provider: `@libreoffice/files`
+   - Responsibilities: PDF generation, document format conversion
+   - Automatically loaded when LibreOffice is installed
+
+### How It Works
+
+When the Files service is enabled, all three provider types are automatically loaded:
+
+```javascript
+// The Files service internally loads multiple providers
+API.Files = {
+  Remote: loadProvider('@minio/files'),      // Storage operations
+  Sharp: loadProvider('@sharp/files'),       // Image processing
+  LibreOffice: loadProvider('@libreoffice/files') // Document conversion
+}
+```
+
+### Configuration Example
+
+```javascript
+// basefloor.config.js
+files: {
+  enabled: true,
+  providers: {
+    "Remote": "@minio/files",        // Required: Storage provider
+    "Sharp": "@sharp/files"          // Optional: Image processing
+    // LibreOffice provider auto-loaded if available
+  }
+},
+providers: {
+  "@minio/files": {
+    endPoint: process.env.MINIO_ENDPOINT,
+    port: parseInt(process.env.MINIO_PORT),
+    useSSL: process.env.MINIO_USE_SSL === 'true',
+    access: process.env.MINIO_ACCESS_KEY,
+    secret: process.env.MINIO_SECRET_KEY,
+    bucket: process.env.MINIO_BUCKET
+  },
+  "@sharp/files": {
+    // Sharp configuration for image processing
+  }
+}
+```
+
+### File Processing Pipeline
+
+Files flow through providers based on their type and requested operations:
+
+1. **Upload**: Remote provider stores the file
+2. **Image Processing**: Sharp provider handles resizing/conversion if needed
+3. **Document Conversion**: LibreOffice provider converts office documents to PDF/images
+4. **Download**: Remote provider retrieves the file
+
+### Dependencies
+
+The Files service requires specific dependencies to be installed in the BasefloorAPI packages directory:
+
+```bash
+cd packages/api
+npm install minio sharp --save
+```
+
+Note: LibreOffice must be installed separately on the system for document conversion features.
 
 ### Database Providers
 
@@ -176,8 +256,9 @@ The `manifest.json` file defines the required dependencies for each provider:
   "@google/transcription": ["@google-cloud/speech"],
   "@postmark/emails": ["postmark"],
   "@mailgun/emails": ["mailgun.js"],
-  "@minio/storage": ["minio"],
-  "@sharp/images": ["sharp"]
+  "@minio/files": ["minio"],
+  "@sharp/files": ["sharp"],
+  "@libreoffice/files": ["libreoffice-convert"]
 }
 ```
 
