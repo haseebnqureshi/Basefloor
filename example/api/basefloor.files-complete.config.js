@@ -2,12 +2,12 @@ module.exports = (API) => {
   return {
     // Project configuration (required)
     project: {
-      name: 'BasefloorAPI Files Routes Test',
+      name: 'BasefloorAPI Files Complete Test',
       port: process.env.PORT || 4000,
       env: process.env.NODE_ENV || 'development',
       app: {
-        name: 'BasefloorAPI Files Routes Test',
-        secret: process.env.JWT_SECRET || 'files-routes-secret',
+        name: 'BasefloorAPI Files Complete Test',
+        secret: process.env.JWT_SECRET || 'files-complete-secret',
         author: {
           name: 'Basefloor',
           email: 'hello@basefloor.app'
@@ -37,24 +37,26 @@ module.exports = (API) => {
         bucket: process.env.MINIO_BUCKET || 'basefloor-test',
         region: 'us-east-1'
       },
-      '@sharp/files': {}
+      '@sharp/files': {},
+      '@libreoffice/files': {}
     },
     
     // Authentication configuration
     auth: {
       enabled: true,
       jwt: {
-        secret: process.env.JWT_SECRET || 'files-routes-secret',
+        secret: process.env.JWT_SECRET || 'files-complete-secret',
         expiresIn: '24h'
       }
     },
     
-    // File management configuration - ENABLED with required providers
+    // File management configuration - ENABLED with all providers
     files: {
       enabled: true,
       providers: {
         Remote: '@minio/files',
-        Sharp: '@sharp/files'
+        Sharp: '@sharp/files',
+        Libreoffice: '@libreoffice/files'
       }
     },
     

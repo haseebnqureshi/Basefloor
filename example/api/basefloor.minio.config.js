@@ -2,12 +2,12 @@ module.exports = (API) => {
   return {
     // Project configuration (required)
     project: {
-      name: 'BasefloorAPI Files Routes Test',
+      name: 'BasefloorAPI MinIO Test',
       port: process.env.PORT || 4000,
       env: process.env.NODE_ENV || 'development',
       app: {
-        name: 'BasefloorAPI Files Routes Test',
-        secret: process.env.JWT_SECRET || 'files-routes-secret',
+        name: 'BasefloorAPI MinIO Test',
+        secret: process.env.JWT_SECRET || 'minio-test-secret',
         author: {
           name: 'Basefloor',
           email: 'hello@basefloor.app'
@@ -35,27 +35,25 @@ module.exports = (API) => {
         access: process.env.MINIO_ACCESS_KEY || 'miniouser',
         secret: process.env.MINIO_SECRET_KEY || 'miniopassword',
         bucket: process.env.MINIO_BUCKET || 'basefloor-test',
-        region: 'us-east-1'
-      },
-      '@sharp/files': {}
+        region: 'us-east-1',
+        cdn: `http://${process.env.MINIO_ENDPOINT || 'localhost'}:${process.env.MINIO_PORT || 9000}/${process.env.MINIO_BUCKET || 'basefloor-test'}`,
+        defaultAcl: 'public-read'
+      }
     },
     
     // Authentication configuration
     auth: {
       enabled: true,
       jwt: {
-        secret: process.env.JWT_SECRET || 'files-routes-secret',
+        secret: process.env.JWT_SECRET || 'minio-test-secret',
         expiresIn: '24h'
       }
     },
     
-    // File management configuration - ENABLED with required providers
+    // File management configuration - ENABLED with MinIO provider
     files: {
       enabled: true,
-      providers: {
-        Remote: '@minio/files',
-        Sharp: '@sharp/files'
-      }
+      provider: '@minio/files'
     },
     
     // Email configuration - disabled
@@ -104,16 +102,14 @@ module.exports = (API) => {
         labels: ['File', 'Files'],
         values: {
           _id: ['ObjectId', 'rd'],
-          name: ['String', 'cru'],
           filename: ['String', 'cru'],
+          originalName: ['String', 'cru'],
           size: ['Number', 'cru'],
-          content_type: ['String', 'cru'],
-          hash: ['String', 'cru'],
-          key: ['String', 'cru'],
-          extension: ['String', 'cru'],
+          mimetype: ['String', 'cru'],
+          path: ['String', 'cru'],
+          url: ['String', 'cru'],
           user_id: ['ObjectId', 'cr'],
           parent_id: ['ObjectId', 'cru'],
-          uploaded_at: ['Date', 'cru'],
           created_at: ['Date', 'r'],
           updated_at: ['Date', 'r']
         },

@@ -36,8 +36,7 @@ module.exports = (API) => {
         secret: process.env.MINIO_SECRET_KEY || 'miniopassword',
         bucket: process.env.MINIO_BUCKET || 'basefloor-test',
         region: 'us-east-1'
-      },
-      '@sharp/files': {}
+      }
     },
     
     // Authentication configuration
@@ -49,13 +48,10 @@ module.exports = (API) => {
       }
     },
     
-    // File management configuration - ENABLED with required providers
+    // File management configuration - ENABLED with minimal setup
     files: {
       enabled: true,
-      providers: {
-        Remote: '@minio/files',
-        Sharp: '@sharp/files'
-      }
+      provider: '@minio/files'
     },
     
     // Email configuration - disabled

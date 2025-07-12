@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run:*)",
+      "Bash(node:*)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(curl:*)",
+      "Bash(mkdir:*)",
+      "Bash(__NEW_LINE__ echo -e \"\\n\\n=== 6. READ ALL to verify DELETE ===\")",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "Bash(docker run:*)",
+      "Bash(grep:*)",
+      "Bash(chmod:*)",
+      "Bash(timeout:*)",
+      "Bash(cp:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": []
+  }
+}

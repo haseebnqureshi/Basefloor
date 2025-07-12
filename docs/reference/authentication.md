@@ -19,18 +19,10 @@ Configure authentication in your `basefloor.config.js`:
 module.exports = (API) => {
   return {
     auth: {
+      enabled: true,
       jwt: {
-        secret: process.env.JWT_SECRET,
-        expirations: {
-          auth: '7d',      // Authentication token
-          verify: '24h',   // Email verification token  
-          reset: '1h'      // Password reset token
-        }
-      },
-      registration: {
-        enabled: true,
-        requireEmailVerification: true,
-        defaultRole: 'user'
+        secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+        expiresIn: '7d'
       }
     }
   }
@@ -57,14 +49,14 @@ Register a new user account:
 
 <APIExplorer 
   method="POST" 
-  endpoint="/auth/register" 
+  endpoint="/register" 
   :requiresAuth="false"
   sampleBody='{"email": "user@example.com", "password": "securePassword123", "name": "John Doe"}'
 />
 
 **Static Example:**
 ```http
-POST /auth/register
+POST /register
 Content-Type: application/json
 
 {
@@ -80,7 +72,7 @@ Authenticate a user and receive a JWT token:
 
 <APIExplorer 
   method="POST" 
-  endpoint="/auth/login" 
+  endpoint="/login" 
   :requiresAuth="false"
   sampleBody='{"email": "user@example.com", "password": "securePassword123"}'
 />
@@ -100,7 +92,7 @@ Authenticate a user and receive a JWT token:
 
 **Static Example:**
 ```http
-POST /auth/login
+POST /login
 Content-Type: application/json
 
 {
@@ -115,14 +107,14 @@ Verify a user's email address with a verification token:
 
 <APIExplorer 
   method="POST" 
-  endpoint="/auth/verify" 
+  endpoint="/user/verify" 
   :requiresAuth="false"
   sampleBody='{"token": "verification-token-here"}'
 />
 
 **Static Example:**
 ```http
-POST /auth/verify
+POST /user/verify
 Content-Type: application/json
 
 {
@@ -136,14 +128,14 @@ Request a password reset email:
 
 <APIExplorer 
   method="POST" 
-  endpoint="/auth/forgot" 
+  endpoint="/user/reset/password" 
   :requiresAuth="false"
   sampleBody='{"email": "user@example.com"}'
 />
 
 **Static Example:**
 ```http
-POST /auth/forgot
+POST /user/reset/password
 Content-Type: application/json
 
 {
@@ -157,14 +149,14 @@ Reset password using a reset token:
 
 <APIExplorer 
   method="POST" 
-  endpoint="/auth/reset" 
+  endpoint="/user/reset/password" 
   :requiresAuth="false"
   sampleBody='{"token": "reset-token-here", "password": "newSecurePassword123"}'
 />
 
 **Static Example:**
 ```http
-POST /auth/reset
+PUT /user/reset/password
 Content-Type: application/json
 
 {
@@ -179,7 +171,7 @@ Get the authenticated user's information:
 
 <APIExplorer 
   method="GET" 
-  endpoint="/auth/user" 
+  endpoint="/user" 
   :requiresAuth="true"
 />
 
@@ -317,18 +309,18 @@ API_BASE_URL="https://api.yourdomain.com"  # Production
 # API_BASE_URL="http://localhost:3000"     # Development
 
 # Register a new user
-curl -X POST ${API_BASE_URL}/auth/register \
+curl -X POST ${API_BASE_URL}/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123","name":"Test User"}'
 
 # Login
-curl -X POST ${API_BASE_URL}/auth/login \
+curl -X POST ${API_BASE_URL}/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123"}'
 
 # Use the token in protected requests
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  ${API_BASE_URL}/auth/user
+  ${API_BASE_URL}/user
 ```
 
 ## Next Steps

@@ -5,9 +5,10 @@
 
 const BasefloorAPI = require('./packages/api')
 
-// Load the unified configuration
+// Load the unified configuration and adapt it for the API module
 const api = BasefloorAPI({
-  config: require('./basefloor.config.js')
+  projectPath: __dirname,
+  envPath: './.env'
 })
 
 console.log('🚀 Basefloor application started!')

@@ -4,10 +4,10 @@
 require('dotenv').config();
 
 // Import the Basefloor API
-const { api } = require('basefloor');
+const BasefloorAPI = require('../../packages/api');
 
 // Initialize the API with the project path
-const API = api({
+const API = BasefloorAPI({
   projectPath: __dirname,
   envPath: './.env' // Path to your .env file
 });

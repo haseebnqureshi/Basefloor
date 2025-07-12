@@ -35,57 +35,89 @@ module.exports = (API) => ({
     env: 'development'
   },
   
-  database: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/myapp'
+  // Database configuration
+  db: '@mongodb/local-db',
+  
+  // Provider configurations
+  providers: {
+    '@mongodb/local-db': {
+      uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/myapp',
+      database: process.env.MONGODB_DATABASE || 'myapp'
+    }
   },
   
-  // 🚀 Only these providers will be installed:
-  email: {
-    provider: 'sendgrid',
-    from: 'noreply@myapp.com'
+  // Authentication configuration
+  auth: {
+    enabled: true,
+    jwt: {
+      secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+      expiresIn: '7d'
+    }
   },
   
+  // Email configuration (optional)
+  emails: {
+    enabled: false  // Set to true to enable email services
+  },
+  
+  // AI configuration (optional)
   ai: {
-    providers: {
-      openai: {
-        apiKey: process.env.OPENAI_API_KEY,
-        model: 'gpt-4'
+    enabled: false  // Set to true to enable AI services
+  },
+  
+  // Models configuration
+  models: {
+    Users: {
+      collection: 'users',
+      labels: ['User', 'Users'],
+      values: {
+        _id: ['ObjectId', 'rd'],
+        name: ['String', 'cru'],
+        email: ['String', 'cru'],
+        password: ['String', 'c'],
+        role: ['String', 'cru', 'user'],
+        created_at: ['Date', 'r'],
+        updated_at: ['Date', 'r']
+      }
+    },
+    
+    Posts: {
+      collection: 'posts',
+      labels: ['Post', 'Posts'],
+      values: {
+        _id: ['ObjectId', 'rd'],
+        title: ['String', 'cru'],
+        content: ['String', 'cru'],
+        author_id: ['ObjectId', 'cr'],
+        published: ['Boolean', 'cru', false],
+        created_at: ['Date', 'r'],
+        updated_at: ['Date', 'r']
       }
     }
   },
   
-  models: (m) => [
-    m.create('Users', {
-      fields: {
-        name: { type: 'string', required: true },
-        email: { type: 'string', required: true, unique: true },
-        role: { type: 'string', default: 'user' }
+  // Routes configuration
+  routes: () => {
+    return {
+      // User routes
+      "/users(Users)": {
+        c: { allow: true },  // Anyone can create (register)
+        rA: { allow: "admin=in=@req_user.role" },  // Only admins can list all users
+        r: { allow: true },  // Anyone can read a user profile
+        u: { allow: "@user._id=@req_user._id" },  // Users can only update their own profile
+        d: { allow: "admin=in=@req_user.role" }   // Only admins can delete users
+      },
+      
+      // Post routes
+      "/posts(Posts)": {
+        c: { allow: "@req_user._id" },  // Any authenticated user can create posts
+        rA: { allow: true },  // Anyone can list posts
+        r: { allow: true },   // Anyone can read a post
+        u: { allow: "@post.author_id=@req_user._id" },  // Author can update
+        d: { allow: "@post.author_id=@req_user._id" }   // Author can delete
       }
-    }),
-    
-    m.create('Posts', {
-      fields: {
-        title: { type: 'string', required: true },
-        content: { type: 'string', required: true },
-        author: { type: 'objectId', ref: 'Users', required: true },
-        published: { type: 'boolean', default: false }
-      }
-    })
-  ],
-  
-  routes: (r) => [
-    // User routes
-    r.post('/users(Users)', { c: true }),
-    r.get('/users(Users)', { rA: true }),
-    r.get('/users/:user_id(Users)', { r: true }),
-    
-    // Post routes  
-    r.post('/posts(Posts)', { c: true, permissions: ['auth'] }),
-    r.get('/posts(Posts)', { rA: true }),
-    r.get('/posts/:post_id(Posts)', { r: true }),
-    r.put('/posts/:post_id(Posts)', { u: true, permissions: ['auth', 'owner'] }),
-    r.delete('/posts/:post_id(Posts)', { d: true, permissions: ['auth', 'owner'] })
-  ]
+    }
+  }
 })
 ```
 
@@ -96,9 +128,17 @@ Create an `index.js` file:
 ```javascript
 const BasefloorAPI = require('@basefloor/api')
 
-const api = BasefloorAPI({
-  config: require('./basefloor.config.js')
+// Initialize the API with the project path
+const API = BasefloorAPI({
+  projectPath: __dirname,
+  envPath: './.env' // Path to your .env file
 })
+
+// Initialize all components based on config
+API.Init()
+
+// Start the server
+API.Start()
 ```
 
 ## Step 5: Start your server
@@ -110,7 +150,7 @@ node index.js
 That's it! Your API is now running on `http://localhost:3000` with:
 
 - Full CRUD operations for Users and Posts
-- Authentication endpoints (`/auth/register`, `/auth/login`, etc.)
+- Authentication endpoints (`/register`, `/login`, `/user`, etc.)
 - Built-in validation and error handling
 - MongoDB integration
 
