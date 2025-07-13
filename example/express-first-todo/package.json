@@ -1,0 +1,26 @@
+{
+  "name": "basefloor-express-first-todo",
+  "version": "1.0.0",
+  "description": "Express-first todo API using Basefloor middleware",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "dependencies": {
+    "axios": "^1.10.0",
+    "basefloor": "file:../../"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "keywords": [
+    "basefloor",
+    "express",
+    "todo",
+    "api",
+    "middleware"
+  ],
+  "author": "Basefloor Team",
+  "license": "MIT"
+}

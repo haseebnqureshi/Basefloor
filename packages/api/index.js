@@ -103,6 +103,24 @@ module.exports = ({ projectPath, envPath }) => {
 		API.Log(`${project.name} running Basefloor/Express started HTTPS in production node environment ...`)
 	}
 
+	/**
+	 * Create Express-first middleware from Basefloor functionality
+	 * This allows developers to use standard Express patterns
+	 * Must be called after API.Init()
+	 */
+	API.createMiddleware = () => {
+		if (!API.requireAuthentication) {
+			throw new Error('API.createMiddleware() must be called after API.Init()')
+		}
+		
+		const createBasefloorMiddleware = require('./express-middleware')
+		return createBasefloorMiddleware(API, { 
+			models, 
+			auth, 
+			project 
+		})
+	}
+
 	return API
 
 }
